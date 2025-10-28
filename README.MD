@@ -36,8 +36,6 @@ Modèle minimum :
 
 ### Semaine 1 — **MVP Admin CRUD** (atteignable)
 
-**^ objectif**
-
 * [ ] **Setup** : projet webapp, SQLite, Bootstrap (CDN), UX packs installés
 * [ ] **Security** : `User` + login form, rôle `ROLE_ADMIN`
 * [ ] **Entités** : `Client`, `Order`, `TimeEntry` (+ relations, migrations)
