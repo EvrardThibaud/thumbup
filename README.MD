@@ -1,171 +1,85 @@
 # ThumbUp — Gestion de miniatures YouTube (Symfony/Twig)
 
-Un mini-ERP pour freelance : suivre clients, commandes de miniatures, temps passé, facturation, paiements et stats.
+## 🎯 Objectifs d’apprentissage
 
-## Stack
-
-* **Symfony 6.4+** (Twig, Doctrine, Security)
-* **Symfony UX**: Turbo, LiveComponent, Autocomplete, Dropzone, Chart.js
-* **Bootstrap 5 (CDN)** pour les formulaires et le layout
-* **DB**: SQLite (dev) / MySQL ou PostgreSQL (prod)
-
----
-
-## Prérequis
-
-* macOS/Linux/WSL
-* PHP 8.2+
-* Composer
-* Symfony CLI
-* Git & GitHub CLI (`gh`)
-
-```bash
-brew install php composer symfony-cli gh
-```
+* **Routing → Controller → Response** (cycle HTTP) et **Twig** (layouts, composants, formulaires)
+* **Forms & Validator** : création/édition sécurisée, messages d’erreur
+* **Doctrine ORM** : entités, relations (OneToMany/ManyToOne), requêtes, **migrations**
+* **Security** : authentification (form login), rôles, restrictions d’accès
+* **Symfony UX** : Turbo/LiveComponent (petites interactions), **Autocomplete**, **Dropzone**, **Chart.js**
+* **Agrégations & reporting** avec Doctrine pour alimenter des **dashboards**
+* **(Optionnel plus tard)** : **API Platform** (+ Serializer) pour un portail client / intégrations, **Mercure** (temps réel)
 
 ---
 
-## Démarrage rapide
+## 🧾 Brief du projet
 
-```bash
-# 1) Créer le projet (déjà fait)
-symfony new thumbup --webapp
-cd thumbup
+Outil interne pour freelance « miniatures YouTube » permettant de :
 
-# 2) DB (SQLite dev par défaut) et serveur
-yes | php bin/console doctrine:database:create || true
-symfony server:start -d  # http://127.0.0.1:8000
-```
+* Gérer des **Clients** (YouTubeurs) et leurs **Commandes** (miniatures)
+* Suivre le **temps** passé par commande (TimeEntries)
+* Enregistrer les **prix** pratiqués et le **reste à encaisser** par client (suivi des soldes/impayés **sans** génération de facture ni envoi d’emails)
+* Visualiser des **statistiques** (miniatures/mois, temps/semaine, CA estimé, répartition statuts)
+* *(Optionnel)* Ouvrir un **portail client** pour déposer une demande et suivre son statut
 
----
+Modèle minimum :
 
-## Configuration UI
-
-**`config/packages/twig.yaml`**
-
-```yaml
-twig:
-  form_themes: ['bootstrap_5_layout.html.twig']
-```
-
-**`templates/base.html.twig`** – ajoute Bootstrap via CDN dans `<head>` avant `</head>`
-
-```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
-```
+* `User` (login, rôles)
+* `Client`
+* `Order` (client, titre, brief, prix, statut, échéance)
+* `TimeEntry` (order, minutes, note)
+* *(Optionnel)* `Payment` (client, amount, paidAt, method) pour suivre les encaissements — **sans facture ni email**
 
 ---
 
-## Modèle de données (MVP)
+## 🗺️ Roadmap — Tâches identifiées
 
-* `User` (id, email, password, roles, name)
-* `Client` (id, name, channelUrl, contactEmail)
-* `Order` (id, client, title, brief, priceHT, status, dueAt, createdAt, updatedAt)
-* `TimeEntry` (id, order, minutes, note, createdAt)
+### Semaine 1 — **MVP Admin CRUD** (atteignable)
 
-> Étapes suivantes : `Invoice`, `InvoiceLine`, `Payment`, `Asset` (uploads), etc.
+**^ objectif**
 
----
+* [ ] **Setup** : projet webapp, SQLite, Bootstrap (CDN), UX packs installés
+* [ ] **Security** : `User` + login form, rôle `ROLE_ADMIN`
+* [ ] **Entités** : `Client`, `Order`, `TimeEntry` (+ relations, migrations)
+* [ ] **CRUD Twig** : listes, création, édition, suppression (forms + validations)
+* [ ] **UX** : Autocomplete pour choisir un client, Dropzone pour brief (fichier), action Live pour changer le statut d’une commande
+* [ ] **Dashboard minimal** :
 
-## Génération initiale (MakerBundle)
+  * [ ] KPI : miniatures du mois, temps total semaine, **CA estimé** (∑ price des orders « Livrés »)
+  * [ ] 1 graphe Chart.js : **miniatures par mois**
 
-```bash
-composer require symfony/maker-bundle --dev
+**bonus :**
 
-# Sécurité (login + users)
-php bin/console make:user         # => User (email, roles, password)
-php bin/console make:auth         # => LoginFormAuthenticator
-
-# Entités métier
-php bin/console make:entity Client
-php bin/console make:entity Order
-php bin/console make:entity TimeEntry
-
-# Migrations
-php bin/console make:migration
-php bin/console doctrine:migrations:migrate
-
-# CRUD (Twig)
-php bin/console make:crud Client
-php bin/console make:crud Order
-php bin/console make:crud TimeEntry
-```
+* [ ] Pagination + filtres (par client, statut, période)
+* [ ] Export CSV des commandes
 
 ---
 
-## Tableaux de bord & Stats
+### Phase 2 — **Suivi financier simple & Stats+** (sans facture/email)
 
-* Installer **Symfony UX Chart.js** (déjà plus haut).
-* Créer un contrôleur `DashboardController` (+ route `/dashboard`).
-* Fournir au template des séries (CA/mois, temps/sem, impayés) à partir de requêtes Doctrine.
+* [ ] **Champ solde/impayé** côté client (calculé à partir des commandes « Facturables »/« Payées » sans générer de facture)
+* [ ] **(Optionnel)** Entité `Payment` pour consigner un encaissement manuel (montant, date, méthode)
+* [ ] Page **Impayés** : liste des clients avec montant dû + actions manuelles (marquer comme réglé)
+* [ ] Dashboard+ :
 
-Exemples de graphes à implémenter :
+  * [ ] Graphe **temps/semaine** (ligne)
+  * [ ] Graphe **répartition statuts** (doughnut)
+  * [ ] Graphe **CA estimé par mois** (barres)
 
-* **Barres** : nombre de miniatures par mois
-* **Ligne** : temps total par semaine
-* **Doughnut** : répartition statuts des commandes
+**bonus :**
 
----
-
-## Uploads & Assets (optionnel MVP+)
-
-* `composer require vich/uploader-bundle`
-* Permet d'associer des briefs, références et livrables aux `Order`.
+* [ ] Règles de transitions de statut (workflow simple)
+* [ ] Import CSV de clients
 
 ---
 
-## Emails & Rappels (optionnel MVP+)
+### Phase 3 — **Portail Client & API (optionnel)**
 
-* `composer require symfony/mailer symfony/messenger`
-* Gabarits Twig d'email (livraison, facture, rappel d'échéance)
-* Transport Messenger Doctrine pour l'async
+* [ ] Rôle `ROLE_CLIENT` + restriction (un client ne voit que ses données)
+* [ ] **Portail** : formulaire de **demande** (Order), suivi statut, accès à ses commandes
+* [ ] **API Platform** sur `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
+* [ ] **Mercure** pour maj de statut en temps réel (optionnel)
 
----
+**bonus :**
 
-## Sécurité & Accès
-
-* Rôles : `ROLE_ADMIN` (toi) et `ROLE_CLIENT` (portail client plus tard)
-* Voters pour restreindre l'accès aux commandes d'un client
-
----
-
-## Scripts utiles
-
-```bash
-# Lancer serveur & ouvrir
-symfony server:start -d && symfony open:local
-
-# Fixtures (si ajoutées plus tard)
-php bin/console doctrine:fixtures:load --no-interaction
-
-# Vérifier migrations en attente
-php bin/console doctrine:migrations:status
-```
-
----
-
-## Roadmap
-
-1. **Auth + CRUD**: Users, Clients, Orders, TimeEntries
-2. **Dashboard**: 3 KPI + 2 charts (mois/semaine)
-3. **Qualité**: validation, pagination, filtres
-4. **Uploads**: briefs/réfs
-5. **Finance**: invoices, PDF (Dompdf/KnpSnappy)
-6. **Rappels**: emails + Messenger
-7. **Portail client** (option): soumissions & suivi
-
----
-
-## Déploiement (aperçu)
-
-* Variables d’env (`APP_ENV=prod`, DSN Mailer, DB)
-* `php bin/console cache:clear --env=prod`
-* Migration DB sur le serveur
-* Web server: Nginx/Apache pointant sur `/public`
-
----
-
-## Licence
-
-MIT (ou à définir)
+* [ ] Intégration d’un paiement en ligne (ex. PayPal) pour régler un solde
