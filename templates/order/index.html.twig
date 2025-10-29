@@ -38,6 +38,12 @@
   {% endmacro %}
   {% import _self as S %}
 
+    {% set start = total == 0 ? 0 : ((page - 1) * limit) + 1 %}
+    {% set end = (page * limit) > total ? total : (page * limit) %}
+    <p class="text-secondary small mb-2">
+    Showing <strong>{{ start }}</strong>–<strong>{{ end }}</strong> of <strong>{{ total }}</strong>
+    </p>
+
   {# Table #}
   <div class="card bg-dark border-0">
     <div class="table-responsive">
