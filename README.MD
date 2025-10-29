@@ -31,38 +31,40 @@ Modèle minimum :
 * *(Optionnel)* `Payment` (client, amount, paidAt, method) pour suivre les encaissements
 
 ---
-
 ## 🗺️ Roadmap — Tâches identifiées
 
-* [x] **Setup** : projet webapp, SQLite, Bootstrap (CDN), UX packs installés
-* [x] **Security** : `User` + login form, rôle `ROLE_ADMIN`
-* [x] **Entités** : `Client`, `Order`, `TimeEntry` (+ relations, migrations)
-* [x] **CRUD Twig** : listes, création, édition, suppression (forms + validations)
-* [ ] **UX** : Autocomplete pour choisir un client, Dropzone pour brief (fichier), action Live pour changer le statut d’une commande
-* [ ] **Dashboard minimal** :
-
-  * [ ] KPI : miniatures du mois, temps total semaine, **CA estimé** (∑ price des orders « Livrés »)
-  * [ ] 1 graphe Chart.js : **miniatures par mois**
-
-* [ ] Pagination + filtres (par client, statut, période)
-* [ ] Export CSV des commandes
-
-
-* [ ] **Champ solde/impayé** côté client (calculé à partir des commandes « Facturables »/« Payées » sans générer de facture)
-* [ ] Entité `Payment` pour consigner un encaissement manuel (montant, date, méthode)
-* [ ] Page **Impayés** : liste des clients avec montant dû + actions manuelles (marquer comme réglé)
-* [ ] Dashboard+ :
-
-  * [ ] Graphe **temps/semaine** (ligne)
-  * [ ] Graphe **répartition statuts** (doughnut)
-  * [ ] Graphe **CA estimé par mois** (barres)
-
-* [ ] Règles de transitions de statut (workflow simple)
-* [ ] Import CSV de clients
-
-* [ ] Rôle `ROLE_CLIENT` + restriction (un client ne voit que ses données)
-* [ ] **Portail** : formulaire de **demande** (Order), suivi statut, accès à ses commandes
-* [ ] **API Platform** sur `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
-* [ ] **Mercure** pour maj de statut en temps réel
-
-* [ ] Intégration d’un paiement en ligne (ex. PayPal) pour régler un solde
+* [x] **Setup** : projet webapp, SQLite, Bootstrap (CDN), UX packs
+* [x] **Security** : `User` + login form, rôle `ROLE_ADMIN`, `/admin/*` protégé
+* [x] **Entités** : `Client`, `Order`, `TimeEntry` (+ relations)
+* [x] **Migrations** : génération & exécution
+* [x] **CRUD Twig** : Clients / Orders / TimeEntries
+* [x] **Timestamps** : `createdAt`/`updatedAt` sur `Order`
+* [x] **Status enum** : `todo|doing|delivered|paid` (PHP Enum + select)
+* [x] **Navbar & routes** : liens admin cohérents (`/admin/...`)
+* [x] **Autocomplete** : `Order.client` et `TimeEntry.relatedOrder`
+* [x] **Dashboard minimal** : 3 KPI (miniatures/mois, temps/semaine, CA estimé) + 1 graphe (orders/mois)
+* [x] **Affichages utiles** :
+  * [x] Prix formaté en € (listes/vues)
+  * [x] Total temps par commande (min & h) + tableau des TimeEntries
+* [ ] **Filtres Orders** (index) :
+  * [ ] par **Client** (select)
+  * [ ] par **Statut** (enum)
+  * [ ] par **Période** (date min/max sur `createdAt` ou `dueAt`)
+* [ ] **Recherche texte** : champ libre sur `title`
+* [ ] **Pagination** : paginer l’index (conserver filtres dans la query string)
+* [ ] **Tri** (option) : titre, client, dates
+* [ ] **Solde par client** : total dû basé sur orders `delivered|paid` (sans facture/email)
+* [ ] **(Option)** `Payment` : encaissements manuels (montant, date, méthode)
+* [ ] **Page Impayés** : clients + montants dus + action « marqué réglé »
+* [ ] **Dash+** :
+  * [ ] Ligne **temps/semaine**
+  * [ ] Doughnut **répartition statuts**
+  * [ ] Barres **CA estimé par mois**
+* [ ] Rôle `ROLE_CLIENT` + Voters (un client voit ses données)
+* [ ] **Portail client** : créer une demande (Order), suivre statut, voir ses commandes
+* [ ] **API Platform** : exposer `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
+* [ ] **Mercure** : MAJ de statut en temps réel (option)
+* [ ] **Dropzone** sur brief (upload fichiers)
+* [ ] Export CSV (Orders/Clients)
+* [ ] Import CSV (Clients)
+* [ ] Workflow de statuts (règles/guard)

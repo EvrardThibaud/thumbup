@@ -53,4 +53,7 @@ return [
     '@symfony/ux-autocomplete' => [
         'version' => '2.31.0',
     ],
+    'chart.js' => [
+        'version' => '3.9.1',
+    ],
 ];
