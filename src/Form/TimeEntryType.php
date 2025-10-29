@@ -23,6 +23,7 @@ class TimeEntryType extends AbstractType
                 'class' => Order::class,
                 'choice_label' => 'title',
                 'placeholder' => 'Sélectionner une commande',
+                'autocomplete' => true,
             ])
         ;
     }

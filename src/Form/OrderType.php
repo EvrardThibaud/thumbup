@@ -46,6 +46,7 @@ class OrderType extends AbstractType
                 'class' => Client::class,
                 'choice_label' => 'name',
                 'placeholder' => 'Sélectionner un client',
+                'autocomplete' => true,
             ])
         ;
     }
