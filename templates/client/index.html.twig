@@ -4,52 +4,67 @@
 {% block body %}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 m-0">👥 Clients</h1>
-    <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_client_new') }}">+ New client</a>
-    </div>
+    <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_client_new') }}">+ New client</a>
   </div>
 
   <div class="card bg-dark border-0">
     <div class="table-responsive">
       <table class="table table-dark table-hover align-middle mb-0">
         <thead class="small text-secondary">
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Channel</th>
-                <th>Payment</th> {# ← NOUVELLE COLONNE #}
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for client in clients %}
-            {% set due = (dueMap[client.id] ?? 0) / 100 %}
-            <tr>
-                <td class="text-secondary">#{{ client.id }}</td>
-                <td class="fw-medium">{{ client.name }}</td>
-                <td class="text-secondary">
-                {% if client.channelUrl %}
-                    <a class="link-light link-opacity-75-hover" href="{{ client.channelUrl }}" target="_blank">Open</a>
-                {% else %} — {% endif %}
-                </td>
-                <td>
-                {% if due > 0 %}
-                    <span class="badge text-bg-warning rounded-1">Payment due</span>
-                {% else %}
-                    <span class="badge text-bg-success rounded-1">Up to date</span>
-                {% endif %}
-                </td>
-                <td class="text-end">
-                <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_client_show', {'id': client.id}) }}">Open</a>
-                <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_client_edit', {'id': client.id}) }}">Edit</a>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" class="text-secondary">No clients yet.</td></tr>
-            {% endfor %}
-            </tbody>
-
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Channel</th>
+            <th>Payment</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for client in clients %}
+          {% set due = (dueMap[client.id] ?? 0) / 100 %}
+          <tr class="table-row-link"
+              role="button"
+              style="cursor: pointer;"
+              data-href="{{ path('app_client_show', {'id': client.id}) }}">
+            <td class="text-secondary">#{{ client.id }}</td>
+            <td class="fw-medium">{{ client.name }}</td>
+            <td class="text-secondary">
+              {% if client.channelUrl %}
+                <a class="link-light link-opacity-75-hover"
+                   href="{{ client.channelUrl }}"
+                   target="_blank"
+                   onclick="event.stopPropagation()">Open</a>
+              {% else %} — {% endif %}
+            </td>
+            <td>
+              {% if due > 0 %}
+                <span class="badge text-bg-warning rounded-1">Payment due</span>
+              {% else %}
+                <span class="badge text-bg-success rounded-1">Up to date</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-light rounded-1"
+                 href="{{ path('app_client_edit', {'id': client.id}) }}"
+                 onclick="event.stopPropagation()">✏️ Edit</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-secondary">No clients yet.</td></tr>
+        {% endfor %}
+        </tbody>
       </table>
     </div>
   </div>
+
+  <script>
+    // navigation par ligne cliquable
+    document.addEventListener('click', function (e) {
+      const row = e.target.closest('.table-row-link');
+      if (row && !(e.target.closest('a, button'))) {
+        const href = row.getAttribute('data-href');
+        if (href) window.location = href;
+      }
+    });
+  </script>
 {% endblock %}
