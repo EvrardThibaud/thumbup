@@ -7,7 +7,11 @@
 
     {{ include('time_entry/_form.html.twig', {'button_label': 'Update'}) }}
 
-    <a href="{{ path('app_time_entry_index') }}">back to list</a>
+    {% set back = time_entry.relatedOrder
+    ? path('app_order_show', {'id': time_entry.relatedOrder.id})
+    : path('app_time_entry_index') %}
+
+    <a href="{{ back }}">Back</a>
 
     {{ include('time_entry/_delete_form.html.twig') }}
 {% endblock %}

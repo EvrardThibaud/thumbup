@@ -45,6 +45,11 @@ final class TimeEntryController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($timeEntry);
             $em->flush();
+        
+            $order = $timeEntry->getRelatedOrder();
+            if ($order) {
+                return $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
+            }
             return $this->redirectToRoute('app_time_entry_index');
         }
 
@@ -70,8 +75,12 @@ final class TimeEntryController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
-
-            return $this->redirectToRoute('app_time_entry_index', [], Response::HTTP_SEE_OTHER);
+        
+            $order = $timeEntry->getRelatedOrder();
+            if ($order) {
+                return $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
+            }
+            return $this->redirectToRoute('app_time_entry_index');
         }
 
         return $this->render('time_entry/edit.html.twig', [
@@ -83,11 +92,13 @@ final class TimeEntryController extends AbstractController
     #[Route('/{id}', name: 'app_time_entry_delete', methods: ['POST'])]
     public function delete(Request $request, TimeEntry $timeEntry, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$timeEntry->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($timeEntry);
-            $entityManager->flush();
-        }
+        $entityManager->remove($timeEntry);
+        $entityManager->flush();
 
-        return $this->redirectToRoute('app_time_entry_index', [], Response::HTTP_SEE_OTHER);
+        $order = $timeEntry->getRelatedOrder();
+        if ($order) {
+            return $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
+        }
+        return $this->redirectToRoute('app_time_entry_index');
     }
 }

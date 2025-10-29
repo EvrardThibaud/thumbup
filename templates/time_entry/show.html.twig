@@ -26,7 +26,11 @@
         </tbody>
     </table>
 
-    <a href="{{ path('app_time_entry_index') }}">back to list</a>
+    {% set back = time_entry.relatedOrder
+    ? path('app_order_show', {'id': time_entry.relatedOrder.id})
+    : path('app_time_entry_index') %}
+
+    <a href="{{ back }}">Back</a>
 
     <a href="{{ path('app_time_entry_edit', {'id': time_entry.id}) }}">edit</a>
 
