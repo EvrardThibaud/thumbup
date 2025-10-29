@@ -20,30 +20,24 @@ final class OrderController extends AbstractController
     {
         $form = $this->createForm(OrderFilterType::class);
         $form->handleRequest($request);
-
-        /** @var array|null $data */
         $data = $form->getData() ?? [];
 
-        // Safeguards
-        $q       = $data['q']      ?? null;
-        $client  = $data['client'] ?? null;   // objet Client|null
-        $status  = $data['status'] ?? null;   // enum|null
-        $from    = $data['from']   ?? null;   // DateTimeInterface|null
-        $to      = $data['to']     ?? null;
+        $q      = $data['q']      ?? null;
+        $client = $data['client'] ?? null;   // Client|null
+        $status = $data['status'] ?? null;   // OrderStatus|null
+        $from   = $data['from']   ?? null;   // DateTimeInterface|null
+        $to     = $data['to']     ?? null;
 
         $clientId = $client?->getId();
 
         $page  = max(1, (int) $request->query->get('page', 1));
         $limit = 6;
+        $sort  = (string) $request->query->get('sort', 'updatedAt');
+        $dir   = (string) $request->query->get('dir', 'DESC');
 
         $result = $repo->searchPaginated(
-            $q,
-            $clientId,
-            $status,
-            $from,
-            $to,
-            $page,
-            $limit
+            $q, $clientId, $status, $from, $to,
+            $page, $limit, $sort, $dir
         );
 
         return $this->render('order/index.html.twig', [
@@ -52,6 +46,8 @@ final class OrderController extends AbstractController
             'page'    => $result['page'],
             'limit'   => $result['limit'],
             'filters' => $form->createView(),
+            'sort'    => $sort,
+            'dir'     => strtoupper($dir),
         ]);
     }
 

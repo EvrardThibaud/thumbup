@@ -23,46 +23,87 @@ class OrderRepository extends ServiceEntityRepository
         ?\DateTimeInterface $from,
         ?\DateTimeInterface $to,
         int $page = 1,
-        int $limit = 20
+        int $limit = 20,
+        string $sort = 'updatedAt',
+        string $dir = 'DESC'
     ): array {
+        $map = [
+            'id'        => 'o.id',
+            'title'     => 'o.title',
+            'client'    => 'c.name',
+            'price'     => 'o.price',
+            'status'    => 'o.status',
+            'dueAt'     => 'o.dueAt',
+            'createdAt' => 'o.createdAt',
+            'updatedAt' => 'o.updatedAt',
+        ];
+        $sortExpr = $map[$sort] ?? 'o.updatedAt';
+        $dir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
+
+        // --- liste paginée
         $qb = $this->createQueryBuilder('o')
-            ->leftJoin('o.client', 'c')->addSelect('c')
-            ->orderBy('o.updatedAt', 'DESC');
-    
+            ->leftJoin('o.client', 'c')->addSelect('c');
+
         if ($q) {
+            $like = '%'.mb_strtolower($q).'%';
             $qb->andWhere('LOWER(o.title) LIKE :q OR LOWER(o.brief) LIKE :q2')
-               ->setParameter('q', '%'.mb_strtolower($q).'%')
-               ->setParameter('q2', '%'.mb_strtolower($q).'%');
+            ->setParameter('q', $like)
+            ->setParameter('q2', $like);
         }
         if ($clientId) {
             $qb->andWhere('c.id = :clientId')->setParameter('clientId', $clientId);
         }
         if ($status) {
+            // Si souci avec ORM/DBAL, remplacer par ->setParameter('status', $status->value)
             $qb->andWhere('o.status = :status')->setParameter('status', $status);
-            // si souci ORM3 avec enums, utiliser ->setParameter('status', $status->value)
         }
         if ($from) {
-            $from = (new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0,0);
+            $from = (new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0, 0);
             $qb->andWhere('o.createdAt >= :from')->setParameter('from', $from);
         }
         if ($to) {
-            $to = (new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23,59,59);
+            $to = (new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23, 59, 59);
             $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to);
         }
-    
-        $offset = max(0, ($page - 1) * $limit);
-        $qb->setFirstResult($offset)->setMaxResults($limit);
-    
+
+        $qb->orderBy($sortExpr, $dir)
+        ->setFirstResult(max(0, ($page - 1) * $limit))
+        ->setMaxResults($limit);
+
         $items = $qb->getQuery()->getResult();
-    
-        // total (sans pagination)
-        $countQb = clone $qb;
-        $countQb->resetDQLPart('orderBy')->setFirstResult(null)->setMaxResults(null)
-            ->select('COUNT(o.id)');
+
+        // --- total avec les mêmes filtres (sans order/limit)
+        $countQb = $this->createQueryBuilder('o')
+            ->select('COUNT(o.id)')
+            ->leftJoin('o.client', 'c');
+
+        if ($q) {
+            $like = '%'.mb_strtolower($q).'%';
+            $countQb->andWhere('LOWER(o.title) LIKE :q_c OR LOWER(o.brief) LIKE :q2_c')
+                    ->setParameter('q_c', $like)
+                    ->setParameter('q2_c', $like);
+        }
+        if ($clientId) {
+            $countQb->andWhere('c.id = :clientId_c')->setParameter('clientId_c', $clientId);
+        }
+        if ($status) {
+            $countQb->andWhere('o.status = :status_c')->setParameter('status_c', $status);
+            // ou $status->value selon ton mapping
+        }
+        if ($from) {
+            $from = (new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0, 0);
+            $countQb->andWhere('o.createdAt >= :from_c')->setParameter('from_c', $from);
+        }
+        if ($to) {
+            $to = (new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23, 59, 59);
+            $countQb->andWhere('o.createdAt <= :to_c')->setParameter('to_c', $to);
+        }
+
         $total = (int) $countQb->getQuery()->getSingleScalarResult();
-    
+
         return ['items' => $items, 'total' => $total, 'page' => $page, 'limit' => $limit];
     }
+
     
 
     //    /**

@@ -28,7 +28,7 @@ Modèle minimum :
 * `Client`
 * `Order` (client, titre, brief, prix, statut, échéance)
 * `TimeEntry` (order, minutes, note)
-* *(Optionnel)* `Payment` (client, amount, paidAt, method) pour suivre les encaissements
+* `Payment` (client, amount, paidAt, method) pour suivre les encaissements
 
 ---
 ## 🗺️ Roadmap — Tâches identifiées
@@ -52,9 +52,9 @@ Modèle minimum :
   * [x] par **Période** (date min/max sur `createdAt` ou `dueAt`)
 * [x] **Recherche texte** : champ libre sur `title`
 * [x] **Pagination** : paginer l’index (conserver filtres dans la query string)
-* [ ] **Tri** (option) : titre, client, dates
+* [x] **Tri** : titre, client, dates
 * [ ] **Solde par client** : total dû basé sur orders `delivered|paid` (sans facture/email)
-* [ ] **(Option)** `Payment` : encaissements manuels (montant, date, méthode)
+* [ ] **Payment** : encaissements manuels (montant, date, méthode)
 * [ ] **Page Impayés** : clients + montants dus + action « marqué réglé »
 * [ ] **Dash+** :
   * [ ] Ligne **temps/semaine**
@@ -63,7 +63,7 @@ Modèle minimum :
 * [ ] Rôle `ROLE_CLIENT` + Voters (un client voit ses données)
 * [ ] **Portail client** : créer une demande (Order), suivre statut, voir ses commandes
 * [ ] **API Platform** : exposer `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
-* [ ] **Mercure** : MAJ de statut en temps réel (option)
+* [ ] **Mercure** : MAJ de statut en temps réel
 * [ ] **Dropzone** sur brief (upload fichiers)
 * [ ] Export CSV (Orders/Clients)
 * [ ] Import CSV (Clients)
