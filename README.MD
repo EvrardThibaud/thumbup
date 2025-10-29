@@ -46,12 +46,12 @@ Modèle minimum :
 * [x] **Affichages utiles** :
   * [x] Prix formaté en € (listes/vues)
   * [x] Total temps par commande (min & h) + tableau des TimeEntries
-* [ ] **Filtres Orders** (index) :
-  * [ ] par **Client** (select)
-  * [ ] par **Statut** (enum)
-  * [ ] par **Période** (date min/max sur `createdAt` ou `dueAt`)
-* [ ] **Recherche texte** : champ libre sur `title`
-* [ ] **Pagination** : paginer l’index (conserver filtres dans la query string)
+* [x] **Filtres Orders** (index) :
+  * [x] par **Client** (select)
+  * [x] par **Statut** (enum)
+  * [x] par **Période** (date min/max sur `createdAt` ou `dueAt`)
+* [x] **Recherche texte** : champ libre sur `title`
+* [x] **Pagination** : paginer l’index (conserver filtres dans la query string)
 * [ ] **Tri** (option) : titre, client, dates
 * [ ] **Solde par client** : total dû basé sur orders `delivered|paid` (sans facture/email)
 * [ ] **(Option)** `Payment` : encaissements manuels (montant, date, méthode)

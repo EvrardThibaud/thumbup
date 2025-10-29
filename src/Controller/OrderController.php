@@ -10,15 +10,48 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Form\OrderFilterType;
 
 #[Route('/admin/order')]
 final class OrderController extends AbstractController
 {
     #[Route(name: 'app_order_index', methods: ['GET'])]
-    public function index(OrderRepository $orderRepository): Response
+    public function index(Request $request, OrderRepository $repo): Response
     {
+        $form = $this->createForm(OrderFilterType::class);
+        $form->handleRequest($request);
+
+        /** @var array|null $data */
+        $data = $form->getData() ?? [];
+
+        // Safeguards
+        $q       = $data['q']      ?? null;
+        $client  = $data['client'] ?? null;   // objet Client|null
+        $status  = $data['status'] ?? null;   // enum|null
+        $from    = $data['from']   ?? null;   // DateTimeInterface|null
+        $to      = $data['to']     ?? null;
+
+        $clientId = $client?->getId();
+
+        $page  = max(1, (int) $request->query->get('page', 1));
+        $limit = 6;
+
+        $result = $repo->searchPaginated(
+            $q,
+            $clientId,
+            $status,
+            $from,
+            $to,
+            $page,
+            $limit
+        );
+
         return $this->render('order/index.html.twig', [
-            'orders' => $orderRepository->findAll(),
+            'orders'  => $result['items'],
+            'total'   => $result['total'],
+            'page'    => $result['page'],
+            'limit'   => $result['limit'],
+            'filters' => $form->createView(),
         ]);
     }
 
