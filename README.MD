@@ -39,7 +39,7 @@ Modèle minimum :
 * [x] **Setup** : projet webapp, SQLite, Bootstrap (CDN), UX packs installés
 * [x] **Security** : `User` + login form, rôle `ROLE_ADMIN`
 * [x] **Entités** : `Client`, `Order`, `TimeEntry` (+ relations, migrations)
-* [ ] **CRUD Twig** : listes, création, édition, suppression (forms + validations)
+* [x] **CRUD Twig** : listes, création, édition, suppression (forms + validations)
 * [ ] **UX** : Autocomplete pour choisir un client, Dropzone pour brief (fichier), action Live pour changer le statut d’une commande
 * [ ] **Dashboard minimal** :
 

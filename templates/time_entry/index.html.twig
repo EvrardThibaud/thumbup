@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}TimeEntry index{% endblock %}
+
+{% block body %}
+    <h1>TimeEntry index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Minutes</th>
+                <th>Note</th>
+                <th>CreatedAt</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for time_entry in time_entries %}
+            <tr>
+                <td>{{ time_entry.id }}</td>
+                <td>{{ time_entry.minutes }}</td>
+                <td>{{ time_entry.note }}</td>
+                <td>{{ time_entry.createdAt ? time_entry.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>
+                    <a href="{{ path('app_time_entry_show', {'id': time_entry.id}) }}">show</a>
+                    <a href="{{ path('app_time_entry_edit', {'id': time_entry.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_time_entry_new') }}">Create new</a>
+{% endblock %}

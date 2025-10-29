@@ -13,6 +13,7 @@
       <th>Client</th>
       <th>Brief</th>
       <th>Price</th>
+      <th>Time (min)</th>
       <th>Status</th>
       <th>DueAt</th>
       <th>CreatedAt</th>
@@ -28,6 +29,7 @@
         <td>{{ order.client ? order.client.name : '—' }}</td>
         <td>{{ order.brief }}</td>
         <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
+        <td>{{ order.getTotalMinutes() }}</td>
         {% set labels = {
           'todo': 'À faire',
           'doing': 'En cours',

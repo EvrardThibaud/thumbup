@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\TimeEntry;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -161,6 +162,20 @@ class Order
     public function getTimeEntries(): Collection
     {
         return $this->timeEntries;
+    }
+
+    public function getTotalMinutes(): int
+    {
+        $sum = 0;
+        foreach ($this->getTimeEntries() as $t) {
+            $sum += (int) $t->getMinutes();
+        }
+        return $sum;
+    }
+
+    public function getTotalHours(): float
+    {
+        return round($this->getTotalMinutes() / 60, 2);
     }
 
     public function addTimeEntry(TimeEntry $timeEntry): static
