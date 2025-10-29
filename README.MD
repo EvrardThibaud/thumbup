@@ -53,9 +53,9 @@ Modèle minimum :
 * [x] **Recherche texte** : champ libre sur `title`
 * [x] **Pagination** : paginer l’index (conserver filtres dans la query string)
 * [x] **Tri** : titre, client, dates
-* [ ] **Solde par client** : total dû basé sur orders `delivered|paid` (sans facture/email)
+* [x] **Solde par client** : total dû basé sur orders `delivered|paid` (sans facture/email)
 * [ ] **Payment** : encaissements manuels (montant, date, méthode)
-* [ ] **Page Impayés** : clients + montants dus + action « marqué réglé »
+* [x] **Page Impayés** : clients + montants dus + action « marqué réglé »
 * [ ] **Dash+** :
   * [ ] Ligne **temps/semaine**
   * [ ] Doughnut **répartition statuts**
@@ -70,4 +70,6 @@ Modèle minimum :
   * [x] Clients
 * [ ] Import CSV (Clients)
 * [ ] Workflow de statuts (règles/guard)
+* [ ] Report bug
+* [ ] Responsivité
 * [ ] Production

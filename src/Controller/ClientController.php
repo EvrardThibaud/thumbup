@@ -10,15 +10,21 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Repository\OrderRepository;
+
 
 #[Route('/admin/client')]
 final class ClientController extends AbstractController
 {
-    #[Route(name: 'app_client_index', methods: ['GET'])]
-    public function index(ClientRepository $clientRepository): Response
+    #[Route('/', name: 'app_client_index', methods: ['GET'])]
+    public function index(ClientRepository $clientRepo, OrderRepository $orderRepo): Response
     {
+        $clients = $clientRepo->findAll();
+        $dueMap  = $orderRepo->dueByClient();
+
         return $this->render('client/index.html.twig', [
-            'clients' => $clientRepository->findAll(),
+            'clients' => $clients,
+            'dueMap'  => $dueMap,
         ]);
     }
 
@@ -43,10 +49,14 @@ final class ClientController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
-    public function show(Client $client): Response
+    public function show(Client $client, OrderRepository $orderRepo): Response
     {
+        $totals = $orderRepo->dueAndPaidForClient($client->getId());
+
         return $this->render('client/show.html.twig', [
             'client' => $client,
+            'dueCents'  => $totals['dueCents'],
+            'paidCents' => $totals['paidCents'],
         ]);
     }
 

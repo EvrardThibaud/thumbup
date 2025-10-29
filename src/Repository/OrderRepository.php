@@ -138,7 +138,42 @@ class OrderRepository extends ServiceEntityRepository
         return $qb->orderBy($sortExpr,$dir)->getQuery()->toIterable();
     }
 
-    
+    public function dueByClient(): array
+    {
+        // map [clientId => dueCents]
+        $rows = $this->createQueryBuilder('o')
+            ->innerJoin('o.client', 'c')
+            ->select('c.id AS clientId')
+            ->addSelect('COALESCE(SUM(CASE WHEN o.status = :deliv THEN o.price ELSE 0 END), 0) AS dueCents')
+            ->groupBy('c.id')
+            ->setParameter('deliv', \App\Enum\OrderStatus::DELIVERED->value)
+            ->getQuery()
+            ->getArrayResult();
+
+        $map = [];
+        foreach ($rows as $r) { $map[(int)$r['clientId']] = (int)$r['dueCents']; }
+        return $map;
+    }
+
+    public function dueAndPaidForClient(int $clientId): array
+    {
+        $r = $this->createQueryBuilder('o')
+            ->innerJoin('o.client', 'c')
+            ->select('COALESCE(SUM(CASE WHEN o.status = :deliv THEN o.price ELSE 0 END), 0) AS dueCents')
+            ->addSelect('COALESCE(SUM(CASE WHEN o.status = :paid  THEN o.price ELSE 0 END), 0) AS paidCents')
+            ->andWhere('c.id = :cid')
+            ->setParameter('cid', $clientId)
+            ->setParameter('deliv', \App\Enum\OrderStatus::DELIVERED->value)
+            ->setParameter('paid',  \App\Enum\OrderStatus::PAID->value)
+            ->getQuery()
+            ->getSingleResult(); // scalars
+
+        return [
+            'dueCents'  => (int)$r['dueCents'],
+            'paidCents' => (int)$r['paidCents'],
+        ];
+    }
+
 
     //    /**
     //     * @return Order[] Returns an array of Order objects
