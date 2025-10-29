@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Order {{ order.id }}{% endblock %}
+
+{% block body %}
+<h1>Order</h1>
+
+<table class="table">
+  <tbody>
+    <tr>
+      <th>Id</th>
+      <td>{{ order.id }}</td>
+    </tr>
+    <tr>
+      <th>Title</th>
+      <td>{{ order.title }}</td>
+    </tr>
+    <tr>
+      <th>Client</th>
+      <td>{{ order.client ? order.client.name : '—' }}</td>
+    </tr>
+    <tr>
+      <th>Brief</th>
+      <td>{{ order.brief }}</td>
+    </tr>
+    <tr>
+      <th>Price</th>
+      <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
+    </tr>
+
+    {% set labels = {
+      'todo': 'À faire',
+      'doing': 'En cours',
+      'delivered': 'Livré',
+      'paid': 'Payé'
+    } %}
+    <tr>
+      <th>Status</th>
+      <td>{{ labels[order.status.value] ?? order.status.value }}</td>
+    </tr>
+
+    <tr>
+      <th>DueAt</th>
+      <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '' }}</td>
+    </tr>
+    <tr>
+      <th>CreatedAt</th>
+      <td>{{ order.createdAt ? order.createdAt|date('Y-m-d H:i') : '' }}</td>
+    </tr>
+    <tr>
+      <th>UpdatedAt</th>
+      <td>{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '' }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<a href="{{ path('app_order_index') }}">back to list</a>
+<a href="{{ path('app_order_edit', {'id': order.id}) }}">edit</a>
+{{ include('order/_delete_form.html.twig') }}
+{% endblock %}

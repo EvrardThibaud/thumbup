@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Orders{% endblock %}
+
+{% block body %}
+<h1>Orders</h1>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Id</th>
+      <th>Title</th>
+      <th>Client</th>
+      <th>Brief</th>
+      <th>Price</th>
+      <th>Status</th>
+      <th>DueAt</th>
+      <th>CreatedAt</th>
+      <th>UpdatedAt</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+      <tr>
+        <td>{{ order.id }}</td>
+        <td>{{ order.title }}</td>
+        <td>{{ order.client ? order.client.name : '—' }}</td>
+        <td>{{ order.brief }}</td>
+        <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
+        {% set labels = {
+          'todo': 'À faire',
+          'doing': 'En cours',
+          'delivered': 'Livré',
+          'paid': 'Payé'
+        } %}
+        <td>{{ labels[order.status.value] ?? order.status.value }}</td>
+
+        <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '' }}</td>
+        <td>{{ order.createdAt ? order.createdAt|date('Y-m-d H:i') : '' }}</td>
+        <td>{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '' }}</td>
+        <td>
+          <a href="{{ path('app_order_show', {'id': order.id}) }}">show</a>
+          <a href="{{ path('app_order_edit', {'id': order.id}) }}">edit</a>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="10">no records found</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{{ path('app_order_new') }}">Create new</a>
+{% endblock %}
