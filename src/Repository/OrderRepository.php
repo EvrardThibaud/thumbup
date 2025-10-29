@@ -104,6 +104,40 @@ class OrderRepository extends ServiceEntityRepository
         return ['items' => $items, 'total' => $total, 'page' => $page, 'limit' => $limit];
     }
 
+    public function findForExport(
+        ?string $q,
+        ?int $clientId,
+        ?\App\Enum\OrderStatus $status,
+        ?\DateTimeInterface $from,
+        ?\DateTimeInterface $to,
+        string $sort = 'updatedAt',
+        string $dir = 'DESC'
+    ): iterable {
+        $map = [
+            'id'=>'o.id','title'=>'o.title','client'=>'c.name','price'=>'o.price',
+            'status'=>'o.status','dueAt'=>'o.dueAt','createdAt'=>'o.createdAt','updatedAt'=>'o.updatedAt',
+        ];
+        $sortExpr = $map[$sort] ?? 'o.updatedAt';
+        $dir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
+    
+        $qb = $this->createQueryBuilder('o')
+            ->leftJoin('o.client','c')->addSelect('c');
+    
+        if ($q) {
+            $like = '%'.mb_strtolower($q).'%';
+            $qb->andWhere('LOWER(o.title) LIKE :q OR LOWER(o.brief) LIKE :q2')
+               ->setParameter('q',$like)->setParameter('q2',$like);
+        }
+        if ($clientId) { $qb->andWhere('c.id = :cid')->setParameter('cid',$clientId); }
+        if ($status)   { $qb->andWhere('o.status = :st')->setParameter('st',$status); }
+        if ($from)     { $f=(new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0,0);
+                         $qb->andWhere('o.createdAt >= :from')->setParameter('from',$f); }
+        if ($to)       { $t=(new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23,59,59);
+                         $qb->andWhere('o.createdAt <= :to')->setParameter('to',$t); }
+    
+        return $qb->orderBy($sortExpr,$dir)->getQuery()->toIterable();
+    }
+
     
 
     //    /**

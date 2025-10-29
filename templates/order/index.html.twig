@@ -9,16 +9,20 @@
 
   {# Filters #}
   <div class="card bg-dark border-0 p-3 mb-3">
-    {{ form_start(filters, { attr: { class: 'row g-3 align-items-end' } }) }}
-      <div class="col-md-3">{{ form_row(filters.q) }}</div>
-      <div class="col-md-3">{{ form_row(filters.client) }}</div>
-      <div class="col-md-2">{{ form_row(filters.status) }}</div>
-      <div class="col-md-2">{{ form_row(filters.from) }}</div>
-      <div class="col-md-2">{{ form_row(filters.to) }}</div>
-      <div class="col-12 d-flex gap-2">
-        <button class="btn btn-primary btn-sm rounded-1">Filter</button>
-        <a href="{{ path(app.request.attributes.get('_route')) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
-      </div>
+        {{ form_start(filters, { attr: { class: 'row g-3 align-items-end' } }) }}
+        <div class="col-md-3">{{ form_row(filters.q) }}</div>
+        <div class="col-md-3">{{ form_row(filters.client) }}</div>
+        <div class="col-md-2">{{ form_row(filters.status) }}</div>
+        <div class="col-md-2">{{ form_row(filters.from) }}</div>
+        <div class="col-md-2">{{ form_row(filters.to) }}</div>
+        <div class="col-12 d-flex gap-2">
+            <button class="btn btn-primary btn-sm rounded-1">Filter</button>
+            <a href="{{ path(app.request.attributes.get('_route')) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
+        </div>
+        {% set route = app.request.attributes.get('_route') %}
+        {% set qs = app.request.query.all %}<a class="btn btn-outline-light btn-sm rounded-1"
+        href="{{ path('app_order_export', qs) }}">Export CSV</a>
+
     {{ form_end(filters) }}
   </div>
 

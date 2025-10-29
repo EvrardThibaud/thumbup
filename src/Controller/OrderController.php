@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Form\OrderFilterType;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Route('/admin/order')]
 final class OrderController extends AbstractController
@@ -109,4 +110,51 @@ final class OrderController extends AbstractController
 
         return $this->redirectToRoute('app_order_index', [], Response::HTTP_SEE_OTHER);
     }
+
+    #[Route('/admin/order/export', name: 'app_order_export', methods: ['GET'])]
+    public function export(Request $request, OrderRepository $repo): StreamedResponse
+    {
+        // Reprendre les filtres (lecture safe champ par champ)
+        $form = $this->createForm(\App\Form\OrderFilterType::class);
+        $form->handleRequest($request);
+
+        $q       = $form->has('q')      ? $form->get('q')->getData()      : null;
+        $client  = $form->has('client') ? $form->get('client')->getData() : null; // Client|null
+        $status  = $form->has('status') ? $form->get('status')->getData() : null; // Enum|null
+        $from    = $form->has('from')   ? $form->get('from')->getData()   : null;
+        $to      = $form->has('to')     ? $form->get('to')->getData()     : null;
+
+        $clientId = $client?->getId();
+
+        $sort = (string) $request->query->get('sort', 'updatedAt');
+        $dir  = (string) $request->query->get('dir', 'DESC');
+
+        $iter = $repo->findForExport($q, $clientId, $status, $from, $to, $sort, $dir);
+
+        $response = new StreamedResponse(function () use ($iter) {
+            $out = fopen('php://output', 'w');
+            // En-têtes
+            fputcsv($out, ['ID', 'Title', 'Client', 'Price(€)', 'Status', 'Due', 'Created', 'Updated']);
+            // Lignes
+            foreach ($iter as $o) {
+                fputcsv($out, [
+                    $o->getId(),
+                    $o->getTitle(),
+                    $o->getClient()?->getName() ?? '',
+                    number_format($o->getPrice() / 100, 2, ',', ' '),
+                    $o->getStatus()->value,
+                    $o->getDueAt()?->format('Y-m-d H:i') ?? '',
+                    $o->getCreatedAt()?->format('Y-m-d H:i') ?? '',
+                    $o->getUpdatedAt()?->format('Y-m-d H:i') ?? '',
+                ]);
+            }
+            fclose($out);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="orders.csv"');
+
+        return $response;
+    }
+
 }

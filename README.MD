@@ -65,7 +65,9 @@ Modèle minimum :
 * [ ] **API Platform** : exposer `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
 * [ ] **Mercure** : MAJ de statut en temps réel
 * [ ] **Dropzone** sur brief (upload fichiers)
-* [ ] Export CSV (Orders/Clients)
+* [ ] Export CSV 
+  * [ ] Orders
+  * [x] Clients
 * [ ] Import CSV (Clients)
 * [ ] Workflow de statuts (règles/guard)
 * [ ] Production
