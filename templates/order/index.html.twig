@@ -1,58 +1,53 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Orders{% endblock %}
 
 {% block body %}
-<h1>Orders</h1>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">🧾 Orders</h1>
+    <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_order_new') }}">+ New order</a>
+  </div>
 
-<table class="table">
-  <thead>
-    <tr>
-      <th>Id</th>
-      <th>Title</th>
-      <th>Client</th>
-      <th>Brief</th>
-      <th>Price</th>
-      <th>Time (min)</th>
-      <th>Status</th>
-      <th>DueAt</th>
-      <th>CreatedAt</th>
-      <th>UpdatedAt</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-      <tr>
-        <td>{{ order.id }}</td>
-        <td>{{ order.title }}</td>
-        <td>{{ order.client ? order.client.name : '—' }}</td>
-        <td>{{ order.brief }}</td>
-        <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
-        <td>{{ order.getTotalMinutes() }}</td>
-        {% set labels = {
-          'todo': 'À faire',
-          'doing': 'En cours',
-          'delivered': 'Livré',
-          'paid': 'Payé'
-        } %}
-        <td>{{ labels[order.status.value] ?? order.status.value }}</td>
+  <div class="card bg-dark border-0">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="small text-secondary">
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Client</th>
+            <th style="width:28ch">Brief</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Due</th>
+            <th>Updated</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+          {% set status = order.status.value %}
+          {% set label = {'todo':'To do','doing':'Doing','delivered':'Delivered','paid':'Paid'}[status] ?? status %}
+          {% set color = {'todo':'secondary','doing':'info','delivered':'primary','paid':'success'}[status] ?? 'secondary' %}
 
-        <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '' }}</td>
-        <td>{{ order.createdAt ? order.createdAt|date('Y-m-d H:i') : '' }}</td>
-        <td>{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '' }}</td>
-        <td>
-          <a href="{{ path('app_order_show', {'id': order.id}) }}">show</a>
-          <a href="{{ path('app_order_edit', {'id': order.id}) }}">edit</a>
-        </td>
-      </tr>
-    {% else %}
-      <tr>
-        <td colspan="10">no records found</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<a href="{{ path('app_order_new') }}">Create new</a>
+          <tr>
+            <td class="text-secondary">#{{ order.id }}</td>
+            <td class="fw-medium">{{ order.title }}</td>
+            <td>{{ order.client ? order.client.name : '—' }}</td>
+            <td class="text-secondary text-truncate">{{ order.brief }}</td>
+            <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
+            <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
+            <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
+            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id}) }}">Open</a>
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id}) }}">Edit</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="9" class="text-secondary">No orders yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% endblock %}

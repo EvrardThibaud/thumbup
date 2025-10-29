@@ -1,37 +1,43 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}Client index{% endblock %}
+{% block title %}Clients{% endblock %}
 
 {% block body %}
-    <h1>Client index</h1>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">👥 Clients</h1>
+    <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_client_new') }}">+ New client</a>
+  </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Name</th>
-                <th>ChannelUrl</th>
-                <th>actions</th>
-            </tr>
+  <div class="card bg-dark border-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="small text-secondary">
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Channel</th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
         {% for client in clients %}
-            <tr>
-                <td>{{ client.id }}</td>
-                <td>{{ client.name }}</td>
-                <td>{{ client.channelUrl }}</td>
-                <td>
-                    <a href="{{ path('app_client_show', {'id': client.id}) }}">show</a>
-                    <a href="{{ path('app_client_edit', {'id': client.id}) }}">edit</a>
-                </td>
-            </tr>
+          <tr>
+            <td class="text-secondary">#{{ client.id }}</td>
+            <td class="fw-medium">{{ client.name }}</td>
+            <td class="text-secondary">
+              {% if client.channelUrl %}
+                <a class="link-light link-opacity-75-hover" href="{{ client.channelUrl }}" target="_blank">Open</a>
+              {% else %} — {% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_client_show', {'id': client.id}) }}">Open</a>
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_client_edit', {'id': client.id}) }}">Edit</a>
+            </td>
+          </tr>
         {% else %}
-            <tr>
-                <td colspan="4">no records found</td>
-            </tr>
+          <tr><td colspan="4" class="text-secondary">No clients yet.</td></tr>
         {% endfor %}
         </tbody>
-    </table>
-
-    <a href="{{ path('app_client_new') }}">Create new</a>
+      </table>
+    </div>
+  </div>
 {% endblock %}

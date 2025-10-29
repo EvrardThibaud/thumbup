@@ -1,89 +1,85 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}Order {{ order.id }}{% endblock %}
+{% block title %}Order #{{ order.id }}{% endblock %}
 
 {% block body %}
-<h1>Order</h1>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">🧾 Order <span class="text-secondary">#{{ order.id }}</span></h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id}) }}">✏️ Edit</a>
+      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_index') }}">← Back</a>
+      {{ include('order/_delete_form.html.twig') }}
+    </div>
+  </div>
 
-<table class="table">
-  <tbody>
-    <tr>
-      <th>Id</th>
-      <td>{{ order.id }}</td>
-    </tr>
-    <tr>
-      <th>Title</th>
-      <td>{{ order.title }}</td>
-    </tr>
-    <tr>
-      <th>Client</th>
-      <td>{{ order.client ? order.client.name : '—' }}</td>
-    </tr>
-    <tr>
-      <th>Brief</th>
-      <td>{{ order.brief }}</td>
-    </tr>
-    <tr>
-      <th>Price</th>
-      <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
-    </tr>
+  {% set status = order.status.value %}
+  {% set label = {'todo':'To do','doing':'Doing','delivered':'Delivered','paid':'Paid'}[status] ?? status %}
+  {% set color = {'todo':'secondary','doing':'info','delivered':'primary','paid':'success'}[status] ?? 'secondary' %}
 
-    {% set labels = {
-      'todo': 'À faire',
-      'doing': 'En cours',
-      'delivered': 'Livré',
-      'paid': 'Payé'
-    } %}
-    <tr>
-      <th>Status</th>
-      <td>{{ labels[order.status.value] ?? order.status.value }}</td>
-    </tr>
+  <div class="card border-0 p-3 mb-3">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="small text-secondary mb-1">Title</div>
+        <div class="fw-medium">{{ order.title }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="small text-secondary mb-1">Client</div>
+        <div>{{ order.client ? order.client.name : '—' }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="small text-secondary mb-1">Status</div>
+        <span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span>
+      </div>
 
-    <tr>
-      <th>DueAt</th>
-      <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '' }}</td>
-    </tr>
-    <tr>
-      <th>CreatedAt</th>
-      <td>{{ order.createdAt ? order.createdAt|date('Y-m-d H:i') : '' }}</td>
-    </tr>
-    <tr>
-      <th>UpdatedAt</th>
-      <td>{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '' }}</td>
-    </tr>
-  </tbody>
-</table>
+      <div class="col-md-6">
+        <div class="small text-secondary mb-1">Brief</div>
+        <div class="text-secondary" style="white-space: pre-wrap">{{ order.brief }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="small text-secondary mb-1">Price</div>
+        <div>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</div>
+      </div>
+      <div class="col-md-2">
+        <div class="small text-secondary mb-1">Due</div>
+        <div>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="small text-secondary mb-1">Updated</div>
+        <div>{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</div>
+      </div>
+    </div>
+  </div>
 
-<h2 class="h5 mt-4">Temps passé</h2>
-<p>
-  Total : <strong>{{ order.getTotalMinutes() }} min</strong>
-  ({{ order.getTotalHours() }} h)
-  —
-  <a href="{{ path('app_time_entry_new', {'orderId': order.id}) }}">Ajouter du temps</a>
-</p>
+  <div class="card border-0 p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h6 m-0">⏱ Time logged</h2>
+      <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_time_entry_new', {'orderId': order.id}) }}">+ Add time</a>
+    </div>
 
-<table class="table table-sm">
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Minutes</th>
-      <th>Note</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for t in order.timeEntries %}
-    <tr>
-      <td>{{ t.createdAt ? t.createdAt|date('Y-m-d H:i') : '' }}</td>
-      <td>{{ t.minutes }}</td>
-      <td>{{ t.note }}</td>
-    </tr>
-  {% else %}
-    <tr><td colspan="3">Aucune saisie de temps.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+    <p class="text-secondary mb-2">
+      Total: <strong class="text-light">{{ order.getTotalMinutes() }} min</strong> ({{ order.getTotalHours() }} h)
+    </p>
 
-<a href="{{ path('app_order_index') }}">back to list</a>
-<a href="{{ path('app_order_edit', {'id': order.id}) }}">edit</a>
-{{ include('order/_delete_form.html.twig') }}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="small text-secondary">
+          <tr>
+            <th>Date</th>
+            <th>Minutes</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in order.timeEntries %}
+            <tr>
+              <td>{{ t.createdAt ? t.createdAt|date('Y-m-d H:i') : '—' }}</td>
+              <td>{{ t.minutes }}</td>
+              <td class="text-secondary">{{ t.note }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="3" class="text-secondary">No time entries yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% endblock %}

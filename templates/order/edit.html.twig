@@ -1,13 +1,27 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}Edit Order{% endblock %}
+{% block title %}Edit order #{{ order.id }}{% endblock %}
 
 {% block body %}
-    <h1>Edit Order</h1>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">✏️ Edit order <span class="text-secondary">#{{ order.id }}</span></h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id}) }}">View</a>
+      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_index') }}">← Back</a>
+    </div>
+  </div>
 
-    {{ include('order/_form.html.twig', {'button_label': 'Update'}) }}
+  <div class="card bg-dark border-0 p-3 mb-3">
+    {{ include('order/_form.html.twig', {
+      form: form,
+      button_label: 'Save changes',
+      back_path: path('app_order_show', {'id': order.id})
+    }) }}
+  </div>
 
-    <a href="{{ path('app_order_index') }}">back to list</a>
-
-    {{ include('order/_delete_form.html.twig') }}
+  <div class="card bg-dark border-0 p-3">
+    <div class="d-flex align-items-center justify-content-between">
+      <span class="small text-secondary">Danger zone</span>
+      {{ include('order/_delete_form.html.twig') }}
+    </div>
+  </div>
 {% endblock %}

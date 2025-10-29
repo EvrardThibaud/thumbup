@@ -1,11 +1,17 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}New Order{% endblock %}
+{% block title %}New order{% endblock %}
 
 {% block body %}
-    <h1>Create new Order</h1>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">🆕 New order</h1>
+    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_index') }}">← Back</a>
+  </div>
 
-    {{ include('order/_form.html.twig') }}
-
-    <a href="{{ path('app_order_index') }}">back to list</a>
+  <div class="card bg-dark border-0 p-3">
+    {{ include('order/_form.html.twig', {
+      form: form,
+      button_label: 'Create',
+      back_path: path('app_order_index')
+    }) }}
+  </div>
 {% endblock %}
