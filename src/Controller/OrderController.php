@@ -100,15 +100,17 @@ final class OrderController extends AbstractController
     #[Route('/{id}/edit', name: 'app_order_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Order $order, EntityManagerInterface $em): Response
     {
-        $back = $request->query->get('back'); // string|null
+        $back = $request->query->get('back') ?: $request->headers->get('referer');
+
         $form = $this->createForm(OrderType::class, $order);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
-            return $back
-                ? $this->redirect($back)
-                : $this->redirectToRoute('app_order_index');
+            if ($back) {
+                return $this->redirect($back);
+            }
+            return $this->redirectToRoute('app_order_index');
         }
 
         return $this->render('order/edit.html.twig', [
@@ -116,7 +118,7 @@ final class OrderController extends AbstractController
             'form'  => $form,
             'back'  => $back,
         ]);
-}
+    }
 
     #[Route('/{id}', name: 'app_order_delete', methods: ['POST'])]
     public function delete(Request $request, Order $order, EntityManagerInterface $em): Response

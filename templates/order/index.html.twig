@@ -82,7 +82,8 @@
             <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
             <td class="text-end">
               <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id}) }}">Open</a>
-              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id}) }}">Edit</a>
+              {% set backList = app.request.uri %}
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
             </td>
           </tr>
         {% else %}

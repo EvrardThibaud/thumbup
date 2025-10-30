@@ -5,9 +5,13 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 m-0">🧾 Order <span class="text-secondary">#{{ order.id }}</span></h1>
     <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id}) }}">✏️ Edit</a>
-      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ back ?? path('app_order_index') }}">← Back</a>
-      {{ include('order/_delete_form.html.twig') }}
+        {# Back: retourne là d'où on vient (client/show ou liste), inchangé #}
+        <a class="btn btn-sm btn-outline-light rounded-1"
+            href="{{ back ?? path('app_order_index') }}">← Back</a>
+
+        {# Edit: back = URL courante (order/show) pour revenir ici après Cancel/Save #}
+        <a class="btn btn-sm btn-outline-light rounded-1"
+            href="{{ path('app_order_edit', {'id': order.id, 'back': app.request.uri}) }}">✏️ Edit</a>
     </div>
   </div>
 
