@@ -31,10 +31,10 @@ final class OrderFilterType extends AbstractType
             'label' => 'Status',
             'required' => false,
             'choices' => [
-                'To do' => OrderStatus::TODO,
+                'To do' => OrderStatus::CREATED,
                 'Doing' => OrderStatus::DOING,
                 'Delivered' => OrderStatus::DELIVERED,
-                'Paid' => OrderStatus::PAID,
+                'Paid' => OrderStatus::CREATED,
             ],
         ])
         ->add('from', DateType::class, [

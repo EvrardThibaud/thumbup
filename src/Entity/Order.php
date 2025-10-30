@@ -31,7 +31,7 @@ class Order
 
     #[ORM\Column(type: Types::STRING, enumType: OrderStatus::class)]
     #[Assert\NotNull]
-    private ?OrderStatus $status = OrderStatus::TODO;
+    private ?OrderStatus $status = OrderStatus::CREATED;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $dueAt = null;
@@ -45,6 +45,9 @@ class Order
     #[ORM\ManyToOne(inversedBy: 'orders')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Client $client = null;
+
+    #[ORM\Column(type: 'boolean', nullable: true, options: ['default' => false])]
+    private ?bool $paid = false;
 
     /**
      * @var Collection<int, TimeEntry>
@@ -141,6 +144,17 @@ class Order
     {
         $this->updatedAt = $updatedAt;
 
+        return $this;
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->paid;
+    }
+
+    public function setPaid(bool $paid): self
+    {
+        $this->paid = $paid;
         return $this;
     }
 

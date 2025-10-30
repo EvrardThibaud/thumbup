@@ -13,6 +13,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Form\OrderFilterType;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Enum\OrderStatus;
+use App\Entity\User;
 
 #[Route('/order')]
 final class OrderController extends AbstractController
@@ -25,53 +27,37 @@ final class OrderController extends AbstractController
         $data = $form->getData() ?? [];
 
         $q      = $data['q']      ?? null;
-        $client = $data['client'] ?? null;   // Client|null
-        $status = $data['status'] ?? null;   // OrderStatus|null
+        $client = $data['client'] ?? null;
+        $status = $data['status'] ?? null;
         $from   = $data['from']   ?? null;
         $to     = $data['to']     ?? null;
 
         $clientId = $client?->getId();
 
-        $page  = max(1, (int) $request->query->get('page', 1));
-        $limit = 6;
-        $sort  = (string) $request->query->get('sort', 'updatedAt');
-        $dir   = (string) $request->query->get('dir', 'DESC');
-
-        /** @var \App\Entity\User|null $user */
-        $user = $this->getUser();
-        $isClient = $user instanceof \App\Entity\User && in_array('ROLE_CLIENT', $user->getRoles(), true);
-
-        // 1) Si ROLE_CLIENT → on **force** son propre client, point.
+        // 👉 Si ROLE_CLIENT : impose le client et pré-remplit le champ du form
+        $isClient = $this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN');
         if ($isClient) {
-            if (!$user->getClient()) {
-                throw $this->createAccessDeniedException(); // sécurité
-            }
-            $clientId = $user->getClient()->getId();
+            /** @var \App\Entity\User|null $user */
+            $user = $this->getUser();
 
-            // (facultatif) Préremplir le champ du form si non soumis (pour affichage)
+            if (!$user instanceof \App\Entity\User || null === $user->getClient()) {
+                throw $this->createAccessDeniedException();
+            }
+
+            $userClient = $user->getClient();
+            $clientId   = $userClient->getId();
+
             if (!$form->isSubmitted()) {
-                if ($c = $clientRepo->find($clientId)) {
-                    $form->get('client')->setData($c);
-                }
-            }
-        } else {
-            // 2) Admins seulement : accepter ?clientId=... (préfiltre “View in Orders”)
-            $forcedClientId = $request->query->getInt('clientId', 0);
-            if ($forcedClientId > 0) {
-                $clientId = $forcedClientId;
-
-                if (!$form->isSubmitted()) {
-                    if ($c = $clientRepo->find($forcedClientId)) {
-                        $form->get('client')->setData($c);
-                    }
-                }
+                $form->get('client')->setData($userClient);
             }
         }
 
-        $result = $repo->searchPaginated(
-            $q, $clientId, $status, $from, $to,
-            $page, $limit, $sort, $dir
-        );
+        $page  = max(1, (int) $request->query->get('page', 1));
+        $limit = 10;
+        $sort  = (string) $request->query->get('sort', 'updatedAt');
+        $dir   = (string) $request->query->get('dir', 'DESC');
+
+        $result = $repo->searchPaginated($q, $clientId, $status, $from, $to, $page, $limit, $sort, $dir);
 
         return $this->render('order/index.html.twig', [
             'orders'  => $result['items'],
@@ -81,30 +67,64 @@ final class OrderController extends AbstractController
             'filters' => $form->createView(),
             'sort'    => $sort,
             'dir'     => strtoupper($dir),
-            'is_client' => $isClient, // pour la vue
+            'is_client' => $isClient, // 👈 pour le Twig
         ]);
     }
-
-
-    #[Route('/new', name: 'app_order_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    
+    #[Route('/new', name: 'app_order_new', methods: ['GET','POST'])]
+    public function new(Request $request, EntityManagerInterface $em): Response
     {
         $order = new Order();
         $order->setCreatedAt(new \DateTimeImmutable());
         $order->setUpdatedAt(new \DateTimeImmutable());
-        $form = $this->createForm(OrderType::class, $order);
+        $order->setStatus(OrderStatus::CREATED); // statut par défaut (client ne peut pas le changer)
+
+        $isClient = $this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN');
+
+        // Form spécialisé si client
+        $form = $this->createForm(OrderType::class, $order, [
+            'is_client' => $isClient,
+        ]);
+
+        // Si CLIENT : lier automatiquement son Client (champ non visible)
+        if ($isClient) {
+            /** @var User|null $user */
+            $user = $this->getUser();
+            if (!$user instanceof User || null === $user->getClient()) {
+                throw $this->createAccessDeniedException();
+            }
+            $order->setClient($user->getClient());
+        }
+
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($order);
-            $entityManager->flush();
+            // Double filet : si client, on reconfirme les règles
+            if ($isClient) {
+                $order->setStatus(OrderStatus::CREATED);
+                if ($order->getPrice() < 500) { // 5€ min en centimes
+                    // Ajoute une erreur gracieuce (au lieu de modifier silencieusement)
+                    $form->get('price')->addError(new \Symfony\Component\Form\FormError('Minimum €5.00'));
+                    return $this->render('order/new.html.twig', [
+                        'order' => $order, 'form' => $form, 'back' => $request->query->get('back') ?: $request->headers->get('referer'),
+                    ]);
+                }
+            }
 
-            return $this->redirectToRoute('app_order_index', [], Response::HTTP_SEE_OTHER);
+            $em->persist($order);
+            $em->flush();
+
+            $back = $request->request->get('back') ?: $request->query->get('back');
+            return $back
+                ? $this->redirect($back)
+                : $this->redirectToRoute($this->isGranted('ROLE_ADMIN') ? 'app_order_index' : 'app_order_index');
         }
 
+        $back = $request->query->get('back') ?: $request->headers->get('referer');
         return $this->render('order/new.html.twig', [
             'order' => $order,
-            'form' => $form,
+            'form'  => $form,
+            'back'  => $back,
         ]);
     }
 
@@ -122,15 +142,24 @@ final class OrderController extends AbstractController
 
     #[Route('/{id}/edit', name: 'app_order_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Order $order, EntityManagerInterface $em): Response
-    {   
+    {
         $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+
+        $user = $this->getUser();
+        $isClient = $this->isGranted('ROLE_CLIENT')
+            && method_exists($user, 'getClient')
+            && $user->getClient() === $order->getClient();
+
         $back = $request->query->get('back') ?: $request->headers->get('referer');
 
-        $form = $this->createForm(OrderType::class, $order);
+        $form = $this->createForm(OrderType::class, $order, [
+            'is_client' => $isClient, // ← restrict visible/editable fields for clients
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
+
             if ($back) {
                 return $this->redirect($back);
             }
@@ -141,6 +170,7 @@ final class OrderController extends AbstractController
             'order' => $order,
             'form'  => $form,
             'back'  => $back,
+            'is_client' => $isClient,
         ]);
     }
 

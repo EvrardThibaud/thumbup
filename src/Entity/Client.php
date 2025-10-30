@@ -20,10 +20,9 @@ class Client
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $channelUrl = null;
-
-    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Invitation::class, orphanRemoval: true)]
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Invitation::class, cascade: ['persist','remove'], orphanRemoval: true)]
     private Collection $invitations;
-    
+
     /**
      * @var Collection<int, Order>
      */
@@ -36,7 +35,21 @@ class Client
         $this->invitations = new ArrayCollection();
     }
 
+    /** @return Collection<int, Invitation> */
     public function getInvitations(): Collection { return $this->invitations; }
+    public function addInvitation(Invitation $inv): self {
+        if (!$this->invitations->contains($inv)) {
+            $this->invitations->add($inv);
+            $inv->setClient($this);
+        }
+        return $this;
+    }
+    public function removeInvitation(Invitation $inv): self {
+        if ($this->invitations->removeElement($inv)) {
+            if ($inv->getClient() === $this) { $inv->setClient(null); }
+        }
+        return $this;
+    }
 
 
     public function getId(): ?int

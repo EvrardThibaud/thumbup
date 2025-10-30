@@ -18,7 +18,7 @@ class Invitation
     #[ORM\Column(length: 64, unique: true)]
     private string $token;
 
-    #[ORM\ManyToOne(targetEntity: Client::class)]
+    #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'invitations')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Client $client = null;
 

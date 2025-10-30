@@ -164,7 +164,7 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('c.id = :cid')
             ->setParameter('cid', $clientId)
             ->setParameter('deliv', \App\Enum\OrderStatus::DELIVERED->value)
-            ->setParameter('paid',  \App\Enum\OrderStatus::PAID->value)
+            ->setParameter('paid',  \App\Enum\OrderStatus::CREATED->value)
             ->getQuery()
             ->getSingleResult(); // scalars
 

@@ -1,18 +1,31 @@
-{# templates/order/_form.html.twig — stacked fields, labels above inputs #}
-{{ form_start(form, { attr: { class: 'vstack gap-3' } }) }}
+{# templates/order/_form.html.twig #}
+{{ form_start(form) }}
 
-  {{ form_row(form.title,  { label: 'Title' }) }}
-  {{ form_row(form.client, { label: 'Client' }) }}
-  {{ form_row(form.brief,  { label: 'Brief' }) }}
-  {{ form_row(form.price,  { label: 'Price (cents)' }) }}
-  {{ form_row(form.status, { label: 'Status' }) }}
-  {{ form_row(form.dueAt,  { label: 'Due date' }) }}
+{{ form_row(form.title,  { label: '📝 Title' }) }}
+{{ form_row(form.brief,  { label: '📄 Brief' }) }}
+{{ form_row(form.dueAt,  { label: '⏰ Due at' }) }}
 
-  <div class="d-flex gap-2">
-    <button class="btn btn-primary rounded-1">{{ button_label|default('Save') }}</button>
-    {% if back_path is defined %}
-      <a href="{{ back_path }}" class="btn btn-outline-light rounded-1">Cancel</a>
-    {% endif %}
-  </div>
+{# Champs présents seulement pour l’admin : on les affiche si et seulement s’ils existent #}
+{% if form.children['price'] is defined %}
+  {{ form_row(form.children['price'], { label: '💶 Price (cents)' }) }}
+{% endif %}
+
+{% if form.children['client'] is defined %}
+  {{ form_row(form.children['client'], { label: '👤 Client' }) }}
+{% endif %}
+
+{% if form.children['status'] is defined %}
+  {{ form_row(form.children['status'], { label: '🏷️ Status' }) }}
+{% endif %}
+
+{% if form.children['createdAt'] is defined %}
+  {{ form_row(form.children['createdAt'], { label: 'Created at' }) }}
+{% endif %}
+
+{% if form.children['updatedAt'] is defined %}
+  {{ form_row(form.children['updatedAt'], { label: 'Updated at' }) }}
+{% endif %}
+
+<button class="btn btn-primary">{{ button_label|default('Save') }}</button>
 
 {{ form_end(form) }}

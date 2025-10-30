@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Security\Voter;
 
 use App\Entity\Order;
@@ -13,31 +14,32 @@ final class OrderVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::VIEW, self::EDIT], true)
+        return \in_array($attribute, [self::VIEW, self::EDIT], true)
             && $subject instanceof Order;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
-        if (!$user instanceof User) return false;
 
-        if (in_array('ROLE_ADMIN', $user->getRoles(), true)) return true;
-
-        if (in_array('ROLE_CLIENT', $user->getRoles(), true)) {
-            // refus si pas approuvé ou pas de client lié
-            if (!$user->getClient()) return false;
-
-            $sameClient = $subject->getClient() && $subject->getClient()->getId() === $user->getClient()->getId();
-            if (!$sameClient) return false;
-
-            // Un client peut VOIR ses commandes ; pour EDIT, à toi d’ouvrir/fermer
-            return match ($attribute) {
-                self::VIEW => true,
-                self::EDIT => false, // mets true si tu veux autoriser l’édition par le client
-            };
+        if (!$user instanceof User) {
+            return false;
         }
 
-        return false;
+        // Admin: accès total
+        if (\in_array('ROLE_ADMIN', $user->getRoles(), true)) {
+            return true;
+        }
+
+        // Client: accès uniquement à ses propres orders
+        $order = $subject; /** @var Order $order */
+        $userClient = method_exists($user, 'getClient') ? $user->getClient() : null;
+
+        if (null === $userClient) {
+            return false;
+        }
+
+        // Même client → OK pour VIEW et EDIT (les champs visibles sont déjà restreints par le FormType)
+        return $order->getClient() === $userClient;
     }
 }
