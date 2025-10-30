@@ -8,34 +8,84 @@
   </div>
 
   {# Filters #}
-  <div class="card bg-dark border-0 p-3 mb-3">
-        {{ form_start(filters, { attr: { class: 'row g-3 align-items-end' } }) }}
-        <div class="col-md-3">{{ form_row(filters.q) }}</div>
-        <div class="col-md-3">
-            {% if is_client %}
-                {{ form_row(filters.client, { attr: {'disabled': true} }) }}
-                {% set boundEntity = filters.client.vars.data %}
-                {% set boundId = boundEntity ? boundEntity.id : (filters.client.vars.value ?? (app.user and app.user.client ? app.user.client.id : '')) %}
-                <input type="hidden"
-                    name="{{ filters.client.vars.full_name }}"
-                    value="{{ boundId }}">
-            {% else %}
-                {{ form_row(filters.client) }}
-            {% endif %}
-        </div>
-        <div class="col-md-2">{{ form_row(filters.status) }}</div>
-        <div class="col-md-2">{{ form_row(filters.from) }}</div>
-        <div class="col-md-2">{{ form_row(filters.to) }}</div>
-        <div class="col-12 d-flex gap-2">
-            <button class="btn btn-primary btn-sm rounded-1">Filter</button>
-            <a href="{{ path(app.request.attributes.get('_route')) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
-        </div>
-        {% set route = app.request.attributes.get('_route') %}
-        {% set qs = app.request.query.all %}<a class="btn btn-outline-light btn-sm rounded-1"
-        href="{{ path('app_order_export', qs) }}">Export CSV</a>
-
-    {{ form_end(filters) }}
+<div class="card bg-dark border-0 p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <h2 class="h6 m-0">Filters</h2>
+      <div class="small text-secondary">Narrow results by text, client, status, and dates.</div>
+    </div>
+    {% set route = app.request.attributes.get('_route') %}
+    {% set qs = app.request.query.all %}
+    <div class="d-flex gap-2">
+      <a href="{{ path(route) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
+      <a class="btn btn-secondary btn-sm rounded-1" href="{{ path('app_order_export', qs) }}">Export CSV</a>
+    </div>
   </div>
+
+  {{ form_start(filters, { attr: { class: 'row g-3 align-items-end' } }) }}
+
+    <div class="col-md-3">
+      {{ form_row(filters.q, {
+        label: 'Search',
+        label_attr: { class: 'form-label mb-1 small text-secondary' },
+        attr: {
+          class: 'form-control form-control-sm bg-dark text-white border-secondary',
+          placeholder: 'Title contains…'
+        }
+      }) }}
+    </div>
+
+    <div class="col-md-3">
+      {% if is_client %}
+        {{ form_label(filters.client, 'Client', { label_attr: { class: 'form-label mb-1 small text-secondary' } }) }}
+        {{ form_widget(filters.client, {
+          attr: {
+            disabled: true
+          }
+        }) }}
+        {% set boundEntity = filters.client.vars.data %}
+        {% set boundId = boundEntity ? boundEntity.id : (filters.client.vars.value ?? (app.user and app.user.client ? app.user.client.id : '')) %}
+        <input type="hidden" name="{{ filters.client.vars.full_name }}" value="{{ boundId }}">
+      {% else %}
+        {{ form_row(filters.client, {
+          label: 'Client',
+          label_attr: { class: 'form-label mb-1 small text-secondary' },
+        }) }}
+      {% endif %}
+    </div>
+
+    <div class="col-md-2">
+      {{ form_row(filters.status, {
+        label: 'Status',
+        label_attr: { class: 'form-label mb-1 small text-secondary' },
+        attr: { class: 'form-select form-select-sm bg-dark text-white border-secondary' }
+      }) }}
+    </div>
+
+    <div class="col-md-2">
+      {{ form_row(filters.from, {
+        label: 'From',
+        label_attr: { class: 'form-label mb-1 small text-secondary' },
+        attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
+      }) }}
+    </div>
+
+    <div class="col-md-2">
+      {{ form_row(filters.to, {
+        label: 'To',
+        label_attr: { class: 'form-label mb-1 small text-secondary' },
+        attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
+      }) }}
+    </div>
+
+    <div class="col-12">
+      <button class="btn btn-primary btn-sm rounded-1">Apply filters</button>
+    </div>
+
+  {{ form_end(filters) }}
+</div>
+
+
 
   {# Prépare tri: route + querystring + macro #}
   {% set route = app.request.attributes.get('_route') %}
