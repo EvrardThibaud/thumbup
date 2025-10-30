@@ -5,7 +5,7 @@
 {{ form_row(form.brief,  { label: '📄 Brief' }) }}
 {{ form_row(form.dueAt,  { label: '⏰ Due at' }) }}
 
-{# Champs présents seulement pour l’admin : on les affiche si et seulement s’ils existent #}
+{# Admin-only (render only if present in the form) #}
 {% if form.children['price'] is defined %}
   {{ form_row(form.children['price'], { label: '💶 Price (cents)' }) }}
 {% endif %}
@@ -16,6 +16,10 @@
 
 {% if form.children['status'] is defined %}
   {{ form_row(form.children['status'], { label: '🏷️ Status' }) }}
+{% endif %}
+
+{% if form.children['paid'] is defined %}
+  {{ form_row(form.children['paid'], { label: 'Paid' }) }}
 {% endif %}
 
 {% if form.children['createdAt'] is defined %}

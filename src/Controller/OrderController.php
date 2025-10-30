@@ -75,38 +75,45 @@ final class OrderController extends AbstractController
     public function new(Request $request, EntityManagerInterface $em): Response
     {
         $order = new Order();
-        $order->setCreatedAt(new \DateTimeImmutable());
-        $order->setUpdatedAt(new \DateTimeImmutable());
-        $order->setStatus(OrderStatus::CREATED); // statut par défaut (client ne peut pas le changer)
+        $now = new \DateTimeImmutable();
+        $order->setCreatedAt($now);
+        $order->setUpdatedAt($now);
+        $order->setStatus(\App\Enum\OrderStatus::CREATED); // défaut
+        $order->setPaid(false); // défaut
 
         $isClient = $this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN');
 
-        // Form spécialisé si client
-        $form = $this->createForm(OrderType::class, $order, [
-            'is_client' => $isClient,
-        ]);
-
         // Si CLIENT : lier automatiquement son Client (champ non visible)
         if ($isClient) {
-            /** @var User|null $user */
+            /** @var \App\Entity\User|null $user */
             $user = $this->getUser();
-            if (!$user instanceof User || null === $user->getClient()) {
+            if (!$user instanceof \App\Entity\User || null === $user->getClient()) {
                 throw $this->createAccessDeniedException();
             }
             $order->setClient($user->getClient());
         }
 
+        // NEW: for_edit = false en création pour afficher "price" au client (avec min 5€)
+        $form = $this->createForm(\App\Form\OrderType::class, $order, [
+            'is_client' => $isClient,
+            'for_edit'  => false,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Double filet : si client, on reconfirme les règles
+
+            // Filets de sécurité côté serveur
             if ($isClient) {
-                $order->setStatus(OrderStatus::CREATED);
-                if ($order->getPrice() < 500) { // 5€ min en centimes
-                    // Ajoute une erreur gracieuce (au lieu de modifier silencieusement)
+                // Le client ne peut pas modifier ces champs sensibles
+                $order->setStatus(\App\Enum\OrderStatus::CREATED);
+                $order->setPaid(false);
+                // Min 5€ déjà validé par le FormType, mais on revérifie au cas où
+                if ($order->getPrice() < 500) {
                     $form->get('price')->addError(new \Symfony\Component\Form\FormError('Minimum €5.00'));
                     return $this->render('order/new.html.twig', [
-                        'order' => $order, 'form' => $form, 'back' => $request->query->get('back') ?: $request->headers->get('referer'),
+                        'order' => $order,
+                        'form'  => $form,
+                        'back'  => $request->query->get('back') ?: $request->headers->get('referer'),
                     ]);
                 }
             }
@@ -117,7 +124,7 @@ final class OrderController extends AbstractController
             $back = $request->request->get('back') ?: $request->query->get('back');
             return $back
                 ? $this->redirect($back)
-                : $this->redirectToRoute($this->isGranted('ROLE_ADMIN') ? 'app_order_index' : 'app_order_index');
+                : $this->redirectToRoute('app_order_index');
         }
 
         $back = $request->query->get('back') ?: $request->headers->get('referer');
@@ -232,6 +239,33 @@ final class OrderController extends AbstractController
         $response->headers->set('Content-Disposition', 'attachment; filename="orders.csv"');
 
         return $response;
+    }
+
+    #[Route('/{id}/cancel', name: 'app_order_cancel', methods: ['POST'])]
+    public function cancel(Request $request, \App\Entity\Order $order, \Doctrine\ORM\EntityManagerInterface $em): \Symfony\Component\HttpFoundation\Response
+    {
+        // Autorisations: le client propriétaire peut éditer; l’admin aussi (mais en pratique seul le client verra le bouton)
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+
+        // CSRF
+        if (!$this->isCsrfTokenValid('cancel'.$order->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        // Règle métier: Cancel autorisé uniquement si status = CREATED
+        if ($order->getStatus() !== \App\Enum\OrderStatus::CREATED) {
+            $this->addFlash('warning', 'This order can no longer be canceled.');
+        } else {
+            $order->setStatus(\App\Enum\OrderStatus::CANCELED);
+            $order->setUpdatedAt(new \DateTimeImmutable());
+            $em->flush();
+            $this->addFlash('success', 'Order canceled.');
+        }
+
+        $back = $request->query->get('back') ?: $request->headers->get('referer');
+        return $back
+            ? $this->redirect($back)
+            : $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
     }
 
 }

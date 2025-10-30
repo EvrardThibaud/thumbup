@@ -1,0 +1,7 @@
+<form method="post"
+      action="{{ path('app_order_cancel', {id: order.id, back: back}) }}"
+      onsubmit="return confirm('Cancel this order?');"
+>
+  <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ order.id) }}">
+  <button class="btn btn-outline-warning rounded-1">Cancel</button>
+</form>

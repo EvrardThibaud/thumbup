@@ -1,27 +1,32 @@
+{# templates/order/edit.html.twig — version complète avec bouton Cancel côté client #}
 {% extends 'base.html.twig' %}
 {% block title %}Edit order #{{ order.id }}{% endblock %}
 
 {% block body %}
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 m-0">✏️ Edit order <span class="text-secondary">#{{ order.id }}</span></h1>
-    <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id}) }}">View</a>
-      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ back ?? app.request.headers.get('referer') ?? path('app_order_index') }}">Cancel</a>
-    </div>
+    <h1 class="h4 m-0">✏️ Edit order #{{ order.id }}</h1>
+    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ back ?? path('app_order_index') }}">← Back</a>
   </div>
 
   <div class="card bg-dark border-0 p-3 mb-3">
-    {{ include('order/_form.html.twig', {
-      form: form,
-      button_label: 'Save changes',
-      back_path: path('app_order_show', {'id': order.id})
-    }) }}
+    {{ include('order/_form.html.twig', { form: form, button_label: 'Save' }) }}
   </div>
 
-  <div class="card bg-dark border-0 p-3">
-    <div class="d-flex align-items-center justify-content-between">
-      <span class="small text-secondary">Danger zone</span>
+  <div class="d-flex gap-2">
+    {% if is_client %}
+      {# CLIENT: pas de delete. Bouton Cancel si status=created, sinon disabled + message #}
+      {% set isCreated = order.status.value == 'created' %}
+      {% if isCreated %}
+        {{ include('order/_cancel_form.html.twig', { order: order, back: back }) }}
+      {% else %}
+        <button class="btn btn-outline-secondary rounded-1" disabled>Cancel</button>
+        <span class="text-secondary small align-self-center">
+          This order can no longer be canceled (status is {{ order.status.value }}).
+        </span>
+      {% endif %}
+    {% else %}
+      {# ADMIN: affiche le delete standard si tu l’as #}
       {{ include('order/_delete_form.html.twig') }}
-    </div>
+    {% endif %}
   </div>
 {% endblock %}
