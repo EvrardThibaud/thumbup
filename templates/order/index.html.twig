@@ -18,7 +18,7 @@
     {% set qs = app.request.query.all %}
     <div class="d-flex gap-2">
       <a href="{{ path(route) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
-      <a class="btn btn-secondary btn-sm rounded-1" href="{{ path('app_order_export', qs) }}">Export CSV</a>
+      <a class="btn btn-secondary btn-sm rounded-1" href="{{ path('app_order_export', app.request.query.all) }}">Export CSV</a>
     </div>
   </div>
 
@@ -76,6 +76,13 @@
         label_attr: { class: 'form-label mb-1 small text-secondary' },
         attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
       }) }}
+    </div>
+
+    <div class="col-md-2">
+        {{ form_row(filters.paid, {
+            label: 'Paid',
+            label_attr: { class: 'form-label mb-1 small text-secondary' }
+        }) }}
     </div>
 
     <div class="col-12">

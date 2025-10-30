@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Order;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Enum\OrderStatus;
 
 /**
  * @extends ServiceEntityRepository<Order>
@@ -16,126 +17,77 @@ class OrderRepository extends ServiceEntityRepository
         parent::__construct($registry, Order::class);
     }
 
+    /**
+     * @return array{0: Order[], 1: int}
+     */
     public function searchPaginated(
         ?string $q,
         ?int $clientId,
-        ?\App\Enum\OrderStatus $status,
+        ?OrderStatus $status,
         ?\DateTimeInterface $from,
         ?\DateTimeInterface $to,
-        int $page = 1,
-        int $limit = 20,
-        string $sort = 'updatedAt',
-        string $dir = 'DESC'
+        ?bool $paid,
+        int $page,
+        int $limit,
+        string $sort,
+        string $dir
     ): array {
-        $map = [
-            'id'        => 'o.id',
-            'title'     => 'o.title',
-            'client'    => 'c.name',
-            'price'     => 'o.price',
-            'status'    => 'o.status',
-            'dueAt'     => 'o.dueAt',
-            'createdAt' => 'o.createdAt',
-            'updatedAt' => 'o.updatedAt',
-        ];
-        $sortExpr = $map[$sort] ?? 'o.updatedAt';
-        $dir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
-
-        // --- liste paginée
         $qb = $this->createQueryBuilder('o')
             ->leftJoin('o.client', 'c')->addSelect('c');
 
-        if ($q) {
-            $like = '%'.mb_strtolower($q).'%';
-            $qb->andWhere('LOWER(o.title) LIKE :q OR LOWER(o.brief) LIKE :q2')
-            ->setParameter('q', $like)
-            ->setParameter('q2', $like);
-        }
-        if ($clientId) {
-            $qb->andWhere('c.id = :clientId')->setParameter('clientId', $clientId);
-        }
-        if ($status) {
-            // Si souci avec ORM/DBAL, remplacer par ->setParameter('status', $status->value)
-            $qb->andWhere('o.status = :status')->setParameter('status', $status);
-        }
-        if ($from) {
-            $from = (new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0, 0);
-            $qb->andWhere('o.createdAt >= :from')->setParameter('from', $from);
-        }
-        if ($to) {
-            $to = (new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23, 59, 59);
-            $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to);
-        }
+        if ($q)          { $qb->andWhere('o.title LIKE :q')->setParameter('q', '%'.$q.'%'); }
+        if ($clientId)   { $qb->andWhere('c.id = :cid')->setParameter('cid', $clientId); }
+        if ($status)     { $qb->andWhere('o.status = :st')->setParameter('st', $status->value); }
+        if ($from)       { $qb->andWhere('o.createdAt >= :from')->setParameter('from', $from); }
+        if ($to)         { $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to); }
+        if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
 
-        $qb->orderBy($sortExpr, $dir)
-        ->setFirstResult(max(0, ($page - 1) * $limit))
-        ->setMaxResults($limit);
+        $sortMap = [
+            'id' => 'o.id', 'title' => 'o.title', 'client' => 'c.name',
+            'price' => 'o.price', 'status' => 'o.status', 'dueAt' => 'o.dueAt',
+            'createdAt' => 'o.createdAt', 'updatedAt' => 'o.updatedAt',
+        ];
+        $qb->orderBy($sortMap[$sort] ?? 'o.updatedAt', strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC');
 
-        $items = $qb->getQuery()->getResult();
+        $countQb = clone $qb;
+        $count = (int) $countQb->select('COUNT(o.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
 
-        // --- total avec les mêmes filtres (sans order/limit)
-        $countQb = $this->createQueryBuilder('o')
-            ->select('COUNT(o.id)')
-            ->leftJoin('o.client', 'c');
+        $items = $qb->setFirstResult(($page-1)*$limit)->setMaxResults($limit)->getQuery()->getResult();
 
-        if ($q) {
-            $like = '%'.mb_strtolower($q).'%';
-            $countQb->andWhere('LOWER(o.title) LIKE :q_c OR LOWER(o.brief) LIKE :q2_c')
-                    ->setParameter('q_c', $like)
-                    ->setParameter('q2_c', $like);
-        }
-        if ($clientId) {
-            $countQb->andWhere('c.id = :clientId_c')->setParameter('clientId_c', $clientId);
-        }
-        if ($status) {
-            $countQb->andWhere('o.status = :status_c')->setParameter('status_c', $status);
-            // ou $status->value selon ton mapping
-        }
-        if ($from) {
-            $from = (new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0, 0);
-            $countQb->andWhere('o.createdAt >= :from_c')->setParameter('from_c', $from);
-        }
-        if ($to) {
-            $to = (new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23, 59, 59);
-            $countQb->andWhere('o.createdAt <= :to_c')->setParameter('to_c', $to);
-        }
-
-        $total = (int) $countQb->getQuery()->getSingleScalarResult();
-
-        return ['items' => $items, 'total' => $total, 'page' => $page, 'limit' => $limit];
+        return [$items, $count];
     }
 
+    /**
+     * @return iterable<Order>
+     */
     public function findForExport(
         ?string $q,
         ?int $clientId,
-        ?\App\Enum\OrderStatus $status,
+        ?OrderStatus $status,
         ?\DateTimeInterface $from,
         ?\DateTimeInterface $to,
-        string $sort = 'updatedAt',
-        string $dir = 'DESC'
+        ?bool $paid,
+        string $sort,
+        string $dir
     ): iterable {
-        $map = [
-            'id'=>'o.id','title'=>'o.title','client'=>'c.name','price'=>'o.price',
-            'status'=>'o.status','dueAt'=>'o.dueAt','createdAt'=>'o.createdAt','updatedAt'=>'o.updatedAt',
-        ];
-        $sortExpr = $map[$sort] ?? 'o.updatedAt';
-        $dir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
-    
         $qb = $this->createQueryBuilder('o')
-            ->leftJoin('o.client','c')->addSelect('c');
-    
-        if ($q) {
-            $like = '%'.mb_strtolower($q).'%';
-            $qb->andWhere('LOWER(o.title) LIKE :q OR LOWER(o.brief) LIKE :q2')
-               ->setParameter('q',$like)->setParameter('q2',$like);
-        }
-        if ($clientId) { $qb->andWhere('c.id = :cid')->setParameter('cid',$clientId); }
-        if ($status)   { $qb->andWhere('o.status = :st')->setParameter('st',$status); }
-        if ($from)     { $f=(new \DateTimeImmutable($from->format('Y-m-d')))->setTime(0,0);
-                         $qb->andWhere('o.createdAt >= :from')->setParameter('from',$f); }
-        if ($to)       { $t=(new \DateTimeImmutable($to->format('Y-m-d')))->setTime(23,59,59);
-                         $qb->andWhere('o.createdAt <= :to')->setParameter('to',$t); }
-    
-        return $qb->orderBy($sortExpr,$dir)->getQuery()->toIterable();
+            ->leftJoin('o.client', 'c')->addSelect('c');
+
+        if ($q)          { $qb->andWhere('o.title LIKE :q')->setParameter('q', '%'.$q.'%'); }
+        if ($clientId)   { $qb->andWhere('c.id = :cid')->setParameter('cid', $clientId); }
+        if ($status)     { $qb->andWhere('o.status = :st')->setParameter('st', $status->value); }
+        if ($from)       { $qb->andWhere('o.createdAt >= :from')->setParameter('from', $from); }
+        if ($to)         { $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to); }
+        if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
+
+        $sortMap = [
+            'id' => 'o.id', 'title' => 'o.title', 'client' => 'c.name',
+            'price' => 'o.price', 'status' => 'o.status', 'dueAt' => 'o.dueAt',
+            'createdAt' => 'o.createdAt', 'updatedAt' => 'o.updatedAt',
+        ];
+        $qb->orderBy($sortMap[$sort] ?? 'o.updatedAt', strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC');
+
+        return $qb->getQuery()->toIterable();
     }
 
     public function dueByClient(): array

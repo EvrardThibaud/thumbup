@@ -15,6 +15,21 @@
     </div>
   </div>
 
+  <div class="d-flex gap-2 mb-3">
+    <span class="badge text-bg-{{ order.paid ? 'success' : 'warning' }} rounded-1">
+        {{ order.paid ? 'Paid' : 'Unpaid' }}
+    </span>
+
+    {% if is_granted('ROLE_ADMIN') %}
+        <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id, back: back ?? app.request.uri }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('toggle-paid' ~ order.id) }}">
+        <button class="btn btn-sm btn-outline-light rounded-1">
+            {{ order.paid ? 'Unmark as paid' : 'Mark as paid' }}
+        </button>
+        </form>
+    {% endif %}
+    </div>
+
   {% set status = order.status.value %}
   {% set label = {'todo':'To do','doing':'Doing','delivered':'Delivered','paid':'Paid'}[status] ?? status %}
   {% set color = {'todo':'secondary','doing':'info','delivered':'primary','paid':'success'}[status] ?? 'secondary' %}
