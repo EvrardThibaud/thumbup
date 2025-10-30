@@ -20,7 +20,7 @@ final class ClientController extends AbstractController
     {
         $clients = $clientRepo->findAll();
         $dueMap  = $orderRepo->dueByClient();
-        
+
         return $this->render('client/index.html.twig', [
             'clients' => $clients,
             'dueMap'  => $dueMap,
@@ -50,6 +50,7 @@ final class ClientController extends AbstractController
     #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
     public function show(Client $client, OrderRepository $orderRepo, Request $request): Response
     {
+        $this->denyAccessUnlessGranted('CLIENT_VIEW', $client);
         // Totaux financiers (tu as déjà dueAndPaidForClient)
         $totals = $orderRepo->dueAndPaidForClient($client->getId());
 

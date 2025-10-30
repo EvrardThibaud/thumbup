@@ -11,7 +11,9 @@
   <div class="card bg-dark border-0 p-3 mb-3">
         {{ form_start(filters, { attr: { class: 'row g-3 align-items-end' } }) }}
         <div class="col-md-3">{{ form_row(filters.q) }}</div>
-        <div class="col-md-3">{{ form_row(filters.client) }}</div>
+        {% if not is_client %}
+            <div class="col-md-3">{{ form_row(filters.client) }}</div>
+        {% endif %}
         <div class="col-md-2">{{ form_row(filters.status) }}</div>
         <div class="col-md-2">{{ form_row(filters.from) }}</div>
         <div class="col-md-2">{{ form_row(filters.to) }}</div>

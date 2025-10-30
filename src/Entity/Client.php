@@ -21,6 +21,9 @@ class Client
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $channelUrl = null;
 
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Invitation::class, orphanRemoval: true)]
+    private Collection $invitations;
+    
     /**
      * @var Collection<int, Order>
      */
@@ -30,7 +33,11 @@ class Client
     public function __construct()
     {
         $this->orders = new ArrayCollection();
+        $this->invitations = new ArrayCollection();
     }
+
+    public function getInvitations(): Collection { return $this->invitations; }
+
 
     public function getId(): ?int
     {

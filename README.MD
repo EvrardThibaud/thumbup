@@ -60,17 +60,20 @@ Modèle minimum :
   * [ ] Ligne **temps/semaine**
   * [ ] Doughnut **répartition statuts**
   * [ ] Barres **CA estimé par mois**
-* [ ] Rôle `ROLE_CLIENT` + Voters (un client voit ses données)
+* [x] Rôle `ROLE_CLIENT` + Voters (un client voit ses données)
 * [ ] Page error 404
 * [x] Breadcrumb
 * [ ] **Portail client** : créer une demande (Order), suivre statut, voir ses commandes
 * [ ] **API Platform** : exposer `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
 * [ ] **Mercure** : MAJ de statut en temps réel
 * [ ] **Dropzone** sur brief (upload fichiers)
+* [ ] Modal Edit et New
+* [ ] Message Alert/Warning/Info
 * [ ] Export CSV 
   * [ ] Orders
   * [x] Clients
 * [ ] Import CSV (Clients)
+* [ ] Vich pour upload fichier
 * [ ] Workflow de statuts (règles/guard)
 * [ ] Report bug
 * [ ] Responsivité

@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use App\Form\OrderFilterType;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-#[Route('/admin/order')]
+#[Route('/order')]
 final class OrderController extends AbstractController
 {
     #[Route(name: 'app_order_index', methods: ['GET'])]
@@ -27,7 +27,7 @@ final class OrderController extends AbstractController
         $q      = $data['q']      ?? null;
         $client = $data['client'] ?? null;   // Client|null
         $status = $data['status'] ?? null;   // OrderStatus|null
-        $from   = $data['from']   ?? null;   // DateTimeInterface|null
+        $from   = $data['from']   ?? null;
         $to     = $data['to']     ?? null;
 
         $clientId = $client?->getId();
@@ -37,13 +37,33 @@ final class OrderController extends AbstractController
         $sort  = (string) $request->query->get('sort', 'updatedAt');
         $dir   = (string) $request->query->get('dir', 'DESC');
 
-        $forcedClientId = $request->query->getInt('clientId', 0);
-        if ($forcedClientId > 0) {
-            $clientId = $forcedClientId;
+        /** @var \App\Entity\User|null $user */
+        $user = $this->getUser();
+        $isClient = $user instanceof \App\Entity\User && in_array('ROLE_CLIENT', $user->getRoles(), true);
 
+        // 1) Si ROLE_CLIENT → on **force** son propre client, point.
+        if ($isClient) {
+            if (!$user->getClient()) {
+                throw $this->createAccessDeniedException(); // sécurité
+            }
+            $clientId = $user->getClient()->getId();
+
+            // (facultatif) Préremplir le champ du form si non soumis (pour affichage)
             if (!$form->isSubmitted()) {
-                if ($c = $clientRepo->find($forcedClientId)) {
+                if ($c = $clientRepo->find($clientId)) {
                     $form->get('client')->setData($c);
+                }
+            }
+        } else {
+            // 2) Admins seulement : accepter ?clientId=... (préfiltre “View in Orders”)
+            $forcedClientId = $request->query->getInt('clientId', 0);
+            if ($forcedClientId > 0) {
+                $clientId = $forcedClientId;
+
+                if (!$form->isSubmitted()) {
+                    if ($c = $clientRepo->find($forcedClientId)) {
+                        $form->get('client')->setData($c);
+                    }
                 }
             }
         }
@@ -61,8 +81,10 @@ final class OrderController extends AbstractController
             'filters' => $form->createView(),
             'sort'    => $sort,
             'dir'     => strtoupper($dir),
+            'is_client' => $isClient, // pour la vue
         ]);
     }
+
 
     #[Route('/new', name: 'app_order_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
@@ -89,6 +111,7 @@ final class OrderController extends AbstractController
     #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]
     public function show(Request $request, Order $order): Response
     {
+        $this->denyAccessUnlessGranted('ORDER_VIEW', $order);
         $back = $request->query->get('back'); // string|null
         return $this->render('order/show.html.twig', [
             'order' => $order,
@@ -99,7 +122,8 @@ final class OrderController extends AbstractController
 
     #[Route('/{id}/edit', name: 'app_order_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Order $order, EntityManagerInterface $em): Response
-    {
+    {   
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
         $back = $request->query->get('back') ?: $request->headers->get('referer');
 
         $form = $this->createForm(OrderType::class, $order);
@@ -123,6 +147,7 @@ final class OrderController extends AbstractController
     #[Route('/{id}', name: 'app_order_delete', methods: ['POST'])]
     public function delete(Request $request, Order $order, EntityManagerInterface $em): Response
     {
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
         $back = $request->request->get('back'); // via POST
         if ($this->isCsrfTokenValid('delete'.$order->getId(), $request->request->get('_token'))) {
             $em->remove($order);

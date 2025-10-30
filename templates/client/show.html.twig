@@ -36,6 +36,67 @@
     </div>
   </div>
 
+  {# --- Invitations (admin only) --- #}
+{% if is_granted('ROLE_ADMIN') %}
+  <div class="card bg-dark border-0 p-3 mt-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h2 class="h6 m-0">🔗 Invitations</h2>
+      <form method="post" action="{{ path('app_invite_create', {'id': client.id}) }}" class="m-0">
+        <button class="btn btn-sm btn-primary rounded-1">+ Create invite</button>
+      </form>
+    </div>
+
+    {% set invites = client.invitations ?? [] %}
+    {% if invites is empty %}
+      <div class="text-secondary small">No invitations yet.</div>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-dark table-sm align-middle mb-0">
+          <thead class="small text-secondary">
+            <tr>
+              <th>Token</th>
+              <th>Link</th>
+              <th>Created</th>
+              <th>Expires</th>
+              <th>Used</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for inv in invites %}
+            {% set link = absolute_url(path('app_register', {'invite': inv.token})) %}
+            <tr>
+              <td class="text-truncate" style="max-width:24ch"><code>{{ inv.token }}</code></td>
+              <td class="text-truncate" style="max-width:36ch">
+                <a class="link-light link-opacity-75-hover" href="{{ link }}" target="_blank">{{ link }}</a>
+              </td>
+              <td class="text-secondary small">{{ inv.createdAt|date('Y-m-d H:i') }}</td>
+              <td class="text-secondary small">{{ inv.expiresAt ? inv.expiresAt|date('Y-m-d H:i') : '—' }}</td>
+              <td>
+                {% if inv.usedAt %}
+                  <span class="badge text-bg-success rounded-1">Used {{ inv.usedAt|date('Y-m-d') }}</span>
+                {% else %}
+                  <span class="badge text-bg-warning rounded-1">Not used</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if not inv.usedAt %}
+                  <form method="post" action="{{ path('app_invite_revoke', {'id': inv.id}) }}" class="d-inline m-0"
+                        onsubmit="return confirm('Revoke this invite?');">
+                    <button class="btn btn-sm btn-outline-light rounded-1">Revoke</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+
   {# ---- Orders for this client (no filters, no CSV) ---- #}
   <div class="d-flex align-items-center justify-content-between mt-4 mb-2">
     <h2 class="h5 m-0">🧾 His orders</h2>

@@ -2,21 +2,31 @@
 
 namespace App\Entity;
 
+use App\Entity\Client;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
+#[UniqueEntity(fields: ['email'], message: 'This email is already used.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    #[ORM\OneToOne(targetEntity: Client::class)]
+    #[ORM\JoinColumn(name: "client_id", referencedColumnName: "id", nullable: true, unique: true, onDelete: "SET NULL")]
+    private ?Client $client = null;
+
+    public function getClient(): ?Client { return $this->client; }
+    public function setClient(?Client $c): self { $this->client = $c; return $this; }
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 180)]
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
     /**
