@@ -16,6 +16,7 @@
             <th>ID</th>
             <th>Name</th>
             <th>Channel</th>
+            <th>Linked</th> {# 🆕 #}
             <th>Payment</th>
             <th class="text-end">Actions</th>
           </tr>
@@ -23,6 +24,8 @@
         <tbody>
         {% for client in clients %}
           {% set due = (dueMap[client.id] ?? 0) / 100 %}
+          {% set linkedUser = linkedMap[client.id] ?? null %} {# 🆕 #}
+
           <tr class="table-row-link"
               role="button"
               style="cursor: pointer;"
@@ -38,6 +41,14 @@
               {% else %} — {% endif %}
             </td>
             <td>
+              {% if linkedUser %}
+                <span class="badge text-bg-success rounded-1"
+                      title="{{ linkedUser.email }}">Linked</span>
+              {% else %}
+                <span class="badge text-bg-secondary rounded-1">Unlinked</span>
+              {% endif %}
+            </td>
+            <td>
               {% if due > 0 %}
                 <span class="badge text-bg-warning rounded-1">Payment due</span>
               {% else %}
@@ -51,7 +62,7 @@
             </td>
           </tr>
         {% else %}
-          <tr><td colspan="5" class="text-secondary">No clients yet.</td></tr>
+          <tr><td colspan="6" class="text-secondary">No clients yet.</td></tr>
         {% endfor %}
         </tbody>
       </table>

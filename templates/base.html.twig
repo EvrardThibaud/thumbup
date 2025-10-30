@@ -13,25 +13,38 @@
   </head>
   <body>
     <nav class="navbar navbar-expand bg-body-tertiary border-bottom">
-      <div class="container-fluid">
+    <div class="container-fluid">
         <a class="navbar-brand fw-semibold" href="{{ path('admin_home') }}">👍 ThumbUp</a>
 
         <div class="navbar-nav">
-          <a class="nav-link" href="{{ path('admin_dashboard') }}">Dashboard</a>
-          <a class="nav-link" href="{{ path('app_client_index') }}">Clients</a>
-          <a class="nav-link" href="{{ path('app_order_index') }}">Orders</a>
-          <a class="nav-link" href="{{ path('app_time_entry_index') }}">Time</a>
+        {# Liens ADMIN uniquement #}
+        {% if is_granted('ROLE_ADMIN') %}
+            <a class="nav-link" href="{{ path('admin_dashboard') }}">Dashboard</a>
+            <a class="nav-link" href="{{ path('app_client_index') }}">Clients</a>
+            <a class="nav-link" href="{{ path('app_order_index') }}">Orders</a>
+            <a class="nav-link" href="{{ path('app_time_entry_index') }}">Time</a>
+        {% endif %}
+
+        {# Liens CLIENT uniquement #}
+        {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
+            <a class="nav-link" href="{{ path('app_order_index') }}">My orders</a>
+            {% set meClient = app.user and app.user.client ? app.user.client : null %}
+            {% if meClient %}
+            <a class="nav-link" href="{{ path('app_client_show', {'id': meClient.id}) }}">My profile</a>
+            {% endif %}
+        {% endif %}
         </div>
 
         <div class="ms-auto d-flex align-items-center gap-2">
-          {% if app.user %}
+        {% if app.user %}
             <span class="text-secondary small">👤 {{ app.user.email }}</span>
             <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_logout') }}">Logout</a>
-          {% else %}
+        {% else %}
             <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_login') }}">Login</a>
-          {% endif %}
+            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_register') }}">Register</a>
+        {% endif %}
         </div>
-      </div>
+    </div>
     </nav>
 
     <main class="container-xxl py-4">

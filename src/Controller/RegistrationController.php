@@ -28,6 +28,13 @@ final class RegistrationController extends AbstractController
     ): Response {
         $token = (string) $request->query->get('invite', '');
         $inv   = $token ? $invitations->findUsableByToken($token) : null;
+        $linkedAlready = false;
+        $linkedAlready = false;
+        if ($inv) {
+            $linkedAlready = (bool) $em
+                ->getRepository(User::class)
+                ->findOneBy(['client' => $inv->getClient()]);
+        }
 
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user, [
@@ -40,6 +47,25 @@ final class RegistrationController extends AbstractController
             $user->setPassword(
                 $hasher->hashPassword($user, (string) $form->get('plainPassword')->getData())
             );
+
+            if ($linkedAlready) {
+                $this->addFlash('danger', 'This client is already linked to another account.');
+                return $this->redirectToRoute('app_login');
+            }
+        
+            // Lier + marquer utilisée
+            $client = $inv->getClient();
+            $user->setClient($client);
+            $inv->setUsedAt(new \DateTimeImmutable());
+            $em->persist($inv);
+        
+            // Invalider les autres invitations non utilisées de ce client (optionnel mais conseillé)
+            $others = $em->getRepository(\App\Entity\Invitation::class)->findBy(['client' => $client]);
+            foreach ($others as $o) {
+                if ($o !== $inv && !$o->getUsedAt()) {
+                    $em->remove($o);
+                }
+            }
 
             if ($inv) {
                 // Lier au Client existant via invitation

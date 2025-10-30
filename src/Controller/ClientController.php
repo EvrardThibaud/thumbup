@@ -11,21 +11,42 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Repository\OrderRepository;
+use App\Repository\UserRepository;
 
 #[Route('/admin/client')]
 final class ClientController extends AbstractController
 {
-    #[Route('/', name: 'app_client_index', methods: ['GET'])]
-    public function index(ClientRepository $clientRepo, OrderRepository $orderRepo): Response
+    #[Route('/admin/client', name: 'app_client_index', methods: ['GET'])]
+    public function index(ClientRepository $clientsRepo, UserRepository $usersRepo): Response
     {
-        $clients = $clientRepo->findAll();
-        $dueMap  = $orderRepo->dueByClient();
+        $clients = $clientsRepo->findAll();
+
+        // Construire linkedMap: clientId => User
+        $linkedMap = [];
+        if (!empty($clients)) {
+            $users = $usersRepo->createQueryBuilder('u')
+                ->where('u.client IN (:clients)')
+                ->setParameter('clients', $clients)
+                ->getQuery()->getResult();
+
+            foreach ($users as $u) {
+                $cid = $u->getClient()?->getId();
+                if ($cid) {
+                    $linkedMap[$cid] = $u;
+                }
+            }
+        }
+
+        // dueMap : tu l’as déjà (logique existante). Sinon passe un tableau vide.
+        $dueMap = $dueMap ?? [];
 
         return $this->render('client/index.html.twig', [
-            'clients' => $clients,
-            'dueMap'  => $dueMap,
+            'clients'   => $clients,
+            'dueMap'    => $dueMap,
+            'linkedMap' => $linkedMap, // 🆕
         ]);
     }
+
 
     #[Route('/new', name: 'app_client_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
@@ -48,9 +69,11 @@ final class ClientController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
-    public function show(Client $client, OrderRepository $orderRepo, Request $request): Response
+    public function show(Client $client, OrderRepository $orderRepo, Request $request, UserRepository $users): Response
     {
         $this->denyAccessUnlessGranted('CLIENT_VIEW', $client);
+        $linkedUser = $users->findOneBy(['client' => $client]);
+
         // Totaux financiers (tu as déjà dueAndPaidForClient)
         $totals = $orderRepo->dueAndPaidForClient($client->getId());
 
@@ -84,24 +107,28 @@ final class ClientController extends AbstractController
             'limit'  => $result['limit'],
             'sort'   => $sort,
             'dir'    => strtoupper($dir),
+            'linkedUser' => $linkedUser,
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_client_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Client $client, EntityManagerInterface $entityManager): Response
+    #[Route('/admin/client/{id}/edit', name: 'app_client_edit', methods: ['GET','POST'])]
+    public function edit(Request $request, Client $client, EntityManagerInterface $em, UserRepository $users): Response
     {
         $form = $this->createForm(ClientType::class, $client);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_client_index', [], Response::HTTP_SEE_OTHER);
+            $em->flush();
+            $this->addFlash('success', 'Client updated.');
+            return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
         }
 
+        $linkedUser = $users->findOneBy(['client' => $client]);
+
         return $this->render('client/edit.html.twig', [
-            'client' => $client,
-            'form' => $form,
+            'client'     => $client,
+            'form'       => $form,
+            'linkedUser' => $linkedUser, // 👈
         ]);
     }
 

@@ -36,8 +36,20 @@
     </div>
   </div>
 
-  {# --- Invitations (admin only) --- #}
-{% if is_granted('ROLE_ADMIN') %}
+ {# templates/client/show.html.twig #}
+{% if linkedUser %}
+  <div class="card bg-dark border-0 p-3 mt-3">
+    <h2 class="h6 m-0 mb-2">👤 Linked account</h2>
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="fw-medium">{{ linkedUser.email }}</div>
+        {# ajoute ce que tu veux: date de création, last login si dispo, etc. #}
+      </div>
+      <span class="badge text-bg-success rounded-1">Active</span>
+    </div>
+  </div>
+{% else %}
+  {# ← ancien bloc Invitations tel que tu l’avais #}
   <div class="card bg-dark border-0 p-3 mt-3">
     <div class="d-flex align-items-center justify-content-between mb-2">
       <h2 class="h6 m-0">🔗 Invitations</h2>
@@ -53,28 +65,23 @@
       <div class="table-responsive">
         <table class="table table-dark table-sm align-middle mb-0">
           <thead class="small text-secondary">
-            <tr>
-              <th>Token</th>
-              <th>Link</th>
-              <th>Created</th>
-              <th>Expires</th>
-              <th>Used</th>
-              <th class="text-end">Actions</th>
-            </tr>
+          <tr>
+            <th>Token</th><th>Link</th><th>Created</th><th>Expires</th><th>Used</th><th class="text-end">Actions</th>
+          </tr>
           </thead>
           <tbody>
           {% for inv in invites %}
             {% set link = absolute_url(path('app_register', {'invite': inv.token})) %}
             <tr>
               <td class="text-truncate" style="max-width:24ch"><code>{{ inv.token }}</code></td>
-              <td class="text-truncate" style="max-width:36ch">
-                <a class="link-light link-opacity-75-hover" href="{{ link }}" target="_blank">{{ link }}</a>
-              </td>
+              <td class="text-truncate" style="max-width:36ch"><a class="link-light link-opacity-75-hover" href="{{ link }}" target="_blank">{{ link }}</a></td>
               <td class="text-secondary small">{{ inv.createdAt|date('Y-m-d H:i') }}</td>
               <td class="text-secondary small">{{ inv.expiresAt ? inv.expiresAt|date('Y-m-d H:i') : '—' }}</td>
               <td>
-                {% if inv.usedAt %}
-                  <span class="badge text-bg-success rounded-1">Used {{ inv.usedAt|date('Y-m-d') }}</span>
+                {% if inv.expiresAt and inv.expiresAt < date() %}
+                  <span class="badge text-bg-secondary rounded-1">Expired</span>
+                {% elseif inv.usedAt %}
+                  <span class="badge text-bg-success rounded-1">Used</span>
                 {% else %}
                   <span class="badge text-bg-warning rounded-1">Not used</span>
                 {% endif %}
@@ -95,6 +102,7 @@
     {% endif %}
   </div>
 {% endif %}
+
 
 
   {# ---- Orders for this client (no filters, no CSV) ---- #}
