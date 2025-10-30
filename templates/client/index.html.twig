@@ -1,3 +1,4 @@
+{# templates/client/index.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Clients{% endblock %}
 
@@ -58,7 +59,6 @@
   </div>
 
   <script>
-    // navigation par ligne cliquable
     document.addEventListener('click', function (e) {
       const row = e.target.closest('.table-row-link');
       if (row && !(e.target.closest('a, button'))) {

@@ -61,6 +61,8 @@ Modèle minimum :
   * [ ] Doughnut **répartition statuts**
   * [ ] Barres **CA estimé par mois**
 * [ ] Rôle `ROLE_CLIENT` + Voters (un client voit ses données)
+* [ ] Page error 404
+* [ ] Breadcrumb
 * [ ] **Portail client** : créer une demande (Order), suivre statut, voir ses commandes
 * [ ] **API Platform** : exposer `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
 * [ ] **Mercure** : MAJ de statut en temps réel

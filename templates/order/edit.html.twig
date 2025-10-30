@@ -6,7 +6,7 @@
     <h1 class="h4 m-0">✏️ Edit order <span class="text-secondary">#{{ order.id }}</span></h1>
     <div class="d-flex gap-2">
       <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id}) }}">View</a>
-      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_index') }}">← Back</a>
+      <a class="btn btn-sm btn-outline-light rounded-1" href="{{ back ?? path('app_order_index') }}">Cancel</a>
     </div>
   </div>
 

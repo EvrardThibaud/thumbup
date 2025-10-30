@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Order;
 use App\Form\OrderType;
 use App\Repository\OrderRepository;
+use App\Repository\ClientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 final class OrderController extends AbstractController
 {
     #[Route(name: 'app_order_index', methods: ['GET'])]
-    public function index(Request $request, OrderRepository $repo): Response
+    public function index(Request $request, OrderRepository $repo, ClientRepository $clientRepo): Response
     {
         $form = $this->createForm(OrderFilterType::class);
         $form->handleRequest($request);
@@ -35,6 +36,17 @@ final class OrderController extends AbstractController
         $limit = 6;
         $sort  = (string) $request->query->get('sort', 'updatedAt');
         $dir   = (string) $request->query->get('dir', 'DESC');
+
+        $forcedClientId = $request->query->getInt('clientId', 0);
+        if ($forcedClientId > 0) {
+            $clientId = $forcedClientId;
+
+            if (!$form->isSubmitted()) {
+                if ($c = $clientRepo->find($forcedClientId)) {
+                    $form->get('client')->setData($c);
+                }
+            }
+        }
 
         $result = $repo->searchPaginated(
             $q, $clientId, $status, $from, $to,
@@ -75,40 +87,48 @@ final class OrderController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]
-    public function show(Order $order): Response
+    public function show(Request $request, Order $order): Response
     {
+        $back = $request->query->get('back'); // string|null
         return $this->render('order/show.html.twig', [
             'order' => $order,
+            'back'  => $back,
         ]);
     }
+
 
     #[Route('/{id}/edit', name: 'app_order_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, Order $order, EntityManagerInterface $em): Response
     {
+        $back = $request->query->get('back'); // string|null
         $form = $this->createForm(OrderType::class, $order);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $order->setUpdatedAt(new \DateTimeImmutable());
             $em->flush();
-            return $this->redirectToRoute('app_order_index');
+            return $back
+                ? $this->redirect($back)
+                : $this->redirectToRoute('app_order_index');
         }
 
         return $this->render('order/edit.html.twig', [
             'order' => $order,
-            'form' => $form,
+            'form'  => $form,
+            'back'  => $back,
         ]);
-    }
+}
 
     #[Route('/{id}', name: 'app_order_delete', methods: ['POST'])]
-    public function delete(Request $request, Order $order, EntityManagerInterface $entityManager): Response
+    public function delete(Request $request, Order $order, EntityManagerInterface $em): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$order->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($order);
-            $entityManager->flush();
+        $back = $request->request->get('back'); // via POST
+        if ($this->isCsrfTokenValid('delete'.$order->getId(), $request->request->get('_token'))) {
+            $em->remove($order);
+            $em->flush();
         }
-
-        return $this->redirectToRoute('app_order_index', [], Response::HTTP_SEE_OTHER);
+        return $back
+            ? $this->redirect($back)
+            : $this->redirectToRoute('app_order_index');
     }
 
     #[Route('/admin/order/export', name: 'app_order_export', methods: ['GET'])]
