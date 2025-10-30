@@ -17,7 +17,7 @@ use App\Repository\UserRepository;
 final class ClientController extends AbstractController
 {
     #[Route('/admin/client', name: 'app_client_index', methods: ['GET'])]
-    public function index(ClientRepository $clientsRepo, UserRepository $usersRepo): Response
+    public function index(ClientRepository $clientsRepo, UserRepository $usersRepo, OrderRepository $orders): Response
     {
         $clients = $clientsRepo->findAll();
 
@@ -37,12 +37,11 @@ final class ClientController extends AbstractController
             }
         }
 
-        // dueMap : tu l’as déjà (logique existante). Sinon passe un tableau vide.
-        $dueMap = $dueMap ?? [];
+        $dueMap = $orders->dueByClient();
 
         return $this->render('client/index.html.twig', [
             'clients'   => $clients,
-            'dueMap'    => $dueMap,
+            'dueMap'  => $dueMap,
             'linkedMap' => $linkedMap, // 🆕
         ]);
     }

@@ -140,13 +140,14 @@ class OrderRepository extends ServiceEntityRepository
 
     public function dueByClient(): array
     {
-        // map [clientId => dueCents]
+        // map [clientId => dueCents] ; due = DELIVERED && NOT paid
         $rows = $this->createQueryBuilder('o')
             ->innerJoin('o.client', 'c')
             ->select('c.id AS clientId')
-            ->addSelect('COALESCE(SUM(CASE WHEN o.status = :deliv THEN o.price ELSE 0 END), 0) AS dueCents')
+            ->addSelect('COALESCE(SUM(CASE WHEN o.status = :deliv AND o.paid = :false THEN o.price ELSE 0 END), 0) AS dueCents')
             ->groupBy('c.id')
             ->setParameter('deliv', \App\Enum\OrderStatus::DELIVERED->value)
+            ->setParameter('false', false)
             ->getQuery()
             ->getArrayResult();
 
@@ -157,16 +158,18 @@ class OrderRepository extends ServiceEntityRepository
 
     public function dueAndPaidForClient(int $clientId): array
     {
+        // due = DELIVERED && NOT paid ; paid = paid == true (quel que soit le statut)
         $r = $this->createQueryBuilder('o')
             ->innerJoin('o.client', 'c')
-            ->select('COALESCE(SUM(CASE WHEN o.status = :deliv THEN o.price ELSE 0 END), 0) AS dueCents')
-            ->addSelect('COALESCE(SUM(CASE WHEN o.status = :paid  THEN o.price ELSE 0 END), 0) AS paidCents')
+            ->select('COALESCE(SUM(CASE WHEN o.status = :deliv AND o.paid = :false THEN o.price ELSE 0 END), 0) AS dueCents')
+            ->addSelect('COALESCE(SUM(CASE WHEN o.paid = :true THEN o.price ELSE 0 END), 0) AS paidCents')
             ->andWhere('c.id = :cid')
             ->setParameter('cid', $clientId)
             ->setParameter('deliv', \App\Enum\OrderStatus::DELIVERED->value)
-            ->setParameter('paid',  \App\Enum\OrderStatus::CREATED->value)
+            ->setParameter('false', false)
+            ->setParameter('true', true)
             ->getQuery()
-            ->getSingleResult(); // scalars
+            ->getSingleResult();
 
         return [
             'dueCents'  => (int)$r['dueCents'],

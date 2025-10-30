@@ -49,11 +49,12 @@
               {% endif %}
             </td>
             <td>
-              {% if due > 0 %}
-                <span class="badge text-bg-warning rounded-1">Payment due</span>
-              {% else %}
-                <span class="badge text-bg-success rounded-1">Up to date</span>
-              {% endif %}
+                {% set dueCents = dueMap[client.id]|default(0) %}
+                {% if dueCents > 0 %}
+                    <span class="badge text-bg-warning rounded-1">Payment due</span>
+                {% else %}
+                    <span class="badge text-bg-success rounded-1">Up to date</span>
+                {% endif %}
             </td>
             <td class="text-end">
               <a class="btn btn-sm btn-outline-light rounded-1"
