@@ -104,9 +104,9 @@
 
             <tr>
             <td class="text-secondary">#{{ order.id }}</td>
-            <td class="fw-medium">{{ order.title }}</td>
+            <td class="fw-medium" style="max-width:16ch">{{ order.title }}</td>
             <td>{{ order.client ? order.client.name : '—' }}</td>
-            <td class="text-secondary text-truncate">{{ order.brief }}</td>
+            <td class="text-secondary text-truncate" style="max-width:16ch">{{ order.brief }}</td>
             <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
 
             <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>

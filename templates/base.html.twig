@@ -48,11 +48,43 @@
     </nav>
 
     <main class="container-xxl py-4">
-      {% for label, messages in app.flashes %}
-        {% for message in messages %}
-          <div class="alert alert-{{ label }} mb-3">{{ message }}</div>
+      <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1080;">
+        {% for label, messages in app.flashes %}
+            {% set tone = {
+            'success':'success',
+            'warning':'warning',
+            'danger':'danger',
+            'error':'danger',
+            'info':'info'
+            }[label]|default('secondary') %}
+
+            {% for message in messages %}
+            <div class="toast align-items-center text-bg-{{ tone }} border-0"
+                role="alert" aria-live="assertive" aria-atomic="true"
+                data-bs-autohide="true" data-bs-delay="6000">
+                <div class="d-flex">
+                <div class="toast-body">{{ message|raw }}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                        data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            {% endfor %}
         {% endfor %}
-      {% endfor %}
+        </div>
+
+        <script>
+        (function () {
+        function showToasts() {
+            document.querySelectorAll('.toast').forEach(function (el) {
+            bootstrap.Toast.getOrCreateInstance(el).show();
+            });
+        }
+        // Premier chargement
+        document.addEventListener('DOMContentLoaded', showToasts);
+        // Navigations Turbo
+        document.addEventListener('turbo:load', showToasts);
+        })();
+        </script>
 
       {# --- Breadcrumbs (global) --- #}
       {% set crumbs = breadcrumbs(app.request) %}
