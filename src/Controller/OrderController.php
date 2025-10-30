@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\Order;
 use App\Form\OrderType;
 use App\Repository\OrderRepository;
-use App\Repository\ClientRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,9 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Form\OrderFiltersType;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use App\Enum\OrderStatus;
-use App\Entity\User;
-
+use App\Domain\OrderWorkflow;
 #[Route('/order')]
 final class OrderController extends AbstractController
 {
@@ -140,7 +137,7 @@ final class OrderController extends AbstractController
         ]);
     }
 
-    #[Route('/{id<\d+>}', name: 'app_order_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]
     public function show(Request $request, Order $order): Response
     {
         $this->denyAccessUnlessGranted('ORDER_VIEW', $order);
@@ -151,7 +148,7 @@ final class OrderController extends AbstractController
         ]);
     }
 
-    #[Route('/{id<\d+>}/edit', name: 'app_order_edit', methods: ['GET','POST'])]
+    #[Route('/{id}/edit', name: 'app_order_edit', methods: ['GET','POST'])]
     public function edit(Request $request, Order $order, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
@@ -185,7 +182,7 @@ final class OrderController extends AbstractController
         ]);
     }
 
-    #[Route('/{id<\d+>}', name: 'app_order_delete', methods: ['POST'])]
+    #[Route('/{id}', name: 'app_order_delete', methods: ['POST'])]
     public function delete(Request $request, Order $order, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
@@ -253,7 +250,7 @@ final class OrderController extends AbstractController
         return $response;
     }
 
-    #[Route('/{id<\d+>}/toggle-paid', name: 'app_order_toggle_paid', methods: ['POST'])]
+    #[Route('/{id}/toggle-paid', name: 'app_order_toggle_paid', methods: ['POST'])]
     public function togglePaid(Request $request, Order $order, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN'); // réservé admin
@@ -272,31 +269,67 @@ final class OrderController extends AbstractController
         return $back ? $this->redirect($back) : $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
     }
 
-    #[Route('/{id<\d+>}/cancel', name: 'app_order_cancel', methods: ['POST'])]
-    public function cancel(Request $request, \App\Entity\Order $order, \Doctrine\ORM\EntityManagerInterface $em): \Symfony\Component\HttpFoundation\Response
+    #[Route('/{id}/accept', name: 'app_order_accept', methods: ['POST'])]
+    public function accept(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
     {
-        // Autorisations: le client propriétaire peut éditer; l’admin aussi (mais en pratique seul le client verra le bouton)
-        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
-
-        // CSRF
-        if (!$this->isCsrfTokenValid('cancel'.$order->getId(), $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        if (!$this->isCsrfTokenValid('wf-accept'.$order->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
         }
-
-        // Règle métier: Cancel autorisé uniquement si status = CREATED
-        if ($order->getStatus() !== \App\Enum\OrderStatus::CREATED) {
-            $this->addFlash('warning', 'This order can no longer be canceled.');
-        } else {
-            $order->setStatus(\App\Enum\OrderStatus::CANCELED);
-            $order->setUpdatedAt(new \DateTimeImmutable());
-            $em->flush();
-            $this->addFlash('success', 'Order canceled.');
-        }
-
-        $back = $request->query->get('back') ?: $request->headers->get('referer');
-        return $back
-            ? $this->redirect($back)
-            : $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
+        try { $wf->accept($order); $em->flush(); $this->addFlash('success','Order accepted.'); }
+        catch (\LogicException) { $this->addFlash('warning','Transition not allowed.'); }
+        return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
     }
+
+    #[Route('/{id}/refuse', name: 'app_order_refuse', methods: ['POST'])]
+    public function refuse(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        if (!$this->isCsrfTokenValid('wf-refuse'.$order->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+        try { $wf->refuse($order); $em->flush(); $this->addFlash('success','Order refused.'); }
+        catch (\LogicException) { $this->addFlash('warning','Transition not allowed.'); }
+        return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
+    }
+
+    #[Route('/{id}/start', name: 'app_order_start', methods: ['POST'])]
+    public function start(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        if (!$this->isCsrfTokenValid('wf-start'.$order->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+        try { $wf->start($order); $em->flush(); $this->addFlash('success','Work started.'); }
+        catch (\LogicException) { $this->addFlash('warning','Transition not allowed.'); }
+        return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
+    }
+
+    #[Route('/{id}/deliver', name: 'app_order_deliver', methods: ['POST'])]
+    public function deliver(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
+    {
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
+        if (!$this->isCsrfTokenValid('wf-deliver'.$order->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+        try { $wf->deliver($order); $em->flush(); $this->addFlash('success','Order delivered.'); }
+        catch (\LogicException) { $this->addFlash('warning','Transition not allowed.'); }
+        return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
+    }
+
+    // Cancel (client) — si tu as déjà une action, tu peux la simplifier pour réutiliser le workflow :
+    #[Route('/{id}/cancel', name: 'app_order_cancel', methods: ['POST'])]
+    public function cancel(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
+    {
+        // Proprio client OU admin (mais UI côté client)
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+        if (!$this->isCsrfTokenValid('wf-cancel'.$order->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+        try { $wf->cancel($order); $em->flush(); $this->addFlash('success','Order canceled.'); }
+        catch (\LogicException) { $this->addFlash('warning','This order can no longer be canceled.'); }
+        return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
+    }
+    
 
 }
