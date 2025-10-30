@@ -70,11 +70,11 @@ Modèle minimum :
 * [ ] Modal Edit et New
 * [ ] Message Alert/Warning/Info
 * [ ] Export CSV 
-  * [ ] Orders
+  * [x] Orders
   * [x] Clients
 * [ ] Import CSV (Clients)
 * [ ] Vich pour upload fichier
-* [ ] Workflow de statuts (règles/guard)
+* [x] Workflow de statuts (règles/guard)
 * [ ] Report bug
 * [ ] Responsivité
 * [ ] Production

@@ -147,8 +147,10 @@
 
   <div class="card border-0 p-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <h2 class="h6 m-0">⏱ Time logged</h2>
-      <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_time_entry_new', {'orderId': order.id}) }}">+ Add time</a>
+        <h2 class="h6 m-0">⏱ Time logged</h2>
+        {% if is_granted('ROLE_ADMIN') %}
+            <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_time_entry_new', {'orderId': order.id}) }}">+ Add time</a>
+        {% endif %}
     </div>
 
     <p class="text-secondary mb-2">
