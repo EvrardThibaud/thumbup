@@ -55,9 +55,13 @@ class Order
     #[ORM\OneToMany(targetEntity: TimeEntry::class, mappedBy: 'relatedOrder')]
     private Collection $timeEntries;
 
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderAsset::class, cascade: ['persist','remove'], orphanRemoval: true)]
+    private Collection $assets;
+
     public function __construct()
     {
         $this->timeEntries = new ArrayCollection();
+        $this->assets = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -211,6 +215,17 @@ class Order
             }
         }
 
+        return $this;
+    }
+
+    /** @return Collection<int, OrderAsset> */
+    public function getAssets(): Collection { return $this->assets; }
+    public function addAsset(OrderAsset $a): self {
+        if (!$this->assets->contains($a)) { $this->assets->add($a); $a->setOrder($this); }
+        return $this;
+    }
+    public function removeAsset(OrderAsset $a): self {
+        if ($this->assets->removeElement($a) && $a->getOrder() === $this) { $a->setOrder(null); }
         return $this;
     }
 }

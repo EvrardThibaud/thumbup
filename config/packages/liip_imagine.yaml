@@ -1,0 +1,10 @@
+liip_imagine:
+  driver: gd
+  resolvers:
+    default: { web_path: ~ }
+  filter_sets:
+    cache: ~
+    thumb_320x180:
+      quality: 75
+      filters:
+        thumbnail: { size: [320, 180], mode: outbound }

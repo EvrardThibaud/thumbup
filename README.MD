@@ -63,7 +63,7 @@ Modèle minimum :
 * [x] Rôle `ROLE_CLIENT` + Voters (un client voit ses données)
 * [ ] Page error 404
 * [x] Breadcrumb
-* [ ] **Portail client** : créer une demande (Order), suivre statut, voir ses commandes
+* [x] **Portail client** : créer une demande (Order), suivre statut, voir ses commandes
 * [ ] **API Platform** : exposer `Client`/`Order`/`TimeEntry` (lecture/écriture sécurisée)
 * [ ] **Mercure** : MAJ de statut en temps réel
 * [ ] **Dropzone** sur brief (upload fichiers)
@@ -73,7 +73,7 @@ Modèle minimum :
   * [x] Orders
   * [x] Clients
 * [ ] Import CSV (Clients)
-* [ ] Vich pour upload fichier
+* [x] Vich pour upload fichier
 * [x] Workflow de statuts (règles/guard)
 * [ ] Report bug
 * [ ] Responsivité

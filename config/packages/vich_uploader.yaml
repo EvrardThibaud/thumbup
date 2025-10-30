@@ -1,0 +1,10 @@
+vich_uploader:
+  db_driver: orm
+  metadata: { type: attribute }
+  mappings:
+    order_asset:
+      uri_prefix: /uploads/order-assets
+      upload_destination: '%kernel.project_dir%/public/uploads/order-assets'
+      namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+      delete_on_update: true
+      delete_on_remove: true

@@ -115,6 +115,56 @@
   {% set status = order.status.value %}
   {% set label = {'todo':'To do','doing':'Doing','delivered':'Delivered','paid':'Paid'}[status] ?? status %}
   {% set color = {'todo':'secondary','doing':'info','delivered':'primary','paid':'success'}[status] ?? 'secondary' %}
+{# Delivered thumbnails #}
+<div class="card border-0 p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h6 m-0">🖼 Delivered thumbnails</h2>
+
+    {% if is_granted('ROLE_ADMIN') %}
+      <form class="d-flex gap-2" method="post" enctype="multipart/form-data"
+            action="{{ path('app_order_asset_upload', { id: order.id, back: app.request.uri }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('asset-upload' ~ order.id) }}">
+        <input class="form-control form-control-sm" type="file" name="order_asset[file]" accept="image/png,image/jpeg,image/webp" required>
+        <button class="btn btn-sm btn-primary rounded-1">Upload</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if order.assets is empty %}
+    <div class="text-secondary small">No thumbnails yet.</div>
+  {% else %}
+    <div class="row g-3">
+      {% for a in order.assets %}
+        <div class="col-6 col-md-3">
+          <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
+            <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank" class="mb-2">
+              <img src="{{ asset('uploads/order-assets/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
+                   alt="Thumbnail {{ loop.index }}"
+                   class="img-fluid rounded-1"
+                   loading="lazy"
+                   style="aspect-ratio: 16/9; object-fit: cover;">
+            </a>
+            <div class="small text-secondary mb-2">{{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB</div>
+
+            <div class="mt-auto d-flex gap-2">
+              <a class="btn btn-sm btn-outline-light rounded-1"
+                 href="{{ path('app_order_asset_download', { id: a.id }) }}">Download</a>
+
+              {% if is_granted('ROLE_ADMIN') %}
+                <form method="post"
+                      action="{{ path('app_order_asset_delete', { id: a.id, back: app.request.uri }) }}"
+                      onsubmit="return confirm('Delete this file?');">
+                  <input type="hidden" name="_token" value="{{ csrf_token('asset-delete' ~ a.id) }}">
+                  <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
 
   <div class="card border-0 p-3 mb-3">
     <div class="row g-3">
