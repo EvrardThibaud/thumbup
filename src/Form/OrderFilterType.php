@@ -11,6 +11,7 @@ use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\SearchType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\UX\Autocomplete\Form\AutocompleteType;
 
 final class OrderFiltersType extends AbstractType
 {
@@ -50,6 +51,7 @@ final class OrderFiltersType extends AbstractType
                 'required' => false,
                 'placeholder' => 'Any client',
                 'choice_label' => 'name',
+                'autocomplete' => true,
             ]);
         } else {
             $builder->add('client', EntityType::class, [
@@ -57,6 +59,7 @@ final class OrderFiltersType extends AbstractType
                 'required' => false,
                 'disabled' => true,
                 'choice_label' => 'name',
+                'autocomplete' => true,
             ]);
         }
     }
