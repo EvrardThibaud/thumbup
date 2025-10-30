@@ -88,6 +88,7 @@ final class ClientController extends AbstractController
             status: null,
             from: null,
             to: null,
+            paid: null,
             page: $page,
             limit: $limit,
             sort: $sort,

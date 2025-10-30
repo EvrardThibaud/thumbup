@@ -42,7 +42,7 @@ final class OrderController extends AbstractController
         }
 
         $page = (int) $request->query->get('page', 1);
-        $limit= 20;
+        $limit= 10;
         $sort = (string) $request->query->get('sort', 'updatedAt');
         $dir  = (string) $request->query->get('dir', 'DESC');
 
