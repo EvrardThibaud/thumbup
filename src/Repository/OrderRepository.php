@@ -33,7 +33,9 @@ class OrderRepository extends ServiceEntityRepository
         string $dir
     ): array {
         $qb = $this->createQueryBuilder('o')
-            ->leftJoin('o.client', 'c')->addSelect('c');
+            ->leftJoin('o.client', 'c')->addSelect('c')
+            ->leftJoin('o.assets', 'a')
+            ->addSelect('COUNT(a.id) AS HIDDEN assetsCount');
 
         if ($q)          { $qb->andWhere('o.title LIKE :q')->setParameter('q', '%'.$q.'%'); }
         if ($clientId)   { $qb->andWhere('c.id = :cid')->setParameter('cid', $clientId); }
@@ -42,15 +44,30 @@ class OrderRepository extends ServiceEntityRepository
         if ($to)         { $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to); }
         if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
 
+        // Group pour pouvoir compter les assets
+        $qb->groupBy('o.id, c.id');
+
         $sortMap = [
-            'id' => 'o.id', 'title' => 'o.title', 'client' => 'c.name',
-            'price' => 'o.price', 'status' => 'o.status', 'dueAt' => 'o.dueAt',
-            'createdAt' => 'o.createdAt', 'updatedAt' => 'o.updatedAt',
+            'id'        => 'o.id',
+            'title'     => 'o.title',
+            'client'    => 'c.name',
+            'price'     => 'o.price',
+            'status'    => 'o.status',
+            'dueAt'     => 'o.dueAt',
+            'createdAt' => 'o.createdAt',
+            'updatedAt' => 'o.updatedAt',
+            'assets'    => 'assetsCount', // <-- nouveau
         ];
         $qb->orderBy($sortMap[$sort] ?? 'o.updatedAt', strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC');
 
+        // Count propre (sans groupBy)
         $countQb = clone $qb;
-        $count = (int) $countQb->select('COUNT(o.id)')->resetDQLPart('orderBy')->getQuery()->getSingleScalarResult();
+        $count = (int) $countQb
+            ->resetDQLPart('orderBy')
+            ->resetDQLPart('groupBy')
+            ->select('COUNT(DISTINCT o.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
         $items = $qb->setFirstResult(($page-1)*$limit)->setMaxResults($limit)->getQuery()->getResult();
 
@@ -71,7 +88,9 @@ class OrderRepository extends ServiceEntityRepository
         string $dir
     ): iterable {
         $qb = $this->createQueryBuilder('o')
-            ->leftJoin('o.client', 'c')->addSelect('c');
+            ->leftJoin('o.client', 'c')->addSelect('c')
+            ->leftJoin('o.assets', 'a')
+            ->addSelect('COUNT(a.id) AS HIDDEN assetsCount');
 
         if ($q)          { $qb->andWhere('o.title LIKE :q')->setParameter('q', '%'.$q.'%'); }
         if ($clientId)   { $qb->andWhere('c.id = :cid')->setParameter('cid', $clientId); }
@@ -80,10 +99,18 @@ class OrderRepository extends ServiceEntityRepository
         if ($to)         { $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to); }
         if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
 
+        $qb->groupBy('o.id, c.id');
+
         $sortMap = [
-            'id' => 'o.id', 'title' => 'o.title', 'client' => 'c.name',
-            'price' => 'o.price', 'status' => 'o.status', 'dueAt' => 'o.dueAt',
-            'createdAt' => 'o.createdAt', 'updatedAt' => 'o.updatedAt',
+            'id'        => 'o.id',
+            'title'     => 'o.title',
+            'client'    => 'c.name',
+            'price'     => 'o.price',
+            'status'    => 'o.status',
+            'dueAt'     => 'o.dueAt',
+            'createdAt' => 'o.createdAt',
+            'updatedAt' => 'o.updatedAt',
+            'assets'    => 'assetsCount', // <-- nouveau
         ];
         $qb->orderBy($sortMap[$sort] ?? 'o.updatedAt', strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC');
 

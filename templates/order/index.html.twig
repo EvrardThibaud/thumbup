@@ -122,74 +122,101 @@
     <div class="table-responsive">
       {# templates/order/_table.html.twig (bloc tableau complet, avec colonne Paid + nouveaux statuts) #}
         <table class="table table-dark table-hover align-middle mb-0">
-        <thead class="small text-secondary">
-            <tr>
-            <th>{{ S.sortLink('ID', 'id', sort, dir, route, qs) }}</th>
-            <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
-            <th>{{ S.sortLink('Client', 'client', sort, dir, route, qs) }}</th>
-            <th style="width:28ch">Brief</th>
-            <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
-            <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
-            <th>Paid</th>
-            <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
-            <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
-            <th></th>
-            </tr>
-        </thead>
-
-        <tbody>
-        {% for order in orders %}
-            {% set s = order.status.value %}
-            {# Role-aware label for ACCEPTED: Admin sees "To do", Client sees "Accepted" #}
-            {% set statusLabelMap = {
-            'created':  'Created',
-            'refused':  'Refused',
-            'canceled': 'Canceled',
-            'accepted': is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
-            'doing':    'Doing',
-            'delivered':'Delivered'
-            } %}
-            {% set statusColorMap = {
-            'created':  'secondary',
-            'refused':  'danger',
-            'canceled': 'dark',
-            'accepted': 'warning',
-            'doing':    'info',
-            'delivered':'primary'
-            } %}
-            {% set label = statusLabelMap[s] ?? s %}
-            {% set color = statusColorMap[s] ?? 'secondary' %}
-
-            <tr>
-            <td class="text-secondary">#{{ order.id }}</td>
-            <td class="fw-medium" style="max-width:16ch">{{ order.title }}</td>
-            <td>{{ order.client ? order.client.name : '—' }}</td>
-            <td class="text-secondary text-truncate" style="max-width:16ch">{{ order.brief }}</td>
-            <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
-
-            <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
-
-            <td>
-                {% if order.paid %}
-                <span class="badge text-bg-success rounded-1">Paid</span>
+            <thead class="small text-secondary">
+                {% if is_client %}
+                <tr>
+                    <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
+                    <th style="width:28ch">Brief</th>
+                    <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
+                    <th>Paid</th>
+                    <th>{{ S.sortLink('Assets', 'assets', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
+                    <th></th>
+                </tr>
                 {% else %}
-                <span class="badge text-bg-warning rounded-1">Unpaid</span>
+                <tr>
+                    <th>{{ S.sortLink('ID', 'id', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Client', 'client', sort, dir, route, qs) }}</th>
+                    <th style="width:28ch">Brief</th>
+                    <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
+                    <th>Paid</th>
+                    <th>{{ S.sortLink('Assets', 'assets', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
+                    <th></th>
+                </tr>
                 {% endif %}
-            </td>
+            </thead>
 
-            <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
-            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
-            <td class="text-end">
-                <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id}) }}">Open</a>
-                {% set backList = app.request.uri %}
-                <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
-            </td>
-            </tr>
-        {% else %}
-            <tr><td colspan="10" class="text-secondary">No orders found.</td></tr>
-        {% endfor %}
-        </tbody>
+            <tbody>
+            {% for order in orders %}
+                {% set s = order.status.value %}
+                {% set statusLabelMap = {
+                'created':  'Created',
+                'refused':  'Refused',
+                'canceled': 'Canceled',
+                'accepted': is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
+                'doing':    'Doing',
+                'delivered':'Delivered'
+                } %}
+                {% set statusColorMap = {
+                'created':  'secondary',
+                'refused':  'danger',
+                'canceled': 'dark',
+                'accepted': 'warning',
+                'doing':    'info',
+                'delivered':'primary'
+                } %}
+                {% set label = statusLabelMap[s] ?? s %}
+                {% set color = statusColorMap[s] ?? 'secondary' %}
+
+                <tr>
+                {% if not is_client %}
+                    <td class="text-secondary">#{{ order.id }}</td>
+                {% endif %}
+
+                <td class="fw-medium">{{ order.title }}</td>
+
+                {% if not is_client %}
+                    <td>{{ order.client ? order.client.name : '—' }}</td>
+                {% endif %}
+
+                <td class="text-secondary text-truncate" style="max-width:16ch">{{ order.brief }}</td>
+                <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
+
+                <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
+
+                <td>
+                    {% if order.paid %}
+                    <span class="badge text-bg-success rounded-1">Paid</span>
+                    {% else %}
+                    <span class="badge text-bg-warning rounded-1">Unpaid</span>
+                    {% endif %}
+                </td>
+
+                <td>{{ order.assets|length }}</td>
+
+                <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
+                <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+
+                <td class="text-end">
+                    {% set backList = app.request.uri %}
+                    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id, 'back': backList}) }}">Open</a>
+                    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
+                </td>
+                </tr>
+            {% else %}
+                <tr>
+                <td colspan="{{ is_client ? 9 : 11 }}" class="text-secondary">No orders found.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
         </table>
+
 
     </div>
   </div>
