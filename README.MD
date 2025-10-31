@@ -76,5 +76,7 @@ Modèle minimum :
 * [x] Vich pour upload fichier
 * [x] Workflow de statuts (règles/guard)
 * [ ] Report bug
+* [ ] Synchronyser les horaires selon la tranche horaire
+* [ ] Mailer pour notif
 * [ ] Responsivité
 * [ ] Production

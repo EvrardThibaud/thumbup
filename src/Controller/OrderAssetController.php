@@ -18,7 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/orders')]
 final class OrderAssetController extends AbstractController
 {
-    #[Route('/{id<\d+>}/assets/upload', name: 'app_order_asset_upload', methods: ['POST'])]
+    #[Route('/{id}/assets/upload', name: 'app_order_asset_upload', methods: ['POST'])]
     public function upload(Order $order, Request $request, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
@@ -65,7 +65,7 @@ final class OrderAssetController extends AbstractController
 
     }
 
-    #[Route('/assets/{id<\d+>}/download', name: 'app_order_asset_download', methods: ['GET'])]
+    #[Route('/assets/{id}/download', name: 'app_order_asset_download', methods: ['GET'])]
     public function download(OrderAsset $asset): Response
     {
         // Autorisations: admin, ou client propriétaire de l'order
@@ -82,7 +82,7 @@ final class OrderAssetController extends AbstractController
         return $response;
     }
 
-    #[Route('/assets/{id<\d+>}/delete', name: 'app_order_asset_delete', methods: ['POST'])]
+    #[Route('/assets/{id}/delete', name: 'app_order_asset_delete', methods: ['POST'])]
     public function delete(OrderAsset $asset, Request $request, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
@@ -90,8 +90,20 @@ final class OrderAssetController extends AbstractController
             throw $this->createAccessDeniedException();
         }
         $orderId = $asset->getOrder()->getId();
-        $em->remove($asset);
-        $em->flush();
+        $projectDir = $this->getParameter('kernel.project_dir');
+        $paths = [
+            $projectDir.'/var/uploads/order-assets/'.$asset->getFileName(),     // si tu as déplacé hors webroot
+            $projectDir.'/public/uploads/order-assets/'.$asset->getFileName(),  // sinon (ta config actuelle)
+        ];
+        $fs = new \Symfony\Component\Filesystem\Filesystem();
+        foreach ($paths as $p) {
+            if ($p && $fs->exists($p)) { $fs->remove($p); break; }
+        }
+
+        // Bypass des listeners/validation : DELETE direct en DQL
+        $em->createQuery('DELETE FROM App\Entity\OrderAsset a WHERE a.id = :id')
+        ->setParameter('id', $asset->getId())
+        ->execute();
 
         $this->addFlash('success', 'Thumbnail removed.');
         return $this->redirect($request->query->get('back') ?: $this->generateUrl('app_order_show', ['id' => $orderId]));
