@@ -1,0 +1,7 @@
+{{ form_start(form) }}
+  {{ form_row(form.email, { label: 'Email' }) }}
+  {{ form_row(form.roles, { label: 'Roles' }) }}
+  {{ form_row(form.client, { label: 'Linked client' }) }}
+  {{ form_row(form.plainPassword, { label: 'New password' }) }}
+  <button class="btn btn-primary">{{ button_label|default('Save') }}</button>
+{{ form_end(form) }}

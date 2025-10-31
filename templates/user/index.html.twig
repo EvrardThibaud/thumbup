@@ -1,0 +1,49 @@
+{% extends 'base.html.twig' %}
+{% block title %}Users{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 m-0">👥 Users</h1>
+</div>
+
+<div class="card bg-dark border-0 p-3">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover align-middle mb-0">
+      <thead class="small text-secondary">
+        <tr>
+          <th>ID</th><th>Email</th><th>Roles</th><th>Client</th><th>Created</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td class="text-secondary">#{{ u.id }}</td>
+          <td class="fw-medium">{{ u.email }}</td>
+          <td>
+            {% for r in u.roles %}
+              <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : 'secondary' }} rounded-1">{{ r }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            {% if u.client %}
+              <a class="link-light link-opacity-75-hover" href="{{ path('app_client_show', {id: u.client.id}) }}">{{ u.client.name }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="text-secondary">{{ u.createdAt|date('Y-m-d H:i') }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_show', {id: u.id}) }}">Open</a>
+            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_edit', {id: u.id, back: app.request.uri}) }}">Edit</a>
+            <form method="post" action="{{ path('app_user_delete', {id: u.id}) }}" class="d-inline" onsubmit="return confirm('Delete this user?');">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete-user' ~ u.id) }}">
+              <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-secondary">No users.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+{% block title %}Edit user{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 m-0">✏️ Edit user</h1>
+  <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_index') }}">← Back</a>
+</div>
+
+<div class="card bg-dark border-0 p-3">
+  {{ include('user/_form.html.twig', { form: form, button_label: 'Save' }) }}
+</div>
+{% endblock %}
