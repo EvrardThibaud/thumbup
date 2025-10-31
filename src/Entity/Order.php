@@ -43,7 +43,7 @@ class Order
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Client $client = null;
 
     #[ORM\Column(type: 'boolean', nullable: true, options: ['default' => false])]

@@ -22,7 +22,8 @@ class TimeEntry
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'timeEntries')]
+    #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'timeEntries')]
+    #[ORM\JoinColumn(name: 'related_order_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private ?Order $relatedOrder = null;
 
     public function getId(): ?int
