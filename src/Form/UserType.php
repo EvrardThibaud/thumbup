@@ -36,9 +36,21 @@ final class UserType extends AbstractType
                 'required' => false,
                 'placeholder' => 'No linked client',
                 'choice_label' => 'name',
-                'autocomplete' => true, // Symfony UX Autocomplete
+                'autocomplete' => true,
                 'label' => 'Linked client',
-            ])
+                // N'afficher que les clients non liés… + le client déjà lié à CE user
+                'query_builder' => function (\App\Repository\ClientRepository $cr) use ($options) {
+                    $qb = $cr->createQueryBuilder('c')
+                        ->leftJoin(\App\Entity\User::class, 'u', 'WITH', 'u.client = c')
+                        ->where('u.id IS NULL');
+            
+                    if (($options['current_user'] ?? null) instanceof \App\Entity\User && $options['current_user']->getClient()) {
+                        $qb->orWhere('c = :curr')->setParameter('curr', $options['current_user']->getClient());
+                    }
+            
+                    return $qb->orderBy('c.name', 'ASC');
+                },
+            ])            
             ->add('plainPassword', PasswordType::class, [
                 'label' => 'New password',
                 'mapped' => false,
@@ -52,6 +64,7 @@ final class UserType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => User::class,
+            'current_user' => null,
             'require_password' => false,
         ]);
     }

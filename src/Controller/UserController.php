@@ -39,7 +39,10 @@ final class UserController extends AbstractController
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $user = new User();
-        $form = $this->createForm(UserType::class, $user, ['require_password' => true]);
+        $form = $this->createForm(UserType::class, $user, [
+            'require_password' => true,
+            'current_user' => $user,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -66,10 +69,20 @@ final class UserController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $form = $this->createForm(UserType::class, $user, ['require_password' => false]);
+        $form = $this->createForm(UserType::class, $user, [
+            'require_password' => false,
+            'current_user' => $user,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if ($user->getClient()) {
+                $other = $em->getRepository(\App\Entity\User::class)->findOneBy(['client' => $user->getClient()]);
+                if ($other && $other->getId() !== $user->getId()) {
+                    $form->get('client')->addError(new \Symfony\Component\Form\FormError('This client is already linked to another user.'));
+                    return $this->render('user/edit.html.twig', ['form' => $form, 'user' => $user]);
+                }
+            }
             $plain = (string) $form->get('plainPassword')->getData();
             if ($plain !== '') {
                 $user->setPassword($hasher->hashPassword($user, $plain));
