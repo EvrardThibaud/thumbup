@@ -85,6 +85,54 @@
         document.addEventListener('turbo:load', showToasts);
         })();
         </script>
+        <script>
+          // Helper: créer et afficher un toast programmatique
+          window.showToast = function (message, tone = 'success') {
+            const container = document.querySelector('.toast-container') || (() => {
+              const c = document.createElement('div');
+              c.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+              c.style.zIndex = 1080;
+              document.body.appendChild(c);
+              return c;
+            })();
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-bg-${tone} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+            toast.dataset.bsAutohide = 'true';
+            toast.dataset.bsDelay = '2000';
+            toast.innerHTML = `
+              <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              </div>`;
+            container.appendChild(toast);
+            bootstrap.Toast.getOrCreateInstance(toast).show();
+          };
+
+          // Copie au clic pour tout élément [data-copy]
+          document.addEventListener('click', async (e) => {
+            const el = e.target.closest('[data-copy]');
+            if (!el) return;
+            e.preventDefault();
+            const text = el.getAttribute('data-copy') || '';
+            try {
+              await navigator.clipboard.writeText(text);
+              showToast('Link copied to clipboard.', 'success');
+            } catch {
+              // Fallback
+              const ta = Object.assign(document.createElement('textarea'), { value: text });
+              ta.style.position = 'fixed';
+              ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.select(); document.execCommand('copy'); ta.remove();
+              showToast('Link copied to clipboard.', 'success');
+            }
+          });
+        </script>
+
 
       {# --- Breadcrumbs (global) --- #}
       {% set crumbs = breadcrumbs(app.request) %}

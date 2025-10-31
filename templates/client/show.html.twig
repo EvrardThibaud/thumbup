@@ -48,8 +48,9 @@
       <span class="badge text-bg-success rounded-1">Active</span>
     </div>
   </div>
-{% else %}
-  {# ← ancien bloc Invitations tel que tu l’avais #}
+{% endif %}
+
+  {# ---- Invitations ---- #}
   <div class="card bg-dark border-0 p-3 mt-3">
     <div class="d-flex align-items-center justify-content-between mb-2">
       <h2 class="h6 m-0">🔗 Invitations</h2>
@@ -74,7 +75,15 @@
             {% set link = absolute_url(path('app_register', {'invite': inv.token})) %}
             <tr>
               <td class="text-truncate" style="max-width:24ch"><code>{{ inv.token }}</code></td>
-              <td class="text-truncate" style="max-width:36ch"><a class="link-light link-opacity-75-hover" href="{{ link }}" target="_blank">{{ link }}</a></td>
+              <td class="text-truncate" style="max-width:36ch">
+                <a href="#"
+                  class="link-light link-opacity-75-hover d-inline-block text-truncate"
+                  style="max-width:36ch"
+                  data-copy="{{ link }}"
+                  title="Click to copy">
+                  {{ link }}
+                </a>
+              </td>
               <td class="text-secondary small">{{ inv.createdAt|date('Y-m-d H:i') }}</td>
               <td class="text-secondary small">{{ inv.expiresAt ? inv.expiresAt|date('Y-m-d H:i') : '—' }}</td>
               <td>
@@ -101,7 +110,6 @@
       </div>
     {% endif %}
   </div>
-{% endif %}
 
 
 

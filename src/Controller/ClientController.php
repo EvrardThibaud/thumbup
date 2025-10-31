@@ -94,21 +94,22 @@ final class ClientController extends AbstractController
             sort: $sort,
             dir: $dir
         );
-
+        
+        [$orders, $total] = $result; // ← déstructuration (indexé)
+        
         return $this->render('client/show.html.twig', [
             'client'    => $client,
             'dueCents'  => $totals['dueCents'],
             'paidCents' => $totals['paidCents'],
-
-            // tableau des orders du client
-            'orders' => $result['items'],
-            'total'  => $result['total'],
-            'page'   => $result['page'],
-            'limit'  => $result['limit'],
+        
+            'orders' => $orders,
+            'total'  => $total,
+            'page'   => $page,
+            'limit'  => $limit,
             'sort'   => $sort,
             'dir'    => strtoupper($dir),
             'linkedUser' => $linkedUser,
-        ]);
+        ]);        
     }
 
     #[Route('/admin/client/{id}/edit', name: 'app_client_edit', methods: ['GET','POST'])]
