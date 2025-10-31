@@ -174,7 +174,9 @@
                 {% set label = statusLabelMap[s] ?? s %}
                 {% set color = statusColorMap[s] ?? 'secondary' %}
 
-                <tr>
+                <tr class="table-row-link"
+                data-href="{{ path('app_order_show', {'id': order.id, 'back': app.request.uri}) }}"
+                style="cursor:pointer">
                 {% if not is_client %}
                     <td class="text-secondary">#{{ order.id }}</td>
                 {% endif %}
@@ -205,7 +207,6 @@
 
                 <td class="text-end">
                     {% set backList = app.request.uri %}
-                    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id, 'back': backList}) }}">Open</a>
                     <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
                 </td>
                 </tr>

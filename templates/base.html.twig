@@ -133,6 +133,17 @@
             }
           });
         </script>
+        <script>
+          document.addEventListener('click', (e) => {
+            const row = e.target.closest('tr[data-href]');
+            if (!row) return;
+
+            // ne pas déclencher si on clique un élément interactif
+            if (e.target.closest('a, button, input, select, textarea, label')) return;
+
+            window.location.href = row.dataset.href;
+          });
+          </script>
 
 
       {# --- Breadcrumbs (global) --- #}
