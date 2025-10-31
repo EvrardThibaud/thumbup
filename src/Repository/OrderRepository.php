@@ -80,7 +80,7 @@ class OrderRepository extends ServiceEntityRepository
     public function findForExport(
         ?string $q,
         ?int $clientId,
-        ?OrderStatus $status,
+        ?\App\Enum\OrderStatus $status,
         ?\DateTimeInterface $from,
         ?\DateTimeInterface $to,
         ?bool $paid,
@@ -88,34 +88,62 @@ class OrderRepository extends ServiceEntityRepository
         string $dir
     ): iterable {
         $qb = $this->createQueryBuilder('o')
-            ->leftJoin('o.client', 'c')->addSelect('c')
-            ->leftJoin('o.assets', 'a')
-            ->addSelect('COUNT(a.id) AS HIDDEN assetsCount');
-
-        if ($q)          { $qb->andWhere('o.title LIKE :q')->setParameter('q', '%'.$q.'%'); }
-        if ($clientId)   { $qb->andWhere('c.id = :cid')->setParameter('cid', $clientId); }
-        if ($status)     { $qb->andWhere('o.status = :st')->setParameter('st', $status->value); }
-        if ($from)       { $qb->andWhere('o.createdAt >= :from')->setParameter('from', $from); }
-        if ($to)         { $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to); }
-        if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
-
-        $qb->groupBy('o.id, c.id');
-
-        $sortMap = [
+            ->leftJoin('o.client', 'c')
+            ->addSelect('c');
+    
+        if ($q) {
+            $qb->andWhere('o.title LIKE :q OR o.brief LIKE :q')
+               ->setParameter('q', '%'.$q.'%');
+        }
+    
+        if ($clientId) {
+            $qb->andWhere('c.id = :cid')
+               ->setParameter('cid', $clientId);
+        }
+    
+        if ($status) {
+            $qb->andWhere('o.status = :st')
+               ->setParameter('st', $status->value);
+        }
+    
+        if ($from) {
+            $qb->andWhere('o.updatedAt >= :from')
+               ->setParameter('from', $from);
+        }
+    
+        if ($to) {
+            $qb->andWhere('o.updatedAt <= :to')
+               ->setParameter('to', $to);
+        }
+    
+        if ($paid !== null) {
+            $qb->andWhere('o.paid = :paid')
+               ->setParameter('paid', $paid);
+        }
+    
+        // sécurisation du tri
+        $allowedSort = [
             'id'        => 'o.id',
             'title'     => 'o.title',
             'client'    => 'c.name',
             'price'     => 'o.price',
             'status'    => 'o.status',
+            'paid'      => 'o.paid',
             'dueAt'     => 'o.dueAt',
-            'createdAt' => 'o.createdAt',
             'updatedAt' => 'o.updatedAt',
-            'assets'    => 'assetsCount', // <-- nouveau
+            'createdAt' => 'o.createdAt',
         ];
-        $qb->orderBy($sortMap[$sort] ?? 'o.updatedAt', strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC');
-
+        $sortExpr = $allowedSort[$sort] ?? 'o.updatedAt';
+        $dir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
+    
+        $qb->orderBy($sortExpr, $dir);
+    
+        // ⚠️ IMPORTANT: pas de fetch join vers o.assets ici
+        // et pas de distinct chelou
+        // du coup on peut streamer avec toIterable()
         return $qb->getQuery()->toIterable();
     }
+    
 
     public function dueByClient(): array
     {
