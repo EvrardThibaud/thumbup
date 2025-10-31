@@ -20,7 +20,7 @@
       <div class="small text-secondary mb-1">Roles</div>
       <div>
         {% for r in user.roles %}
-          <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : 'secondary' }} rounded-1">{{ r }}</span>
+            <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : (r == 'ROLE_CLIENT' ? 'success' : 'secondary') }} rounded-1">{{ r }}</span>
         {% endfor %}
       </div>
     </div>

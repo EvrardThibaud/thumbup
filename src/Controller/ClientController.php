@@ -16,7 +16,7 @@ use App\Repository\UserRepository;
 #[Route('/admin/client')]
 final class ClientController extends AbstractController
 {
-    #[Route('/admin/client', name: 'app_client_index', methods: ['GET'])]
+    #[Route('/', name: 'app_client_index', methods: ['GET'])]
     public function index(ClientRepository $clientsRepo, UserRepository $usersRepo, OrderRepository $orders): Response
     {
         $clients = $clientsRepo->findAll();

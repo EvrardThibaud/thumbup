@@ -21,7 +21,7 @@
           <td class="fw-medium">{{ u.email }}</td>
           <td>
             {% for r in u.roles %}
-              <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : 'secondary' }} rounded-1">{{ r }}</span>
+                <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : (r == 'ROLE_CLIENT' ? 'success' : 'secondary') }} rounded-1">{{ r }}</span>
             {% endfor %}
           </td>
           <td>
