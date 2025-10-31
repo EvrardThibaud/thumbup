@@ -48,28 +48,33 @@
     {# Actions ADMIN — boutons bien “boutons” #}
     {% if is_granted('ROLE_ADMIN') %}
       {% if s == 'created' %}
-        <form method="post" action="{{ path('app_order_accept', {id: order.id, back: backUrl}) }}">
+        <form method="post" action="{{ path('app_order_accept', {id: order.id}) }}">
+          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
           <input type="hidden" name="_token" value="{{ csrf_token('wf-accept' ~ order.id) }}">
           <button class="btn btn-sm btn-primary rounded-1">Accept</button>
         </form>
-        <form method="post" action="{{ path('app_order_refuse', {id: order.id, back: backUrl}) }}" onsubmit="return confirm('Refuse this order?');">
+        <form method="post" action="{{ path('app_order_refuse', {id: order.id}) }}" onsubmit="return confirm('Refuse this order?');">
+          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
           <input type="hidden" name="_token" value="{{ csrf_token('wf-refuse' ~ order.id) }}">
           <button class="btn btn-sm btn-outline-danger rounded-1">Refuse</button>
         </form>
       {% elseif s == 'accepted' %}
-        <form method="post" action="{{ path('app_order_start', {id: order.id, back: backUrl}) }}">
+        <form method="post" action="{{ path('app_order_start', {id: order.id}) }}">
+          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
           <input type="hidden" name="_token" value="{{ csrf_token('wf-start' ~ order.id) }}">
           <button class="btn btn-sm btn-primary rounded-1">Start</button>
         </form>
       {% elseif s == 'doing' %}
-        <form method="post" action="{{ path('app_order_deliver', {id: order.id, back: backUrl}) }}">
+        <form method="post" action="{{ path('app_order_deliver', {id: order.id}) }}">
+          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
           <input type="hidden" name="_token" value="{{ csrf_token('wf-deliver' ~ order.id) }}">
           <button class="btn btn-sm btn-success rounded-1">Deliver</button>
         </form>
       {% endif %}
 
       {# Toggle Paid #}
-      <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id, back: backUrl }) }}">
+      <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id }) }}">
+        <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
         <input type="hidden" name="_token" value="{{ csrf_token('toggle-paid' ~ order.id) }}">
         <button class="btn btn-sm btn-outline-light rounded-1">
           {{ order.paid ? 'Unmark as paid' : 'Mark as paid' }}
@@ -80,7 +85,8 @@
     {# Action CLIENT — Cancel uniquement si created #}
     {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
       {% if s == 'created' %}
-        <form method="post" action="{{ path('app_order_cancel', {id: order.id, back: backUrl}) }}" onsubmit="return confirm('Cancel this order?');">
+        <form method="post" action="{{ path('app_order_cancel', {id: order.id}) }}" onsubmit="return confirm('Cancel this order?');">
+          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
           <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
           <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
         </form>
