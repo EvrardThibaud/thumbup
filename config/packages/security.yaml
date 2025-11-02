@@ -43,6 +43,7 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/order, roles: IS_AUTHENTICATED_REMEMBERED }
+        - { path: ^/dashboard, roles: IS_AUTHENTICATED_REMEMBERED }
         # - { path: ^/profile, roles: ROLE_USER }
 
 when@test:

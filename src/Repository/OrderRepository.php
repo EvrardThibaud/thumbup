@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Order;
+use App\Entity\Client;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Enum\OrderStatus;
@@ -182,6 +183,45 @@ class OrderRepository extends ServiceEntityRepository
             'dueCents'  => (int)$r['dueCents'],
             'paidCents' => (int)$r['paidCents'],
         ];
+    }
+
+    public function getMonthlyCountsByClient(\DateTimeInterface $start, \DateTimeInterface $end, Client $client): array
+    {
+        $qb = $this->createQueryBuilder('o')
+            ->andWhere('o.client = :client')
+            ->andWhere('o.createdAt >= :start')
+            ->andWhere('o.createdAt < :end')
+            ->setParameter('client', $client)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('o.createdAt', 'ASC');
+
+        $orders = $qb->getQuery()->getResult();
+
+        // Build month buckets from start..end (inclusive start, exclusive end)
+        $cursor = new \DateTimeImmutable($start->format('Y-m-01 00:00:00'));
+        $endMonth = new \DateTimeImmutable($end->format('Y-m-01 00:00:00'));
+
+        $labels = [];
+        $indexByKey = [];
+        while ($cursor <= $endMonth) {
+            $key = $cursor->format('Y-m');
+            $indexByKey[$key] = count($labels);
+            $labels[] = $key;
+            $cursor = $cursor->modify('+1 month');
+        }
+
+        $data = array_fill(0, count($labels), 0);
+
+        foreach ($orders as $order) {
+            /** @var Order $order */
+            $key = $order->getCreatedAt()->format('Y-m');
+            if (isset($indexByKey[$key])) {
+                $data[$indexByKey[$key]]++;
+            }
+        }
+
+        return ['labels' => $labels, 'data' => $data];
     }
 
 

@@ -19,7 +19,7 @@
         <div class="navbar-nav">
         {# Liens ADMIN uniquement #}
         {% if is_granted('ROLE_ADMIN') %}
-            <a class="nav-link" href="{{ path('admin_dashboard') }}">Dashboard</a>
+            <a class="nav-link" href="{{ path('app_dashboard') }}">Dashboard</a>
             <a class="nav-link" href="{{ path('app_client_index') }}">Clients</a>
             <a class="nav-link" href="{{ path('app_order_index') }}">Orders</a>
             <a class="nav-link" href="{{ path('app_time_entry_index') }}">Time</a>
@@ -28,6 +28,7 @@
 
         {# Liens CLIENT uniquement #}
         {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
+            <a class="nav-link" href="{{ path('app_dashboard') }}">Dashboard</a>
             <a class="nav-link" href="{{ path('app_order_index') }}">My orders</a>
             {% set meClient = app.user and app.user.client ? app.user.client : null %}
             {% if meClient %}

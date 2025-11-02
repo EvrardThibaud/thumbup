@@ -1,0 +1,73 @@
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">📊 Dashboard</h1>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card bg-dark border-0 p-3 h-100">
+        <div class="small text-secondary mb-1">Thumbnails this month</div>
+        <div class="fs-3">{{ miniaturesMois|default(0) }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-dark border-0 p-3 h-100">
+        <div class="small text-secondary mb-1">Minutes this week</div>
+        <div class="fs-3">{{ minutesSemaine|default(0) }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-dark border-0 p-3 h-100">
+        <div class="small text-secondary mb-1">Estimated revenue</div>
+        <div class="fs-3">{{ caEuros|default(0)|number_format(2, ',', ' ') }} €</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-dark border-0 p-3">
+    <div class="small text-secondary mb-2">Recent orders</div>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="small text-secondary">
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Client</th>
+            <th>Status</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for order in orders|default([]) %}
+          {% set s = order.status.value %}
+          {% set label = {
+            'created':'Created',
+            'accepted':'Accepted',
+            'doing':'Doing',
+            'delivered':'Delivered',
+            'refused':'Refused',
+            'canceled':'Canceled'
+          }[s] ?? s %}
+          {% set color = {
+            'created':'secondary',
+            'accepted':'warning',
+            'doing':'info',
+            'delivered':'primary',
+            'refused':'danger',
+            'canceled':'secondary'
+          }[s] ?? 'secondary' %}
+          <tr>
+            <td class="text-secondary">#{{ order.id }}</td>
+            <td class="fw-medium">{{ order.title }}</td>
+            <td>{{ order.client ? order.client.name : '—' }}</td>
+            <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
+            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-secondary">No recent orders.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

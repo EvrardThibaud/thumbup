@@ -1,0 +1,14 @@
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">📊 Dashboard</h1>
+  </div>
+
+  <div class="card bg-dark border-secondary mb-4">
+    <div class="card-header border-secondary">
+      <span class="fw-semibold">Orders per month</span>
+    </div>
+    <div class="card-body">
+      {{ render_chart(ordersByMonthChart, {'height': 120}) }}
+    </div>
+  </div>
+</div>
