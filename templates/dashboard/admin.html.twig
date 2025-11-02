@@ -1,73 +1,82 @@
 <div class="container py-4">
+
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 m-0">📊 Dashboard</h1>
+    <h1 class="h4 m-0">📊 Admin dashboard</h1>
+
+    <form method="get" action="{{ path('app_dashboard') }}" class="d-flex align-items-center gap-2">
+        <select name="client" class="form-select form-select-sm bg-dark text-light border-secondary"
+        onchange="if(this.value===''){window.location.href='{{ path('app_dashboard') }}';}else{this.form.submit();}">
+        <option value="" {{ selectedClient is not defined or selectedClient is null ? 'selected':'' }}>All clients</option>
+        {% for c in clients %}
+          <option value="{{ c.id }}" {{ selectedClient and selectedClient.id == c.id ? 'selected':'' }}>
+            {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+      {% if selectedClient %}
+        <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_dashboard') }}">Reset</a>
+      {% endif %}
+    </form>
   </div>
 
   <div class="row g-3 mb-4">
     <div class="col-md-4">
       <div class="card bg-dark border-0 p-3 h-100">
-        <div class="small text-secondary mb-1">Thumbnails this month</div>
-        <div class="fs-3">{{ miniaturesMois|default(0) }}</div>
+        <div class="small text-secondary mb-1">Total time (last 12 months)</div>
+        <div class="fs-3">{{ totalMinutes12m|default(0) }} min</div>
+        <div class="small text-secondary mt-1">
+          Avg: {{ avg.minutes.day }} /day • {{ avg.minutes.week }} /week • {{ avg.minutes.month }} /month • {{ avg.minutes.year }} /year
+        </div>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card bg-dark border-0 p-3 h-100">
-        <div class="small text-secondary mb-1">Minutes this week</div>
-        <div class="fs-3">{{ minutesSemaine|default(0) }}</div>
+        <div class="small text-secondary mb-1">Total revenue (last 12 months)</div>
+        <div class="fs-3">{{ totalRevenue12m|number_format(2, ',', ' ') }} €</div>
+        <div class="small text-secondary mt-1">
+          Avg: {{ avg.revenueEuros.day|number_format(2, ',', ' ') }} €/day •
+               {{ avg.revenueEuros.week|number_format(2, ',', ' ') }} €/week •
+               {{ avg.revenueEuros.month|number_format(2, ',', ' ') }} €/month •
+               {{ avg.revenueEuros.year|number_format(2, ',', ' ') }} €/year
+        </div>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card bg-dark border-0 p-3 h-100">
-        <div class="small text-secondary mb-1">Estimated revenue</div>
-        <div class="fs-3">{{ caEuros|default(0)|number_format(2, ',', ' ') }} €</div>
+        <div class="small text-secondary mb-1">Total thumbnails (last 12 months)</div>
+        <div class="fs-3">{{ totalOrders12m|default(0) }}</div>
+        <div class="small text-secondary mt-1">
+          Avg: {{ avg.orders.day }} /day • {{ avg.orders.week }} /week • {{ avg.orders.month }} /month • {{ avg.orders.year }} /year
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="card bg-dark border-0 p-3">
-    <div class="small text-secondary mb-2">Recent orders</div>
-    <div class="table-responsive">
-      <table class="table table-dark table-hover align-middle mb-0">
-        <thead class="small text-secondary">
-          <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Client</th>
-            <th>Status</th>
-            <th>Updated</th>
-          </tr>
-        </thead>
-        <tbody>
-        {% for order in orders|default([]) %}
-          {% set s = order.status.value %}
-          {% set label = {
-            'created':'Created',
-            'accepted':'Accepted',
-            'doing':'Doing',
-            'delivered':'Delivered',
-            'refused':'Refused',
-            'canceled':'Canceled'
-          }[s] ?? s %}
-          {% set color = {
-            'created':'secondary',
-            'accepted':'warning',
-            'doing':'info',
-            'delivered':'primary',
-            'refused':'danger',
-            'canceled':'secondary'
-          }[s] ?? 'secondary' %}
-          <tr>
-            <td class="text-secondary">#{{ order.id }}</td>
-            <td class="fw-medium">{{ order.title }}</td>
-            <td>{{ order.client ? order.client.name : '—' }}</td>
-            <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
-            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
-          </tr>
-        {% else %}
-          <tr><td colspan="5" class="text-secondary">No recent orders.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header border-secondary"><span class="fw-semibold">Thumbnails per month</span></div>
+        <div class="card-body">{{ render_chart(ordersByMonthChart, {'height': 120}) }}</div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header border-secondary"><span class="fw-semibold">Time spent per month (min)</span></div>
+        <div class="card-body">{{ render_chart(timeByMonthChart, {'height': 120}) }}</div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header border-secondary"><span class="fw-semibold">Average time per thumbnail (min)</span></div>
+        <div class="card-body">{{ render_chart(avgTimePerOrderChart, {'height': 120}) }}</div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card bg-dark border-secondary mb-3">
+        <div class="card-header border-secondary"><span class="fw-semibold">Revenue per month (€)</span></div>
+        <div class="card-body">{{ render_chart(revenueByMonthChart, {'height': 120}) }}</div>
+      </div>
     </div>
   </div>
+
 </div>
