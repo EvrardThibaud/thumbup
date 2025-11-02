@@ -27,8 +27,7 @@ final class DashboardController extends AbstractController
     ): Response {
         // If CLIENT (non-admin): keep existing client dashboard only
         if ($this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN')) {
-            /** @var ?object $user */
-            $user = $this->getUser();
+            $user   = $this->getUser();
             $client = (is_object($user) && method_exists($user, 'getClient')) ? $user->getClient() : null;
             if (!$client instanceof Client) {
                 throw $this->createAccessDeniedException('No client linked to this user.');
@@ -36,6 +35,7 @@ final class DashboardController extends AbstractController
 
             $end   = new \DateTimeImmutable('first day of next month 00:00:00');
             $start = $end->modify('-12 months');
+
             $series = $orders->getMonthlyCountsByClient($start, $end, $client);
 
             $ordersByMonthChart = $charts->createChart(Chart::TYPE_LINE);
@@ -65,7 +65,7 @@ final class DashboardController extends AbstractController
                 ],
             ]);
 
-            return $this->render('dashboard/client.html.twig', [
+            return $this->render('dashboard/index.html.twig', [
                 'ordersByMonthChart' => $ordersByMonthChart,
             ]);
         }
