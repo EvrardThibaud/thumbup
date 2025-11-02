@@ -17,7 +17,7 @@ final class ThumbnailsController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
-        $perPage = 3;
+        $perPage = 100;
         $page = max(1, (int)$request->query->get('page', 1));
 
         $clientParam = trim((string)$request->query->get('client', ''));

@@ -156,20 +156,25 @@
             {% for order in orders %}
                 {% set s = order.status.value %}
                 {% set statusLabelMap = {
-                'created':  'Created',
-                'refused':  'Refused',
-                'canceled': 'Canceled',
-                'accepted': is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
-                'doing':    'Doing',
-                'delivered':'Delivered'
+                  'created':   'Created',
+                  'refused':   'Refused',
+                  'canceled':  'Canceled',
+                  'accepted':  is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
+                  'doing':     'Doing',
+                  'delivered': 'Delivered',
+                  'finished':  'Finished',
+                  'revision':  'Revision requested'
                 } %}
+
                 {% set statusColorMap = {
-                'created':  'secondary',
-                'refused':  'danger',
-                'canceled': 'dark',
-                'accepted': 'warning',
-                'doing':    'info',
-                'delivered':'primary'
+                  'created':   'secondary',
+                  'refused':   'danger',
+                  'canceled':  'dark',
+                  'accepted':  'warning',
+                  'doing':     'info',
+                  'delivered': 'primary',
+                  'finished':  'success',
+                  'revision':  'warning'
                 } %}
                 {% set label = statusLabelMap[s] ?? s %}
                 {% set color = statusColorMap[s] ?? 'secondary' %}

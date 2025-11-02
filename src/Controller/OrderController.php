@@ -330,6 +330,42 @@ final class OrderController extends AbstractController
         catch (\LogicException) { $this->addFlash('warning','This order can no longer be canceled.'); }
         return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
     }
-    
 
+    #[Route('/{id}/finish', name: 'app_order_finish', methods: ['POST'])]
+    public function finish(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
+    {
+        // Admin OU client propriétaire (via voter)
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+        }
+        if (!$this->isCsrfTokenValid('wf-finish'.$order->getId(), (string)$request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        try { $wf->finish($order); $em->flush(); $this->addFlash('success', 'Order marked as finished.'); }
+        catch (\LogicException) { $this->addFlash('warning', 'Transition not allowed.'); }
+
+        return $this->redirect($request->query->get('back')
+            ?: $request->headers->get('referer')
+            ?: $this->generateUrl('app_order_show', ['id' => $order->getId()]));
+    }
+
+    #[Route('/{id}/request-revision', name: 'app_order_request_revision', methods: ['POST'])]
+    public function requestRevision(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
+    {
+        // Admin OU client propriétaire (via voter)
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+        }
+        if (!$this->isCsrfTokenValid('wf-revision'.$order->getId(), (string)$request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        try { $wf->requestRevision($order); $em->flush(); $this->addFlash('warning', 'Revision requested.'); }
+        catch (\LogicException) { $this->addFlash('warning', 'Transition not allowed.'); }
+
+        return $this->redirect($request->query->get('back')
+            ?: $request->headers->get('referer')
+            ?: $this->generateUrl('app_order_show', ['id' => $order->getId()]));
+    }
 }

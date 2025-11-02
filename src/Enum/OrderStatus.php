@@ -9,4 +9,6 @@ enum OrderStatus: string
     case ACCEPTED  = 'accepted';  // current "To do" (Admin sees “To do”, client sees “Accepted”)
     case DOING     = 'doing';     // work in progress
     case DELIVERED = 'delivered'; // work finished and shown to client
+    case FINISHED  = 'finished';   // client validated – done
+    case REVISION  = 'revision';    // client asked changes after a first delivery
 }

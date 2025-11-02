@@ -10,108 +10,126 @@
     </div>
   </div>
 
-  {% set s = order.status.value %}
-  {% set backUrl = back ?? app.request.uri %}
-  {% set statusColorMap = {
-    'created':  'secondary',
-    'refused':  'danger',
-    'canceled': 'dark',
-    'accepted': 'warning',
-    'doing':    'info',
-    'delivered':'primary'
-  } %}
-  {% set statusLabelMap = {
-    'created':  'Created',
-    'refused':  'Refused',
-    'canceled': 'Canceled',
-    'accepted': is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
-    'doing':    'Doing',
-    'delivered':'Delivered'
-  } %}
-  {% set badgeColor = statusColorMap[s] ?? 'secondary' %}
-  {% set badgeLabel = statusLabelMap[s] ?? s %}
+ {% set s = order.status.value %}
+{% set backUrl = back ?? app.request.uri %}
 
-  {# Barre de statut + actions #}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+{# 👇 maps mises à jour #}
+{% set statusColorMap = {
+  'created':   'secondary',
+  'refused':   'danger',
+  'canceled':  'dark',
+  'accepted':  'warning',
+  'doing':     'info',
+  'delivered': 'primary',
+  'finished':  'success',
+  'revision':  'warning'
+} %}
 
-    {# TAG statut (plus fin) #}
-    <span class="badge text-bg-{{ badgeColor }} rounded-1 px-2 py-1 small">{{ badgeLabel }}</span>
+{% set statusLabelMap = {
+  'created':   'Created',
+  'refused':   'Refused',
+  'canceled':  'Canceled',
+  'accepted':  is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
+  'doing':     'Doing',
+  'delivered': 'Delivered',
+  'finished':  'Finished',
+  'revision':  'Revision requested'
+} %}
 
-    {# TAG paid (unique, pas répété plus bas) #}
-    <span class="badge text-bg-{{ order.paid ? 'success' : 'warning' }} rounded-1 px-2 py-1 small">
-      {{ order.paid ? 'Paid' : 'Unpaid' }}
-    </span>
+{% set badgeColor = statusColorMap[s] ?? 'secondary' %}
+{% set badgeLabel = statusLabelMap[s] ?? s %}
 
-    {# Séparateur visuel #}
-    <span class="text-secondary mx-1">•</span>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <span class="badge text-bg-{{ badgeColor }} rounded-1 px-2 py-1 small">{{ badgeLabel }}</span>
 
-    {# Actions ADMIN — boutons bien “boutons” #}
-    {% if is_granted('ROLE_ADMIN') %}
-      {% if s == 'created' %}
-        <form method="post" action="{{ path('app_order_accept', {id: order.id}) }}">
-          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
-          <input type="hidden" name="_token" value="{{ csrf_token('wf-accept' ~ order.id) }}">
-          <button class="btn btn-sm btn-primary rounded-1">Accept</button>
-        </form>
-        <form method="post" action="{{ path('app_order_refuse', {id: order.id}) }}" onsubmit="return confirm('Refuse this order?');">
-          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
-          <input type="hidden" name="_token" value="{{ csrf_token('wf-refuse' ~ order.id) }}">
-          <button class="btn btn-sm btn-outline-danger rounded-1">Refuse</button>
-        </form>
-      {% elseif s == 'accepted' %}
-        <form method="post" action="{{ path('app_order_start', {id: order.id}) }}">
-          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
-          <input type="hidden" name="_token" value="{{ csrf_token('wf-start' ~ order.id) }}">
-          <button class="btn btn-sm btn-primary rounded-1">Start</button>
-        </form>
-      {% elseif s == 'doing' %}
-        <form method="post" action="{{ path('app_order_deliver', {id: order.id}) }}">
-          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
-          <input type="hidden" name="_token" value="{{ csrf_token('wf-deliver' ~ order.id) }}">
-          <button class="btn btn-sm btn-success rounded-1">Deliver</button>
-        </form>
-      {% endif %}
+  <span class="badge text-bg-{{ order.paid ? 'success' : 'warning' }} rounded-1 px-2 py-1 small">
+    {{ order.paid ? 'Paid' : 'Unpaid' }}
+  </span>
 
-      {# Toggle Paid #}
-      <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id }) }}">
-        <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('toggle-paid' ~ order.id) }}">
-        <button class="btn btn-sm btn-outline-light rounded-1">
-          {{ order.paid ? 'Unmark as paid' : 'Mark as paid' }}
-        </button>
+  <span class="text-secondary mx-1">•</span>
+
+  {# --- Actions ADMIN existantes inchangées (created/accepted/doing + toggle paid) --- #}
+  {% if is_granted('ROLE_ADMIN') %}
+    {% if s == 'created' %}
+      <form method="post" action="{{ path('app_order_accept', {id: order.id}) }}">
+        <input type="hidden" name="back" value="{{ backUrl }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('wf-accept' ~ order.id) }}">
+        <button class="btn btn-sm btn-primary rounded-1">Accept</button>
+      </form>
+      <form method="post" action="{{ path('app_order_refuse', {id: order.id}) }}" onsubmit="return confirm('Refuse this order?');">
+        <input type="hidden" name="back" value="{{ backUrl }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('wf-refuse' ~ order.id) }}">
+        <button class="btn btn-sm btn-outline-danger rounded-1">Refuse</button>
+      </form>
+    {% elseif s == 'accepted' %}
+      <form method="post" action="{{ path('app_order_start', {id: order.id}) }}">
+        <input type="hidden" name="back" value="{{ backUrl }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('wf-start' ~ order.id) }}">
+        <button class="btn btn-sm btn-primary rounded-1">Start</button>
+      </form>
+    {% elseif s == 'doing' %}
+      <form method="post" action="{{ path('app_order_deliver', {id: order.id}) }}">
+        <input type="hidden" name="back" value="{{ backUrl }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('wf-deliver' ~ order.id) }}">
+        <button class="btn btn-sm btn-success rounded-1">Deliver</button>
       </form>
     {% endif %}
 
-    {# Action CLIENT — Cancel uniquement si created #}
-    {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
-      {% if s == 'created' %}
-        <form method="post" action="{{ path('app_order_cancel', {id: order.id}) }}" onsubmit="return confirm('Cancel this order?');">
-          <input type="hidden" name="back" value="{{ back ?? app.request.uri }}">
-          <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
-          <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
-        </form>
-      {% else %}
-        <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
-        <span class="text-secondary small align-self-center">Cannot cancel at this stage.</span>
-      {% endif %}
-    {% endif %}
-  </div>
+    <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id }) }}">
+      <input type="hidden" name="back" value="{{ backUrl }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('toggle-paid' ~ order.id) }}">
+      <button class="btn btn-sm btn-outline-light rounded-1">
+        {{ order.paid ? 'Unmark as paid' : 'Mark as paid' }}
+      </button>
+    </form>
+  {% endif %}
 
+  {# --- Action CLIENT (cancel) inchangée --- #}
   {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
-  {% set s = order.status.value %}
+    {% if s == 'created' %}
+      <form method="post" action="{{ path('app_order_cancel', {id: order.id}) }}" onsubmit="return confirm('Cancel this order?');">
+        <input type="hidden" name="back" value="{{ backUrl }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
+        <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
+      </form>
+    {% else %}
+      <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
+      <span class="text-secondary small align-self-center">Cannot cancel at this stage.</span>
+    {% endif %}
+  {% endif %}
+
+  {# --- NOUVELLES actions communes (ADMIN et CLIENT) quand s == delivered --- #}
+  {% if s == 'delivered' and (is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')) %}
+    <span class="text-secondary mx-1">•</span>
+
+    <form method="post" action="{{ path('app_order_finish', { id: order.id }) }}">
+      <input type="hidden" name="back" value="{{ backUrl }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('wf-finish' ~ order.id) }}">
+      <button class="btn btn-sm btn-outline-success rounded-1">Mark as finished</button>
+    </form>
+
+    <form method="post" action="{{ path('app_order_request_revision', { id: order.id }) }}">
+      <input type="hidden" name="back" value="{{ backUrl }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('wf-revision' ~ order.id) }}">
+      <button class="btn btn-sm btn-outline-warning rounded-1">Request revision</button>
+    </form>
+  {% endif %}
+</div>
+
+{# Aide côté client (complétée) #}
+{% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
   {% set helpMap = {
-    'created':  'We received your request. It’s waiting for review. You can still cancel it.',
-    'accepted': 'Your order was accepted. It will be scheduled and started soon.',
-    'doing':    'Work in progress. You’ll get a preview when it’s ready.',
-    'delivered':'A preview is available. Check it and tell us if you need changes.',
-    'canceled': 'You canceled this order. It stays here for your records.',
-    'refused':  'This order was refused. Feel free to contact us if you have questions.'
+    'created':   'We received your request. It’s waiting for review. You can still cancel it.',
+    'accepted':  'Your order was accepted. It will be scheduled and started soon.',
+    'doing':     'Work in progress. You’ll get a preview when it’s ready.',
+    'delivered': 'A preview is available. Validate it as finished or request a revision.',
+    'finished':  'Thanks! This order is complete.',
+    'revision':  'Revisions requested. We will update and deliver a new version.',
+    'canceled':  'You canceled this order. It stays here for your records.',
+    'refused':   'This order was refused. Feel free to contact us if you have questions.'
   } %}
   <div class="mt-2 p-2 rounded-1 small text-secondary border border-secondary-subtle">
     <span class="me-1">ℹ️</span>{{ helpMap[s] ?? 'Status updated.' }}
-    {% if s == 'created' %}
-      <span class="ms-1 text-warning">You can cancel it until it’s accepted.</span>
-    {% endif %}
   </div>
 {% endif %}
 

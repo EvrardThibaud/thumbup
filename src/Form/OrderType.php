@@ -62,6 +62,8 @@ final class OrderType extends AbstractType
                     'To do'     => OrderStatus::ACCEPTED, // admin wording
                     'Doing'     => OrderStatus::DOING,
                     'Delivered' => OrderStatus::DELIVERED,
+                    'Finished'  => OrderStatus::FINISHED,   // 👈
+                    'Revision'  => OrderStatus::REVISION,
                 ],
                 'choice_label' => fn ($choice) => match ($choice) {
                     OrderStatus::CREATED   => 'Created',
@@ -70,6 +72,8 @@ final class OrderType extends AbstractType
                     OrderStatus::ACCEPTED  => 'To do',
                     OrderStatus::DOING     => 'Doing',
                     OrderStatus::DELIVERED => 'Delivered',
+                    OrderStatus::FINISHED     => 'Finished',
+                    OrderStatus::REVISION => 'Revision',
                 },
             ])
             ->add('paid', CheckboxType::class, [

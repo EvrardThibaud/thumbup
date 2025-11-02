@@ -218,22 +218,25 @@ class OrderRepository extends ServiceEntityRepository
 
     public function dueAndPaidForClient(int $clientId): array
     {
-        // due = DELIVERED && NOT paid ; paid = paid == true (quel que soit le statut)
         $r = $this->createQueryBuilder('o')
             ->innerJoin('o.client', 'c')
-            ->select('COALESCE(SUM(CASE WHEN o.status = :deliv AND o.paid = :false THEN o.price ELSE 0 END), 0) AS dueCents')
+            ->select('COALESCE(SUM(CASE WHEN o.status IN (:st) AND o.paid = :false THEN o.price ELSE 0 END), 0) AS dueCents')
             ->addSelect('COALESCE(SUM(CASE WHEN o.paid = :true THEN o.price ELSE 0 END), 0) AS paidCents')
             ->andWhere('c.id = :cid')
             ->setParameter('cid', $clientId)
-            ->setParameter('deliv', \App\Enum\OrderStatus::DELIVERED->value)
+            ->setParameter('st', [
+                \App\Enum\OrderStatus::DELIVERED->value,
+                \App\Enum\OrderStatus::FINISHED->value,
+                \App\Enum\OrderStatus::REVISION->value,
+            ])
             ->setParameter('false', false)
             ->setParameter('true', true)
             ->getQuery()
             ->getSingleResult();
 
         return [
-            'dueCents'  => (int)$r['dueCents'],
-            'paidCents' => (int)$r['paidCents'],
+            'dueCents'  => (int) $r['dueCents'],
+            'paidCents' => (int) $r['paidCents'],
         ];
     }
 
