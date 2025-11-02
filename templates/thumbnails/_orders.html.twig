@@ -1,0 +1,44 @@
+{% for order in orders %}
+  <div class="card bg-dark border-secondary mb-3">
+    <div class="card-header border-secondary d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div>
+        <a href="{{ path('app_order_show', {id: order.id}) }}" class="link-light text-decoration-none fw-semibold">
+          #{{ order.id }} — {{ order.title }}
+        </a>
+        <span class="text-secondary ms-2">· {{ order.client ? order.client.name : '—' }}</span>
+      </div>
+      <div class="text-secondary small">
+        {{ (order.updatedAt ?? order.createdAt)|date('Y-m-d H:i') }}
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        {% for a in order.assets %}
+          <div class="col-6 col-md-3">
+            <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
+              <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank" class="mb-2">
+                <img src="{{ asset('uploads/order-assets/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
+                     alt="Thumbnail {{ loop.index }}"
+                     class="img-fluid rounded-1"
+                     loading="lazy"
+                     style="aspect-ratio: 16/9; object-fit: cover;">
+              </a>
+              <div class="small text-secondary mb-2">
+                {{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB
+              </div>
+              <div class="mt-auto d-flex gap-2">
+                <a class="btn btn-sm btn-outline-light rounded-1"
+                   href="{{ path('app_order_asset_download', { id: a.id }) }}">Download</a>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="col-12 text-secondary small">No assets.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="text-secondary">No orders with assets.</div>
+{% endfor %}
