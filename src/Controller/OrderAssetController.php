@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Order;
 use App\Entity\OrderAsset;
+use App\Enum\OrderStatus;
 use App\Form\OrderAssetType;
 use App\Repository\OrderAssetRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,11 +27,10 @@ final class OrderAssetController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $asset = new \App\Entity\OrderAsset();
+        $asset = new OrderAsset();
         $asset->setOrder($order);
 
-        // On utilise vraiment le form (et donc ses contraintes)
-        $form = $this->createForm(\App\Form\OrderAssetType::class, $asset);
+        $form = $this->createForm(OrderAssetType::class, $asset);
         $form->handleRequest($request);
 
         if (!$form->isSubmitted()) {
@@ -38,23 +38,24 @@ final class OrderAssetController extends AbstractController
             return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
         }
 
-        // Récupérer l’UploadedFile provenant du champ "file"
         $uploaded = $form->get('file')->getData();
         if (!$uploaded) {
-            // ex: trop gros -> PHP l’a rejeté, ou champ vide
             $this->addFlash('danger', 'Upload failed (file missing or rejected by PHP). Try a smaller file.');
             return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
         }
 
-        // Optionnel : vérifier l’erreur PHP brute
         if (method_exists($uploaded, 'getError') && $uploaded->getError() !== UPLOAD_ERR_OK) {
             $msg = method_exists($uploaded, 'getErrorMessage') ? $uploaded->getErrorMessage() : 'Upload error.';
             $this->addFlash('danger', $msg);
             return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
         }
 
-        // Vich lira $asset->getFile() pendant flush()
         $asset->setFile($uploaded);
+
+        // Set order status to DELIVERED on successful upload
+        if ($order->getStatus() !== OrderStatus::DELIVERED) {
+            $order->setStatus(OrderStatus::DELIVERED);
+        }
 
         $em->persist($asset);
         $em->flush();
@@ -62,13 +63,11 @@ final class OrderAssetController extends AbstractController
         $this->addFlash('success', 'Thumbnail uploaded.');
         $back = $request->query->get('back') ?: $request->headers->get('referer');
         return $back ? $this->redirect($back) : $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
-
     }
 
     #[Route('/assets/{id}/download', name: 'app_order_asset_download', methods: ['GET'])]
     public function download(OrderAsset $asset): Response
     {
-        // Autorisations: admin, ou client propriétaire de l'order
         $order = $asset->getOrder();
         $this->denyAccessUnlessGranted('ORDER_VIEW', $order);
 
@@ -89,21 +88,40 @@ final class OrderAssetController extends AbstractController
         if (!$this->isCsrfTokenValid('asset-delete'.$asset->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
-        $orderId = $asset->getOrder()->getId();
+
+        $order = $asset->getOrder();
+        $orderId = $order->getId();
+
+        // Count assets for this order before deletion
+        $countBefore = (int) $em->createQueryBuilder()
+            ->select('COUNT(a.id)')
+            ->from(OrderAsset::class, 'a')
+            ->andWhere('a.order = :order')
+            ->setParameter('order', $order)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        // Remove physical file (wherever it was stored)
         $projectDir = $this->getParameter('kernel.project_dir');
         $paths = [
-            $projectDir.'/var/uploads/order-assets/'.$asset->getFileName(),     // si tu as déplacé hors webroot
-            $projectDir.'/public/uploads/order-assets/'.$asset->getFileName(),  // sinon (ta config actuelle)
+            $projectDir.'/var/uploads/order-assets/'.$asset->getFileName(),
+            $projectDir.'/public/uploads/order-assets/'.$asset->getFileName(),
         ];
-        $fs = new \Symfony\Component\Filesystem\Filesystem();
+        $fs = new Filesystem();
         foreach ($paths as $p) {
             if ($p && $fs->exists($p)) { $fs->remove($p); break; }
         }
 
-        // Bypass des listeners/validation : DELETE direct en DQL
+        // Delete DB row
         $em->createQuery('DELETE FROM App\Entity\OrderAsset a WHERE a.id = :id')
-        ->setParameter('id', $asset->getId())
-        ->execute();
+            ->setParameter('id', $asset->getId())
+            ->execute();
+
+        // If it was the last asset, set status back to DOING
+        if ($countBefore <= 1 && $order->getStatus() !== OrderStatus::DOING) {
+            $order->setStatus(OrderStatus::DOING);
+            $em->flush();
+        }
 
         $this->addFlash('success', 'Thumbnail removed.');
         return $this->redirect($request->query->get('back') ?: $this->generateUrl('app_order_show', ['id' => $orderId]));
