@@ -6,7 +6,6 @@ use App\Entity\Order;
 use App\Entity\OrderAsset;
 use App\Enum\OrderStatus;
 use App\Form\OrderAssetType;
-use App\Repository\OrderAssetRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Filesystem\Filesystem;
@@ -19,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/orders')]
 final class OrderAssetController extends AbstractController
 {
+
     #[Route('/{id}/assets/upload', name: 'app_order_asset_upload', methods: ['POST'])]
     public function upload(Order $order, Request $request, EntityManagerInterface $em): Response
     {
@@ -27,10 +27,8 @@ final class OrderAssetController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $asset = new OrderAsset();
-        $asset->setOrder($order);
-
-        $form = $this->createForm(OrderAssetType::class, $asset);
+        // ⚠️ on désactive la CSRF du form car on a déjà le token custom ci-dessus
+        $form = $this->createForm(OrderAssetType::class, null, ['csrf_protection' => false]);
         $form->handleRequest($request);
 
         if (!$form->isSubmitted()) {
@@ -38,29 +36,27 @@ final class OrderAssetController extends AbstractController
             return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
         }
 
-        $uploaded = $form->get('file')->getData();
-        if (!$uploaded) {
-            $this->addFlash('danger', 'Upload failed (file missing or rejected by PHP). Try a smaller file.');
+        /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[]|null $files */
+        $files = $form->get('file')->getData();   // ⬅️ array quand multiple=true
+        if (!$files || count($files) === 0) {
+            $this->addFlash('danger', 'Upload failed (no images).');
             return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
         }
 
-        if (method_exists($uploaded, 'getError') && $uploaded->getError() !== UPLOAD_ERR_OK) {
-            $msg = method_exists($uploaded, 'getErrorMessage') ? $uploaded->getErrorMessage() : 'Upload error.';
-            $this->addFlash('danger', $msg);
-            return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
+        foreach ($files as $uploaded) {
+            $asset = new OrderAsset();
+            $asset->setOrder($order);
+            $asset->setFile($uploaded);
+            $em->persist($asset);
         }
 
-        $asset->setFile($uploaded);
-
-        // Set order status to DELIVERED on successful upload
-        if ($order->getStatus() !== OrderStatus::DELIVERED) {
-            $order->setStatus(OrderStatus::DELIVERED);
+        if ($order->getStatus() !== \App\Enum\OrderStatus::DELIVERED) {
+            $order->setStatus(\App\Enum\OrderStatus::DELIVERED);
         }
 
-        $em->persist($asset);
         $em->flush();
 
-        $this->addFlash('success', 'Thumbnail uploaded.');
+        $this->addFlash('success', sprintf('%d image(s) uploaded.', count($files)));
         $back = $request->query->get('back') ?: $request->headers->get('referer');
         return $back ? $this->redirect($back) : $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
     }
@@ -101,7 +97,7 @@ final class OrderAssetController extends AbstractController
             ->getQuery()
             ->getSingleScalarResult();
 
-        // Remove physical file (wherever it was stored)
+        // Remove physical file
         $projectDir = $this->getParameter('kernel.project_dir');
         $paths = [
             $projectDir.'/var/uploads/order-assets/'.$asset->getFileName(),

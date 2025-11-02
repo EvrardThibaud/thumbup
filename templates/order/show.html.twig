@@ -130,10 +130,16 @@
       <form class="d-flex gap-2" method="post" enctype="multipart/form-data"
             action="{{ path('app_order_asset_upload', { id: order.id, back: app.request.uri }) }}">
         <input type="hidden" name="_token" value="{{ csrf_token('asset-upload' ~ order.id) }}">
-        <input class="form-control form-control-sm" type="file" name="order_asset[file]" accept="image/png,image/jpeg,image/webp" required>
+        <input class="form-control form-control-sm"
+              type="file"
+              name="order_asset[file][]"
+              accept="image/*"
+              multiple
+              required>
         <button class="btn btn-sm btn-primary rounded-1">Upload</button>
       </form>
     {% endif %}
+
   </div>
 
   {% if order.assets is empty %}
