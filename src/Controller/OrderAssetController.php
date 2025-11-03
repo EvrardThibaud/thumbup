@@ -50,8 +50,9 @@ final class OrderAssetController extends AbstractController
             $em->persist($asset);
         }
 
-        if ($order->getStatus() !== \App\Enum\OrderStatus::DELIVERED) {
-            $order->setStatus(\App\Enum\OrderStatus::DELIVERED);
+        $state = $order->getStatus();
+        if (in_array($state, [OrderStatus::ACCEPTED, OrderStatus::DOING, OrderStatus::REVISION], true)) {
+            $order->setStatus(OrderStatus::DELIVERED);
         }
 
         $em->flush();
@@ -114,7 +115,7 @@ final class OrderAssetController extends AbstractController
             ->execute();
 
         // If it was the last asset, set status back to DOING
-        if ($countBefore <= 1 && $order->getStatus() !== OrderStatus::DOING) {
+        if ($countBefore <= 1 && $order->getStatus() !== OrderStatus::DOING && $order->getStatus() !== OrderStatus::FINISHED) {
             $order->setStatus(OrderStatus::DOING);
             $em->flush();
         }
