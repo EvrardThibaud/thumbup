@@ -240,6 +240,19 @@ class OrderRepository extends ServiceEntityRepository
         ];
     }
 
+    public function findBillableUnpaidByClient(Client $client): array
+    {
+        return $this->createQueryBuilder('o')
+            ->leftJoin('o.client', 'c')->addSelect('c')
+            ->andWhere('o.client = :client')->setParameter('client', $client)
+            ->andWhere('o.paid = :paid')->setParameter('paid', false)
+            ->andWhere('o.status IN (:st)')
+            ->setParameter('st', [OrderStatus::DELIVERED, OrderStatus::REVISION, OrderStatus::FINISHED])
+            ->orderBy('o.updatedAt', 'DESC')
+            ->addOrderBy('o.id', 'DESC')
+            ->getQuery()->getResult();
+    }
+
     public function getMonthlyCountsByClient(\DateTimeInterface $start, \DateTimeInterface $end, Client $client): array
     {
         $qb = $this->createQueryBuilder('o')
