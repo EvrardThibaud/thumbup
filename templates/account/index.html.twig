@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+{% block title %}Account{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">👤 Account</h1>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-6">
+      <div class="card bg-dark border-secondary rounded-2">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Profile</span>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4 text-secondary">Email</dt>
+            <dd class="col-sm-8">{{ user.email }}</dd>
+
+            <dt class="col-sm-4 text-secondary">Roles</dt>
+            <dd class="col-sm-8">
+              {% for r in user.roles %}
+                <span class="badge text-bg-dark border me-1">{{ r }}</span>
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endfor %}
+            </dd>
+
+            {% if user.client is defined and user.client %}
+              <dt class="col-sm-4 text-secondary">Client</dt>
+              <dd class="col-sm-8">
+                <a class="link-light" href="{{ path('app_client_show', { id: user.client.id }) }}">
+                  {{ user.client.name }}
+                </a>
+              </dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card bg-dark border-secondary rounded-2">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Security</span>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary small mb-2">Manage your password and sessions.</p>
+          {# Branch to your existing reset/change password flow if any #}
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

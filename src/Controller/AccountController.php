@@ -1,0 +1,22 @@
+<?php
+// src/Controller/AccountController.php
+
+namespace App\Controller;
+
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+#[Route('/account')]
+final class AccountController extends AbstractController
+{
+    #[Route('', name: 'app_account', methods: ['GET'])]
+    public function index(): Response
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+
+        return $this->render('account/index.html.twig', [
+            'user' => $this->getUser(),
+        ]);
+    }
+}
