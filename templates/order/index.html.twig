@@ -130,7 +130,7 @@
                     <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
                     <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
                     <th>Paid</th>
-                    <th>{{ S.sortLink('Assets', 'assets', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
                     <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
                     <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
                     <th></th>
@@ -144,7 +144,7 @@
                     <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
                     <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
                     <th>Paid</th>
-                    <th>{{ S.sortLink('Assets', 'assets', sort, dir, route, qs) }}</th>
+                    <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
                     <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
                     <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
                     <th></th>
@@ -205,7 +205,7 @@
                     {% endif %}
                 </td>
 
-                <td>{{ order.assets|length }}</td>
+                <td>{{ order.thumbnails|length }}</td>
 
                 <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
                 <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
