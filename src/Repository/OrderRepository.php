@@ -76,56 +76,56 @@ class OrderRepository extends ServiceEntityRepository
     }
 
     public function paginateOrdersWithAssets(?Client $client, int $page, int $perPage): array
+{
+    $qb = $this->createQueryBuilder('o')
+        ->innerJoin('o.assets', 'a')        // OrderAsset = client files
+        ->addSelect('a')
+        ->groupBy('o.id')
+        ->orderBy('o.updatedAt', 'DESC')
+        ->addOrderBy('o.id', 'DESC');
+
+    if ($client) {
+        $qb->andWhere('o.client = :c')->setParameter('c', $client);
+    }
+
+    $first = max(0, ($page - 1) * $perPage);
+    $rows  = $qb->setFirstResult($first)
+                ->setMaxResults($perPage + 1)
+                ->getQuery()
+                ->getResult();
+
+    $hasMore = \count($rows) > $perPage;
+    if ($hasMore) { array_pop($rows); }
+
+    return ['items' => $rows, 'page' => $page, 'hasMore' => $hasMore];
+}
+
+    public function paginateOrdersWithThumbnails(?Client $client, int $page, int $perPage): array
     {
-        $page = max(1, $page);
-        $perPage = max(1, $perPage);
-
-        // Page d'IDs triées (orders ayant ≥1 asset)
-        $idQb = $this->createQueryBuilder('o')
-            ->select('o.id')
-            ->andWhere('EXISTS (
-                SELECT 1 FROM App\Entity\OrderAsset oa
-                WHERE oa.order = o
-            )')
-            ->orderBy('o.updatedAt', 'DESC')
-            ->addOrderBy('o.id', 'DESC')
-            ->setFirstResult(($page - 1) * $perPage)
-            ->setMaxResults($perPage + 1);
-
-        if ($client instanceof Client) {
-            $idQb->andWhere('o.client = :client')->setParameter('client', $client);
-        }
-
-        $rawIds = $idQb->getQuery()->getScalarResult();
-        $ids = array_map(static fn($r) => (int)$r['id'], $rawIds);
-
-        $hasMore = count($ids) > $perPage;
-        if ($hasMore) {
-            array_pop($ids); // garde exactement $perPage
-        }
-
-        if (!$ids) {
-            return ['items' => [], 'hasMore' => false, 'page' => $page, 'perPage' => $perPage];
-        }
-
-        // Chargement des orders + client + assets pour ces IDs (même tri)
         $qb = $this->createQueryBuilder('o')
-            ->leftJoin('o.client', 'c')->addSelect('c')
-            ->leftJoin('o.assets', 'a')->addSelect('a')
-            ->andWhere('o.id IN (:ids)')
-            ->setParameter('ids', $ids)
+            ->innerJoin('o.thumbnails', 't')    // Thumbnail = final images (admin)
+            ->addSelect('t')
+            ->groupBy('o.id')
             ->orderBy('o.updatedAt', 'DESC')
             ->addOrderBy('o.id', 'DESC');
 
-        $items = $qb->getQuery()->getResult();
+        if ($client) {
+            $qb->andWhere('o.client = :c')->setParameter('c', $client);
+        }
 
-        return [
-            'items'   => $items,
-            'hasMore' => $hasMore,
-            'page'    => $page,
-            'perPage' => $perPage,
-        ];
+        $first = max(0, ($page - 1) * $perPage);
+        $rows  = $qb->setFirstResult($first)
+                    ->setMaxResults($perPage + 1)
+                    ->getQuery()
+                    ->getResult();
+
+        $hasMore = \count($rows) > $perPage;
+        if ($hasMore) { array_pop($rows); }
+
+        return ['items' => $rows, 'page' => $page, 'hasMore' => $hasMore];
     }
+
+    
 
     /**
      * @return iterable<Order>

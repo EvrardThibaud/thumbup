@@ -1,4 +1,5 @@
 <?php
+// src/Form/OrderType.php — FIX submit (no HTML5 block): use HiddenType for price, remove price_euros field
 
 namespace App\Form;
 
@@ -9,89 +10,99 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final class OrderType extends AbstractType
 {
-    public function buildForm(FormBuilderInterface $builder, array $options): void
+    public function buildForm(FormBuilderInterface $b, array $opt): void
     {
-        $isClient = (bool) $options['is_client'];
-        $forEdit  = (bool) $options['for_edit']; // NEW: distinguish create vs edit
+        $isClient = (bool)$opt['is_client'];
+        $minDueAt = $opt['min_due_at']; // 'Y-m-d\TH:i' or null
 
-        // Champs communs
-        $builder
-            ->add('title')
-            ->add('brief')
-            ->add('dueAt', null, ['widget' => 'single_text']);
-
-        if ($isClient) {
-            // CLIENT
-            // NEW: en création (for_edit=false) le client voit le prix (min 5€); en édition, non.
-            if (!$forEdit) {
-                $builder->add('price', null, [
-                    // price stored in CENTS → 500 = €5
-                    'constraints' => [
-                        new Assert\PositiveOrZero(),
-                        new Assert\GreaterThanOrEqual(500),
-                    ],
-                    'attr' => ['min' => 5, 'step' => 1],
-                    'help' => 'Minimum €5.00',
-                ]);
-            }
-            // Pas de client/status/paid côté client.
-            return;
-        }
-
-        // ADMIN
-        $builder
-            ->add('client', EntityType::class, [
-                'class' => Client::class,
-                'placeholder' => 'Select a client',
-                'choice_label' => 'name',
+        $b->add('title', TextType::class, [
+                'label' => '📝 Title',
+                'required' => true,
+                'attr' => ['placeholder' => 'e.g., “MrBeast – Haunted House thumbnail”', 'autocomplete' => 'off'],
+                'constraints' => [new Assert\NotBlank(), new Assert\Length(max:255)],
             ])
-            ->add('price', null, [
-                'constraints' => [new Assert\PositiveOrZero()],
+          ->add('brief', TextareaType::class, [
+                'label' => '📄 Brief',
+                'required' => true,
+                'attr' => ['placeholder' => 'Concept, colors, references, overlay text…', 'rows' => 6],
+                'constraints' => [new Assert\NotBlank()],
             ])
-            ->add('status', ChoiceType::class, [
-                'choices' => [
-                    'Created'   => OrderStatus::CREATED,
-                    'Refused'   => OrderStatus::REFUSED,
-                    'Canceled'  => OrderStatus::CANCELED,
-                    'To do'     => OrderStatus::ACCEPTED, // admin wording
-                    'Doing'     => OrderStatus::DOING,
-                    'Delivered' => OrderStatus::DELIVERED,
-                    'Finished'  => OrderStatus::FINISHED,   // 👈
-                    'Revision'  => OrderStatus::REVISION,
-                ],
-                'choice_label' => fn ($choice) => match ($choice) {
-                    OrderStatus::CREATED   => 'Created',
-                    OrderStatus::REFUSED   => 'Refused',
-                    OrderStatus::CANCELED  => 'Canceled',
-                    OrderStatus::ACCEPTED  => 'To do',
-                    OrderStatus::DOING     => 'Doing',
-                    OrderStatus::DELIVERED => 'Delivered',
-                    OrderStatus::FINISHED     => 'Finished',
-                    OrderStatus::REVISION => 'Revision',
-                },
+          ->add('dueAt', DateTimeType::class, [
+                'label' => '⏰ Due at',
+                'widget' => 'single_text',
+                'required' => true,
+                'html5' => true,
+                'attr' => $minDueAt ? ['min' => $minDueAt] : [],
             ])
-            ->add('paid', CheckboxType::class, [
+          // REAL stored price in cents — hidden so HTML5 "required" won't block submit
+          ->add('price', HiddenType::class, [
+                'constraints' => [new Assert\NotBlank(), new Assert\GreaterThanOrEqual(500)],
+            ])
+          // Optional attachments
+          ->add('attachments', FileType::class, [
+                'mapped' => false,
                 'required' => false,
-                'label' => 'Paid',
-            ])
-            ->add('createdAt', null, ['widget' => 'single_text'])
-            ->add('updatedAt', null, ['widget' => 'single_text']);
+                'label' => '📎 Attach files (PDF or images)',
+                'multiple' => true,
+                'attr' => ['accept' => 'application/pdf,image/png,image/jpeg,image/webp'],
+                'constraints' => [
+                    new Assert\All([
+                        new Assert\File(maxSize: '25M', mimeTypes: [
+                            'application/pdf', 'image/png', 'image/jpeg', 'image/webp',
+                        ]),
+                    ]),
+                ],
+            ]);
+
+        if (!$isClient) {
+            $b->add('client', EntityType::class, [
+                    'class' => Client::class,
+                    'label' => '👤 Client',
+                    'placeholder' => 'Select a client…',
+                    'required' => true,
+                ])
+              ->add('status', ChoiceType::class, [
+                    'label' => '🏷️ Status',
+                    'required' => true,
+                    'choices' => [
+                        'Created' => OrderStatus::CREATED,
+                        'Refused' => OrderStatus::REFUSED,
+                        'Canceled' => OrderStatus::CANCELED,
+                        'Accepted' => OrderStatus::ACCEPTED,
+                        'Doing' => OrderStatus::DOING,
+                        'Delivered' => OrderStatus::DELIVERED,
+                        'Revision' => OrderStatus::REVISION,
+                        'Finished' => OrderStatus::FINISHED,
+                    ],
+                ])
+              ->add('paid', CheckboxType::class, [
+                    'label' => 'Paid',
+                    'required' => false,
+                ]);
+        }
     }
 
-    public function configureOptions(OptionsResolver $resolver): void
+    public function configureOptions(OptionsResolver $r): void
     {
-        $resolver->setDefaults([
+        $r->setDefaults([
             'data_class' => Order::class,
             'is_client'  => false,
-            'for_edit'   => true, // NEW: edit by default; set to false in create action
+            'for_edit'   => false,
+            'min_due_at' => null,
         ]);
-        $resolver->setAllowedTypes('is_client', 'bool');
-        $resolver->setAllowedTypes('for_edit', 'bool');
+        $r->setAllowedTypes('is_client', 'bool');
+        $r->setAllowedTypes('for_edit', 'bool');
+        $r->setAllowedTypes('min_due_at', ['null','string']);
     }
 }

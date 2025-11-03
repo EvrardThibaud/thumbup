@@ -1,0 +1,37 @@
+{% set assets = order.assets %}
+<div class="card bg-dark border-0 p-3 mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="small text-secondary">Client files</div>
+  </div>
+
+  {% if assets|length == 0 %}
+    <div class="text-secondary">No client files.</div>
+  {% else %}
+    <div class="row g-3">
+      {% for a in assets %}
+        <div class="col-6 col-md-3">
+          <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
+            {% if a.mimeType starts with 'image/' %}
+              <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank" class="mb-2">
+                <img src="{{ asset('uploads/order-assets/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
+                     alt="Client file {{ loop.index }}" class="img-fluid rounded-1"
+                     loading="lazy" style="aspect-ratio:16/9;object-fit:cover;">
+              </a>
+            {% else %}
+              <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank"
+                 class="mb-2 d-flex align-items-center justify-content-center border rounded-1" style="aspect-ratio:16/9;">
+                <span class="badge text-bg-light text-dark">PDF</span>
+              </a>
+            {% endif %}
+            <div class="small text-secondary mb-2">{{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB</div>
+
+            <div class="mt-auto d-flex gap-2">
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_asset_download', { id: a.id }) }}">Download</a>
+              {# pas de delete ici (fichiers client). L’admin peut les gérer ailleurs si besoin #}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>

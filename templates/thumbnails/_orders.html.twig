@@ -1,3 +1,4 @@
+{# templates/thumbnails/_orders_thumbnails.html.twig — NEW partial rendering FINAL thumbnails #}
 {% for order in orders %}
   <div class="card bg-dark border-secondary mb-3">
     <div class="card-header border-secondary d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -14,31 +15,31 @@
 
     <div class="card-body">
       <div class="row g-3">
-        {% for a in order.assets %}
+        {% for t in order.thumbnails %}
           <div class="col-6 col-md-3">
             <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
-              <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank" class="mb-2">
-                <img src="{{ asset('uploads/order-assets/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
+              <a href="{{ asset('uploads/order-thumbnails/' ~ t.fileName) }}" target="_blank" class="mb-2">
+                <img src="{{ asset('uploads/order-thumbnails/' ~ t.fileName) | imagine_filter('thumb_320x180') }}"
                      alt="Thumbnail {{ loop.index }}"
                      class="img-fluid rounded-1"
                      loading="lazy"
                      style="aspect-ratio: 16/9; object-fit: cover;">
               </a>
               <div class="small text-secondary mb-2">
-                {{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB
+                {{ (t.fileSize/1024)|number_format(0, ',', ' ') }} KB
               </div>
               <div class="mt-auto d-flex gap-2">
                 <a class="btn btn-sm btn-outline-light rounded-1"
-                   href="{{ path('app_order_asset_download', { id: a.id }) }}">Download</a>
+                   href="{{ path('app_thumbnail_download', { id: t.id }) }}">Download</a>
               </div>
             </div>
           </div>
         {% else %}
-          <div class="col-12 text-secondary small">No assets.</div>
+          <div class="col-12 text-secondary small">No thumbnails.</div>
         {% endfor %}
       </div>
     </div>
   </div>
 {% else %}
-  <div class="text-secondary">No orders with assets.</div>
+  <div class="text-secondary">No orders with thumbnails.</div>
 {% endfor %}

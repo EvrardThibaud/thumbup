@@ -1,18 +1,19 @@
-{# templates/order/new.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}New order{% endblock %}
 
 {% block body %}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 m-0">🆕 New order</h1>
-    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_index') }}">← Back</a>
+    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ back ?? path('app_order_index') }}">← Back</a>
   </div>
 
   <div class="card bg-dark border-0 p-3">
     {{ include('order/_form.html.twig', {
       form: form,
       button_label: 'Create',
-      back_path: path('app_order_index')
+      back_path: back ?? path('app_order_index'),
+      lastPriceCents: lastPriceCents|default(null),
+      due_min_help: due_min_help|default(false),
     }) }}
   </div>
 {% endblock %}

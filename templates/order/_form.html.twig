@@ -1,35 +1,179 @@
-{# templates/order/_form.html.twig #}
+{# templates/order/_form.html.twig — single pretty price input; hidden cents field; no duplicate #}
 {{ form_start(form) }}
 
-{{ form_row(form.title,  { label: '📝 Title' }) }}
-{{ form_row(form.brief,  { label: '📄 Brief' }) }}
-{{ form_row(form.dueAt,  { label: '⏰ Due at' }) }}
+<div class="vstack gap-3">
+  <div>
+    <label class="form-label mb-1">📝 Title</label>
+    {{ form_widget(form.title, { attr: form.title.vars.attr|merge({'class':'form-control'}) }) }}
+    {{ form_errors(form.title) }}
+  </div>
 
-{# Admin-only (render only if present in the form) #}
-{% if form.children['price'] is defined %}
-  {{ form_row(form.children['price'], { label: '💶 Price (cents)' }) }}
-{% endif %}
+  <div>
+    <label class="form-label mb-1">📄 Brief</label>
+    {{ form_widget(form.brief, { attr: form.brief.vars.attr|merge({'class':'form-control','rows':8}) }) }}
+    {{ form_errors(form.brief) }}
+  </div>
 
-{% if form.children['client'] is defined %}
-  {{ form_row(form.children['client'], { label: '👤 Client' }) }}
-{% endif %}
+  <div>
+    <label class="form-label mb-1">⏰ Due at</label>
+    {{ form_widget(form.dueAt, { attr: form.dueAt.vars.attr|merge({'class':'form-control'}) }) }}
+    {{ form_errors(form.dueAt) }}
+  </div>
 
-{% if form.children['status'] is defined %}
-  {{ form_row(form.children['status'], { label: '🏷️ Status' }) }}
-{% endif %}
+  {# ---- Price (pretty) + presets ---- #}
+  <div>
+    <label class="form-label mb-1">💶 Price</label>
+    <div class="input-group">
+      <input type="text" class="form-control js-price-euros"
+             name="pretty_price"
+             value=""
+             placeholder="e.g., 15,00" autocomplete="off">
+      <span class="input-group-text">€</span>
+    </div>
+    {{ form_widget(form.price) }} {# hidden cents field #}
+    {{ form_errors(form.price) }}
 
-{% if form.children['paid'] is defined %}
-  {{ form_row(form.children['paid'], { label: 'Paid' }) }}
-{% endif %}
+    <div class="d-flex flex-wrap gap-2 mt-2">
+      {% set presets = [500,1000,1500,2000,2500,3000] %}
+      {% for c in presets %}
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-1 js-preset" data-cents="{{ c }}">
+          {{ (c/100)|number_format(2, ',', ' ') }} €
+        </button>
+      {% endfor %}
+      {% if lastPriceCents is defined and lastPriceCents %}
+        <button type="button" class="btn btn-sm btn-outline-primary rounded-1 js-preset" data-cents="{{ lastPriceCents }}">
+          Last: {{ (lastPriceCents/100)|number_format(2, ',', ' ') }} €
+        </button>
+      {% endif %}
+    </div>
+    <div class="form-text text-secondary">Minimum 5,00 €.</div>
+  </div>
 
-{% if form.children['createdAt'] is defined %}
-  {{ form_row(form.children['createdAt'], { label: 'Created at' }) }}
-{% endif %}
+  <div>
+    <label class="form-label mb-1">📎 Attach files (PDF or images)</label>
+    {{ form_widget(form.attachments, { attr: form.attachments.vars.attr|merge({'class':'form-control','id':'attachments-input'}) }) }}
+    {{ form_errors(form.attachments) }}
+    <div id="attachments-preview" class="row g-2 mt-2"></div>
+    <div class="form-text text-secondary">PNG/JPG/WebP/PDF, up to 25 MB each.</div>
+  </div>
 
-{% if form.children['updatedAt'] is defined %}
-  {{ form_row(form.children['updatedAt'], { label: 'Updated at' }) }}
-{% endif %}
+  {% if form.children['client'] is defined %}
+    <div>
+      <label class="form-label mb-1">👤 Client</label>
+      {{ form_widget(form.client, { attr: form.client.vars.attr|merge({'class':'form-select'}) }) }}
+      {{ form_errors(form.client) }}
+    </div>
+  {% endif %}
 
-<button class="btn btn-primary">{{ button_label|default('Save') }}</button>
+  {% if form.children['status'] is defined %}
+    <div>
+      <label class="form-label mb-1">🏷️ Status</label>
+      {{ form_widget(form.status, { attr: form.status.vars.attr|merge({'class':'form-select'}) }) }}
+      {{ form_errors(form.status) }}
+    </div>
+  {% endif %}
+
+  {% if form.children['paid'] is defined %}
+    <div class="form-check">
+      {{ form_widget(form.paid, { attr: {'class':'form-check-input','id':'paid-check'} }) }}
+      <label for="paid-check" class="form-check-label">Paid</label>
+      {{ form_errors(form.paid) }}
+    </div>
+  {% endif %}
+
+  <div class="d-flex gap-2 pt-2">
+    <button class="btn btn-primary rounded-1">{{ button_label|default('Save') }}</button>
+    {% if back_path is defined and back_path %}
+      <a class="btn btn-outline-light rounded-1" href="{{ back_path }}">Cancel</a>
+    {% endif %}
+  </div>
+</div>
 
 {{ form_end(form) }}
+
+<style>
+  .form-label{ display:block; }
+  #attachments-preview .thumb{ position:relative;border:1px solid rgba(255,255,255,.15);border-radius:.5rem;padding:.5rem;background:rgba(255,255,255,.03); }
+  #attachments-preview img, #attachments-preview .pdf-icon{ width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:.35rem;background:rgba(255,255,255,.05); }
+  .thumb .btn-remove{ position:absolute;top:.25rem;right:.25rem; }
+</style>
+
+<script>
+// Price formatting + presets -> sync hidden cents
+(function(){
+  const centsInput = document.querySelector('input[name$="[price]"]'); // HiddenType
+  const prettyInput = document.querySelector('.js-price-euros');
+  const presets = document.querySelectorAll('.js-preset');
+
+  function fmt(c){ return (c/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function parseToCents(str){
+    if(!str) return NaN;
+    const n = String(str).replace(/[€\s]/g,'').replace(',','.');
+    const f = parseFloat(n);
+    if(isNaN(f)) return NaN;
+    return Math.round(f*100);
+  }
+  function syncFromPretty(){
+    const c = parseToCents(prettyInput.value);
+    if(!isNaN(c)){ const v = Math.max(500,c); centsInput.value = String(v); prettyInput.value = fmt(v); }
+  }
+  function setCents(c){
+    const v = Math.max(500, c|0);
+    centsInput.value = String(v);
+    prettyInput.value = fmt(v);
+  }
+
+  prettyInput?.addEventListener('change', syncFromPretty);
+  prettyInput?.addEventListener('blur', syncFromPretty);
+  presets.forEach(b => b.addEventListener('click', () => setCents(parseInt(b.dataset.cents||'0',10))));
+
+  // init minimal default
+  if(!centsInput.value){ setCents(500); }
+})();
+</script>
+
+<script>
+// Attachments preview + remove
+(function(){
+  const input = document.getElementById('attachments-input');
+  if (!input) return;
+  const preview = document.getElementById('attachments-preview');
+  const dt = new DataTransfer();
+
+  function render(){
+    preview.innerHTML = '';
+    Array.from(dt.files).forEach((file, idx) => {
+      const col = document.createElement('div'); col.className='col-6 col-md-3';
+      const card = document.createElement('div'); card.className='thumb';
+      const btn = document.createElement('button'); btn.type='button'; btn.className='btn btn-sm btn-outline-danger rounded-1 btn-remove'; btn.textContent='×';
+      btn.addEventListener('click', () => {
+        const tmp = new DataTransfer();
+        Array.from(dt.files).forEach((f,i)=>{ if(i!==idx) tmp.items.add(f); });
+        while(dt.items.length) dt.items.remove(0);
+        Array.from(tmp.files).forEach(f=>dt.items.add(f));
+        input.files = dt.files; render();
+      });
+
+      let media;
+      if (file.type.startsWith('image/')) {
+        media = document.createElement('img'); media.alt=file.name;
+        const r = new FileReader(); r.onload = e => media.src = e.target.result; r.readAsDataURL(file);
+      } else {
+        media = document.createElement('div'); media.className='pdf-icon d-flex align-items-center justify-content-center';
+        media.innerHTML = '<span class="badge text-bg-light text-dark">PDF</span>';
+      }
+
+      const cap = document.createElement('div'); cap.className='small text-truncate mt-2 text-secondary'; cap.textContent=file.name;
+
+      card.appendChild(btn); card.appendChild(media); card.appendChild(cap);
+      col.appendChild(card); preview.appendChild(col);
+    });
+  }
+
+  input.addEventListener('change', () => {
+    Array.from(input.files).forEach(f => dt.items.add(f));
+    input.files = dt.files;
+    render();
+  });
+})();
+</script>

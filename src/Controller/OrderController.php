@@ -72,61 +72,98 @@ final class OrderController extends AbstractController
             'is_client' => $isClient,
         ]);
     }
-    
+        
     #[Route('/new', name: 'app_order_new', methods: ['GET','POST'])]
-    public function new(Request $request, EntityManagerInterface $em): Response
+    public function new(Request $request, EntityManagerInterface $em, \App\Repository\OrderRepository $ordersRepo): Response
     {
-        $order = new Order();
+        $order = new \App\Entity\Order();
         $now = new \DateTimeImmutable();
         $order->setCreatedAt($now);
         $order->setUpdatedAt($now);
-        $order->setStatus(\App\Enum\OrderStatus::CREATED); // défaut
-        $order->setPaid(false); // défaut
+        $order->setStatus(\App\Enum\OrderStatus::CREATED);
+        $order->setPaid(false);
 
         $isClient = $this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN');
 
-        // Si CLIENT : lier automatiquement son Client (champ non visible)
+        $minDueAtAttr = null;
+        $lastPriceCents = null;
+
         if ($isClient) {
-            /** @var \App\Entity\User|null $user */
+            /** @var \App\Entity\User $user */
             $user = $this->getUser();
-            if (!$user instanceof \App\Entity\User || null === $user->getClient()) {
-                throw $this->createAccessDeniedException();
-            }
+            if (!$user || null === $user->getClient()) { throw $this->createAccessDeniedException(); }
             $order->setClient($user->getClient());
+            $order->setDueAt($now->modify('+2 days'));
+            $minDueAtAttr = $now->format('Y-m-d\TH:i');
+
+            $last = $ordersRepo->createQueryBuilder('o')
+                ->andWhere('o.client = :c')->setParameter('c', $user->getClient())
+                ->orderBy('o.id', 'DESC')->setMaxResults(1)
+                ->getQuery()->getOneOrNullResult();
+            if ($last) { $lastPriceCents = max(500, (int)$last->getPrice()); }
         }
 
-        // NEW: for_edit = false en création pour afficher "price" au client (avec min 5€)
         $form = $this->createForm(\App\Form\OrderType::class, $order, [
             'is_client' => $isClient,
             'for_edit'  => false,
+            'min_due_at'=> $minDueAtAttr,
         ]);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        // Sync price from pretty input -> hidden cents (server truth)
+        if ($form->isSubmitted()) {
+            $pretty = $request->request->get('pretty_price');
+            if ($pretty !== null) {
+                $normalized = str_replace(['€',' '], '', (string)$pretty);
+                $normalized = str_replace(',', '.', $normalized);
+                if (is_numeric($normalized)) {
+                    $cents = (int) round(((float)$normalized) * 100);
+                    $order->setPrice(max(500, $cents));
+                }
+            }
+        }
 
-            // Filets de sécurité côté serveur
+        if ($form->isSubmitted() && $form->isValid()) {
             if ($isClient) {
-                // Le client ne peut pas modifier ces champs sensibles
                 $order->setStatus(\App\Enum\OrderStatus::CREATED);
                 $order->setPaid(false);
-                // Min 5€ déjà validé par le FormType, mais on revérifie au cas où
+
+                if ($order->getDueAt() && $order->getDueAt() < $now) {
+                    $form->get('dueAt')->addError(new \Symfony\Component\Form\FormError('Due date must be in the future.'));
+                }
                 if ($order->getPrice() < 500) {
                     $form->get('price')->addError(new \Symfony\Component\Form\FormError('Minimum €5.00'));
+                }
+                if (!$form->isValid()) {
                     return $this->render('order/new.html.twig', [
                         'order' => $order,
                         'form'  => $form,
                         'back'  => $request->query->get('back') ?: $request->headers->get('referer'),
+                        'lastPriceCents' => $lastPriceCents,
+                        'due_min_help'   => true,
                     ]);
                 }
+            }
+
+            // attachments
+            /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $files */
+            $files = $form->get('attachments')->getData() ?: [];
+            foreach ($files as $file) {
+                if (!$file) continue;
+                $mime = $file->getMimeType() ?: '';
+                if (!in_array($mime, ['application/pdf','image/png','image/jpeg','image/webp'], true)) continue;
+
+                $asset = new \App\Entity\OrderAsset();   // ← fichiers client
+                $asset->setOrder($order);
+                $asset->setFile($file);                  // mapping "order_asset"
+                $em->persist($asset);
             }
 
             $em->persist($order);
             $em->flush();
 
             $back = $request->request->get('back') ?: $request->query->get('back');
-            return $back
-                ? $this->redirect($back)
-                : $this->redirectToRoute('app_order_index');
+            return $back ? $this->redirect($back) : $this->redirectToRoute('app_order_index');
         }
 
         $back = $request->query->get('back') ?: $request->headers->get('referer');
@@ -134,8 +171,11 @@ final class OrderController extends AbstractController
             'order' => $order,
             'form'  => $form,
             'back'  => $back,
+            'lastPriceCents' => $lastPriceCents,
+            'due_min_help'   => (bool)$minDueAtAttr,
         ]);
     }
+
 
     #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]
     public function show(Request $request, Order $order): Response

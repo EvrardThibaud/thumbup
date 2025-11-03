@@ -49,6 +49,9 @@ class Order
     #[ORM\Column(type: 'boolean', nullable: true, options: ['default' => false])]
     private ?bool $paid = false;
 
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: Thumbnail::class, orphanRemoval: true, cascade: [])]
+    private Collection $thumbnails;
+
     /**
      * @var Collection<int, TimeEntry>
      */
@@ -58,10 +61,29 @@ class Order
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderAsset::class, cascade: ['persist','remove'], orphanRemoval: true)]
     private Collection $assets;
 
+    /** @return Collection<int, Thumbnail> */
+    public function getThumbnails(): Collection { return $this->thumbnails; }
+    public function addThumbnail(Thumbnail $t): self
+    {
+        if (!$this->thumbnails->contains($t)) {
+            $this->thumbnails->add($t);
+            $t->setOrder($this);
+        }
+        return $this;
+    }
+    public function removeThumbnail(Thumbnail $t): self
+    {
+        if ($this->thumbnails->removeElement($t)) {
+            if ($t->getOrder() === $this) { $t->setOrder(null); }
+        }
+        return $this;
+    }
+
     public function __construct()
     {
         $this->timeEntries = new ArrayCollection();
         $this->assets = new ArrayCollection();
+        $this->thumbnails = new ArrayCollection();
     }
 
     public function getId(): ?int
