@@ -21,8 +21,8 @@
   {% set label = {'todo':'To do','doing':'Doing','delivered':'Delivered','paid':'Paid'}[status] ?? status %}
   {% set color = {'todo':'secondary','doing':'info','delivered':'primary','paid':'success'}[status] ?? 'secondary' %}
 {# Delivered thumbnails #}
-{% include 'order/_client_files.html.twig'   with { order: order } %}
 {% include 'order/_final_thumbnails.html.twig' with { order: order } %}
+{% include 'order/_client_files.html.twig'   with { order: order } %}
 
   <div class="card border-0 p-3 mb-3">
     <div class="row g-3">

@@ -162,17 +162,19 @@
     {% endif %}
   {% endif %}
 
-  {% if s == 'delivered' and (is_granted('ROLE_ADMIN') or is_granted('ROLE_CLIENT')) %}
-    <span class="text-secondary mx-1">•</span>
-    <form method="post" action="{{ path('app_order_finish', { id: order.id }) }}">
-      <input type="hidden" name="back" value="{{ backUrl }}">
-      <input type="hidden" name="_token" value="{{ csrf_token('wf-finish' ~ order.id) }}">
-      <button class="btn btn-sm btn-outline-success rounded-1">Mark as finished</button>
-    </form>
-    <form method="post" action="{{ path('app_order_request_revision', { id: order.id }) }}">
-      <input type="hidden" name="back" value="{{ backUrl }}">
-      <input type="hidden" name="_token" value="{{ csrf_token('wf-revision' ~ order.id) }}">
-      <button class="btn btn-sm btn-outline-warning rounded-1">Request revision</button>
-    </form>
-  {% endif %}
+  {% if s == 'delivered' and is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
+  <span class="text-secondary mx-1">•</span>
+
+  <form method="post" action="{{ path('app_order_finish', { id: order.id }) }}">
+    <input type="hidden" name="back" value="{{ backUrl }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('wf-finish' ~ order.id) }}">
+    <button class="btn btn-sm btn-outline-success rounded-1">Mark as finished</button>
+  </form>
+
+  <form method="post" action="{{ path('app_order_request_revision', { id: order.id }) }}">
+    <input type="hidden" name="back" value="{{ backUrl }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('wf-revision' ~ order.id) }}">
+    <button class="btn btn-sm btn-outline-warning rounded-1">Request revision</button>
+  </form>
+{% endif %}
 </div>
