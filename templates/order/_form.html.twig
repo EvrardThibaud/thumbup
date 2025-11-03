@@ -1,16 +1,16 @@
-{# templates/order/_form.html.twig — single pretty price input; hidden cents field; no duplicate #}
+{# templates/order/_form.html.twig — base with live preview + delete for attachments #}
 {{ form_start(form) }}
 
 <div class="vstack gap-3">
   <div>
     <label class="form-label mb-1">📝 Title</label>
-    {{ form_widget(form.title, { attr: form.title.vars.attr|merge({'class':'form-control'}) }) }}
+    {{ form_widget(form.title, { attr: form.title.vars.attr|merge({'class':'form-control','placeholder':'E.g. Face close-up, bold text “NEW VIDEO”'}) }) }}
     {{ form_errors(form.title) }}
   </div>
 
   <div>
     <label class="form-label mb-1">📄 Brief</label>
-    {{ form_widget(form.brief, { attr: form.brief.vars.attr|merge({'class':'form-control','rows':8}) }) }}
+    {{ form_widget(form.brief, { attr: form.brief.vars.attr|merge({'class':'form-control','rows':8,'placeholder':'Tell us what you need: style, mood, colors, assets…'}) }) }}
     {{ form_errors(form.brief) }}
   </div>
 
@@ -49,11 +49,20 @@
     <div class="form-text text-secondary">Minimum 5,00 €.</div>
   </div>
 
+  {# ---- Attachments with LIVE PREVIEW + DELETE (client-side) ---- #}
+  {% set inputId = form.attachments.vars.id %}
   <div>
     <label class="form-label mb-1">📎 Attach files (PDF or images)</label>
-    {{ form_widget(form.attachments, { attr: form.attachments.vars.attr|merge({'class':'form-control','id':'attachments-input'}) }) }}
+    {{ form_widget(form.attachments, {
+      attr: form.attachments.vars.attr|merge({
+        'class':'form-control',
+        'id': inputId,
+        'accept':'image/png,image/jpeg,image/webp,application/pdf',
+        'multiple':'multiple'
+      })
+    }) }}
     {{ form_errors(form.attachments) }}
-    <div id="attachments-preview" class="row g-2 mt-2"></div>
+    <div id="{{ inputId }}__preview" class="row g-2 mt-2"></div>
     <div class="form-text text-secondary">PNG/JPG/WebP/PDF, up to 25 MB each.</div>
   </div>
 
@@ -93,9 +102,18 @@
 
 <style>
   .form-label{ display:block; }
-  #attachments-preview .thumb{ position:relative;border:1px solid rgba(255,255,255,.15);border-radius:.5rem;padding:.5rem;background:rgba(255,255,255,.03); }
-  #attachments-preview img, #attachments-preview .pdf-icon{ width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:.35rem;background:rgba(255,255,255,.05); }
-  .thumb .btn-remove{ position:absolute;top:.25rem;right:.25rem; }
+  #{{ inputId }}__preview .thumb{
+    position:relative;border:1px solid rgba(255,255,255,.15);
+    border-radius:.5rem;padding:.5rem;background:rgba(255,255,255,.03);
+  }
+  #{{ inputId }}__preview img,
+  #{{ inputId }}__preview .pdf-icon{
+    width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:.35rem;
+    background:rgba(255,255,255,.05);
+  }
+  #{{ inputId }}__preview .btn-remove{
+    position:absolute;top:.25rem;right:.25rem;line-height:1;padding:.15rem .4rem;
+  }
 </style>
 
 <script>
@@ -127,53 +145,83 @@
   prettyInput?.addEventListener('blur', syncFromPretty);
   presets.forEach(b => b.addEventListener('click', () => setCents(parseInt(b.dataset.cents||'0',10))));
 
-  // init minimal default
   if(!centsInput.value){ setCents(500); }
 })();
 </script>
 
 <script>
-// Attachments preview + remove
-(function(){
-  const input = document.getElementById('attachments-input');
-  if (!input) return;
-  const preview = document.getElementById('attachments-preview');
-  const dt = new DataTransfer();
+// Attachments preview + client-side delete using DataTransfer
+(function initAttachments(){
+  const input   = document.getElementById('{{ inputId }}');
+  const preview = document.getElementById('{{ inputId }}__preview');
+  if (!input || !preview) return;
 
-  function render(){
+  // Keep an editable FileList via DataTransfer
+  let dt = window.DataTransfer ? new DataTransfer() : null;
+
+  function rebuildFrom(dtLike){
     preview.innerHTML = '';
-    Array.from(dt.files).forEach((file, idx) => {
-      const col = document.createElement('div'); col.className='col-6 col-md-3';
+    const files = dtLike ? dtLike.files : input.files;
+    Array.from(files).forEach((file, idx) => {
+      const col  = document.createElement('div'); col.className='col-6 col-md-3';
       const card = document.createElement('div'); card.className='thumb';
-      const btn = document.createElement('button'); btn.type='button'; btn.className='btn btn-sm btn-outline-danger rounded-1 btn-remove'; btn.textContent='×';
-      btn.addEventListener('click', () => {
-        const tmp = new DataTransfer();
-        Array.from(dt.files).forEach((f,i)=>{ if(i!==idx) tmp.items.add(f); });
-        while(dt.items.length) dt.items.remove(0);
-        Array.from(tmp.files).forEach(f=>dt.items.add(f));
-        input.files = dt.files; render();
+
+      const close = document.createElement('button');
+      close.type='button';
+      close.className='btn btn-sm btn-outline-danger rounded-1 btn-remove';
+      close.textContent='×';
+
+      close.addEventListener('click', () => {
+        if (dt) {
+          const tmp = new DataTransfer();
+          Array.from(dt.files).forEach((f,i)=>{ if(i!==idx) tmp.items.add(f); });
+          dt = tmp;
+          input.files = dt.files;
+        } else {
+          // Fallback: recreate from current FileList (limited support if no DataTransfer)
+          const arr = Array.from(input.files).filter((_,i)=>i!==idx);
+          const tmp = new DataTransfer();
+          arr.forEach(f=>tmp.items.add(f));
+          input.files = tmp.files;
+        }
+        rebuildFrom(dt);
       });
 
       let media;
-      if (file.type.startsWith('image/')) {
-        media = document.createElement('img'); media.alt=file.name;
-        const r = new FileReader(); r.onload = e => media.src = e.target.result; r.readAsDataURL(file);
+      if (file.type && file.type.startsWith('image/')) {
+        media = document.createElement('img');
+        media.alt = file.name;
+        const r = new FileReader();
+        r.onload = e => media.src = e.target.result;
+        r.readAsDataURL(file);
       } else {
-        media = document.createElement('div'); media.className='pdf-icon d-flex align-items-center justify-content-center';
+        media = document.createElement('div');
+        media.className='pdf-icon d-flex align-items-center justify-content-center';
         media.innerHTML = '<span class="badge text-bg-light text-dark">PDF</span>';
       }
 
-      const cap = document.createElement('div'); cap.className='small text-truncate mt-2 text-secondary'; cap.textContent=file.name;
+      const cap = document.createElement('div');
+      cap.className='small text-truncate mt-2 text-secondary';
+      cap.textContent = file.name;
 
-      card.appendChild(btn); card.appendChild(media); card.appendChild(cap);
-      col.appendChild(card); preview.appendChild(col);
+      card.appendChild(close);
+      card.appendChild(media);
+      card.appendChild(cap);
+      col.appendChild(card);
+      preview.appendChild(col);
     });
   }
 
   input.addEventListener('change', () => {
-    Array.from(input.files).forEach(f => dt.items.add(f));
-    input.files = dt.files;
-    render();
+    if (dt) {
+      // accumulate selections
+      Array.from(input.files).forEach(f => dt.items.add(f));
+      input.files = dt.files;
+    }
+    rebuildFrom(dt);
   });
+
+  // If Turbo is used, ensure preview survives navigation
+  document.addEventListener('turbo:load', () => rebuildFrom(dt));
 })();
 </script>

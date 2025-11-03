@@ -78,49 +78,35 @@ final class OrderAssetController extends AbstractController
         return $response;
     }
 
+
     #[Route('/assets/{id}/delete', name: 'app_order_asset_delete', methods: ['POST'])]
     public function delete(OrderAsset $asset, Request $request, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-        if (!$this->isCsrfTokenValid('asset-delete'.$asset->getId(), $request->request->get('_token'))) {
+        $order = $asset->getOrder();
+
+        // Propriétaire (client) OU admin
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+
+        if (!$this->isCsrfTokenValid('asset-delete'.$asset->getId(), (string)$request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
 
-        $order = $asset->getOrder();
         $orderId = $order->getId();
-
-        // Count assets for this order before deletion
-        $countBefore = (int) $em->createQueryBuilder()
-            ->select('COUNT(a.id)')
-            ->from(OrderAsset::class, 'a')
-            ->andWhere('a.order = :order')
-            ->setParameter('order', $order)
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        // Remove physical file
         $projectDir = $this->getParameter('kernel.project_dir');
         $paths = [
             $projectDir.'/var/uploads/order-assets/'.$asset->getFileName(),
             $projectDir.'/public/uploads/order-assets/'.$asset->getFileName(),
         ];
-        $fs = new Filesystem();
+        $fs = new \Symfony\Component\Filesystem\Filesystem();
         foreach ($paths as $p) {
             if ($p && $fs->exists($p)) { $fs->remove($p); break; }
         }
 
-        // Delete DB row
-        $em->createQuery('DELETE FROM App\Entity\OrderAsset a WHERE a.id = :id')
-            ->setParameter('id', $asset->getId())
-            ->execute();
+        $em->remove($asset);
+        $em->flush();
 
-        // If it was the last asset, set status back to DOING
-        if ($countBefore <= 1 && $order->getStatus() !== OrderStatus::DOING && $order->getStatus() !== OrderStatus::FINISHED) {
-            $order->setStatus(OrderStatus::DOING);
-            $em->flush();
-        }
-
-        $this->addFlash('success', 'Thumbnail removed.');
+        $this->addFlash('success', 'File removed.');
         return $this->redirect($request->query->get('back') ?: $this->generateUrl('app_order_show', ['id' => $orderId]));
     }
+
 }

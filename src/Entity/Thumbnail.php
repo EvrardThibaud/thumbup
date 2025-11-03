@@ -1,4 +1,5 @@
 <?php
+// src/Entity/Thumbnail.php
 
 namespace App\Entity;
 
@@ -19,11 +20,11 @@ class Thumbnail
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Order $order = null;
 
-    #[ORM\Column(type: 'string', length: 255)]
-    private string $fileName = '';
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $fileName = null;
 
-    #[ORM\Column(type: 'integer')]
-    private int $fileSize = 0;
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $fileSize = null;
 
     #[ORM\Column(type: 'string', length: 190, nullable: true)]
     private ?string $mimeType = null;
@@ -34,7 +35,7 @@ class Thumbnail
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    /** @Vich\UploadableField(mapping="order_thumbnail", fileNameProperty="fileName", size="fileSize", mimeType="mimeType") */
+    #[Vich\UploadableField(mapping: 'order_thumbnail', fileNameProperty: 'fileName', size: 'fileSize', mimeType: 'mimeType')]
     private ?File $file = null;
 
     public function __construct()
@@ -43,23 +44,24 @@ class Thumbnail
     }
 
     public function getId(): ?int { return $this->id; }
+
     public function getOrder(): ?Order { return $this->order; }
     public function setOrder(?Order $order): self { $this->order = $order; return $this; }
 
-    public function getFileName(): string { return $this->fileName; }
-    public function setFileName(string $n): self { $this->fileName = $n; return $this; }
+    public function getFileName(): ?string { return $this->fileName; }
+    public function setFileName(?string $fileName): self { $this->fileName = $fileName; return $this; }
 
-    public function getFileSize(): int { return $this->fileSize; }
-    public function setFileSize(int $s): self { $this->fileSize = $s; return $this; }
+    public function getFileSize(): ?int { return $this->fileSize; }
+    public function setFileSize(?int $fileSize): self { $this->fileSize = $fileSize; return $this; }
 
     public function getMimeType(): ?string { return $this->mimeType; }
-    public function setMimeType(?string $m): self { $this->mimeType = $m; return $this; }
+    public function setMimeType(?string $mimeType): self { $this->mimeType = $mimeType; return $this; }
 
     public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $d): self { $this->createdAt = $d; return $this; }
+    public function setCreatedAt(\DateTimeImmutable $createdAt): self { $this->createdAt = $createdAt; return $this; }
 
     public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
-    public function setUpdatedAt(?\DateTimeImmutable $d): self { $this->updatedAt = $d; return $this; }
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self { $this->updatedAt = $updatedAt; return $this; }
 
     public function setFile(?File $file = null): void
     {
