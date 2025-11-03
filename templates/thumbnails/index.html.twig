@@ -4,8 +4,9 @@
 {% block body %}
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 m-0">🖼️ Thumbnails</h1>
+  <h1 class="h4 m-0">🖼️ Thumbnails</h1>
 
+  {% if not isClientOnly %}
     <form method="get" action="{{ path('app_thumbnails_index') }}" class="d-flex align-items-center gap-2">
       <select name="client" class="form-select form-select-sm bg-dark text-light border-secondary"
               onchange="if(this.value===''){window.location.href='{{ path('app_thumbnails_index') }}';}else{this.form.submit();}">
@@ -20,7 +21,8 @@
         <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_thumbnails_index') }}">Reset</a>
       {% endif %}
     </form>
-  </div>
+  {% endif %}
+</div>
 
   {% include 'thumbnails/_orders.html.twig' with { orders: orders } only %}
 

@@ -1,4 +1,6 @@
 <?php
+// src/Controller/ThumbnailsController.php
+
 namespace App\Controller;
 
 use App\Entity\Client;
@@ -15,18 +17,30 @@ final class ThumbnailsController extends AbstractController
     #[Route('', name: 'app_thumbnails_index', methods: ['GET'])]
     public function index(Request $request, ClientRepository $clientsRepo, OrderRepository $ordersRepo): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-
         $perPage = 100;
         $page = max(1, (int)$request->query->get('page', 1));
 
-        $clientParam = trim((string)$request->query->get('client', ''));
-        $selectedClient = (ctype_digit($clientParam) && $clientParam !== '')
-            ? $clientsRepo->find((int)$clientParam)
-            : null;
+        $isAdmin  = $this->isGranted('ROLE_ADMIN');
+        $isClient = $this->isGranted('ROLE_CLIENT') && !$isAdmin;
 
-        $result  = $ordersRepo->paginateOrdersWithAssets($selectedClient, $page, $perPage);
-        $clients = $clientsRepo->createQueryBuilder('c')->orderBy('c.name', 'ASC')->getQuery()->getResult();
+        if ($isClient) {
+            // Force current user's client; no filtering UI; only their orders
+            $user = $this->getUser();
+            $selectedClient = (is_object($user) && method_exists($user, 'getClient')) ? $user->getClient() : null;
+            if (!$selectedClient instanceof Client) {
+                throw $this->createAccessDeniedException('No client linked to this user.');
+            }
+            $clients = []; // hide selector
+        } else {
+            // Admin: allow filtering by any client
+            $clientParam = trim((string)$request->query->get('client', ''));
+            $selectedClient = (ctype_digit($clientParam) && $clientParam !== '')
+                ? $clientsRepo->find((int)$clientParam)
+                : null;
+            $clients = $clientsRepo->createQueryBuilder('c')->orderBy('c.name', 'ASC')->getQuery()->getResult();
+        }
+
+        $result = $ordersRepo->paginateOrdersWithAssets($selectedClient, $page, $perPage);
 
         return $this->render('thumbnails/index.html.twig', [
             'clients'        => $clients,
@@ -34,6 +48,7 @@ final class ThumbnailsController extends AbstractController
             'orders'         => $result['items'],
             'page'           => $result['page'],
             'hasMore'        => $result['hasMore'],
+            'isClientOnly'   => $isClient, // for template logic
         ]);
     }
 }
