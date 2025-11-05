@@ -27,7 +27,7 @@
     <div class="text-secondary">No orders with thumbnails.</div>
   {% else %}
     {# Use a dedicated partial that renders order.thumbnails (not order.assets) #}
-    {% include 'thumbnails/_orders_thumbnails.html.twig' with { orders: orders } %}
+    {% include 'thumbnails/_orders.html.twig' with { orders: orders } %}
   {% endif %}
 
   <div class="d-flex justify-content-between align-items-center mt-3">

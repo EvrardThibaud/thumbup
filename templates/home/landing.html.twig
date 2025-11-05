@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% block title %}ThumbUp — Freelance Thumbnails{% endblock %}
+
+{% block body %}
+<section class="py-5">
+  <div class="container text-center">
+    <h1 class="display-5 fw-semibold mb-3">👍 ThumbUp</h1>
+    <p class="lead text-secondary mb-4">Lightweight tool to request, track, and deliver YouTube thumbnails.</p>
+
+    <div class="d-flex justify-content-center gap-2 mb-5">
+      <a class="btn btn-primary btn-lg rounded-1" href="{{ path('app_register') }}">Create account</a>
+      <a class="btn btn-outline-light btn-lg rounded-1" href="{{ path('app_login') }}">Log in</a>
+    </div>
+
+    <div class="row g-3 justify-content-center">
+      <div class="col-12 col-md-3">
+        <div class="card bg-dark border-0 h-100 p-3">
+          <div class="fs-4">🗂️ Orders</div>
+          <div class="text-secondary mt-2">Create requests with a due date and brief.</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="card bg-dark border-0 h-100 p-3">
+          <div class="fs-4">📈 Dashboard</div>
+          <div class="text-secondary mt-2">Track monthly volume and progress.</div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
+        <div class="card bg-dark border-0 h-100 p-3">
+          <div class="fs-4">🖼️ Thumbnails</div>
+          <div class="text-secondary mt-2">View and download final images.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

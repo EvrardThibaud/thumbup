@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+{% block title %}Home{% endblock %}
+
+{% block body %}
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 m-0">Welcome 👋</h1>
+    <span class="text-secondary small">{{ app.user.email }}</span>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <a href="{{ path('app_dashboard') }}" class="text-decoration-none">
+        <div class="card bg-dark border-0 p-3 h-100">
+          <div class="small text-secondary mb-1">Overview</div>
+          <div class="fs-4">{{ is_granted('ROLE_ADMIN') ? '📊 Admin dashboard' : '📈 Your dashboard' }}</div>
+          <div class="text-secondary mt-2">KPIs & charts.</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="{{ path('app_order_index') }}" class="text-decoration-none">
+        <div class="card bg-dark border-0 p-3 h-100">
+          <div class="small text-secondary mb-1">Workflow</div>
+          <div class="fs-4">🗂️ {{ is_granted('ROLE_ADMIN') ? 'Orders' : 'My orders' }}</div>
+          <div class="text-secondary mt-2">Create & track requests.</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="{{ path('app_thumbnails_index') }}" class="text-decoration-none">
+        <div class="card bg-dark border-0 p-3 h-100">
+          <div class="small text-secondary mb-1">Deliverables</div>
+          <div class="fs-4">🖼️ Thumbnails</div>
+          <div class="text-secondary mt-2">Final images by order.</div>
+        </div>
+      </a>
+    </div>
+
+    {% if is_granted('ROLE_ADMIN') %}
+      <div class="col-md-4">
+        <a href="{{ path('app_client_index') }}" class="text-decoration-none">
+          <div class="card bg-dark border-0 p-3 h-100">
+            <div class="small text-secondary mb-1">Manage</div>
+            <div class="fs-4">👥 Clients</div>
+            <div class="text-secondary mt-2">Profiles & balances.</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="{{ path('app_time_entry_index') }}" class="text-decoration-none">
+          <div class="card bg-dark border-0 p-3 h-100">
+            <div class="small text-secondary mb-1">Tracking</div>
+            <div class="fs-4">⏱️ Time</div>
+            <div class="text-secondary mt-2">Work logs.</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="{{ path('app_user_index') }}" class="text-decoration-none">
+          <div class="card bg-dark border-0 p-3 h-100">
+            <div class="small text-secondary mb-1">Access</div>
+            <div class="fs-4">👤 Users</div>
+            <div class="text-secondary mt-2">Accounts & roles.</div>
+          </div>
+        </a>
+      </div>
+    {% else %}
+      <div class="col-md-6">
+        <a href="{{ path('app_payments_index') }}" class="text-decoration-none">
+          <div class="card bg-dark border-0 p-3 h-100">
+            <div class="small text-secondary mb-1">Billing</div>
+            <div class="fs-4">💳 Payments</div>
+            <div class="text-secondary mt-2">Pay delivered orders.</div>
+          </div>
+        </a>
+      </div>
+      {% set meClient = app.user and app.user.client ? app.user.client : null %}
+      {% if meClient %}
+        <div class="col-md-6">
+          <a href="{{ path('app_client_show', {'id': meClient.id}) }}" class="text-decoration-none">
+            <div class="card bg-dark border-0 p-3 h-100">
+              <div class="small text-secondary mb-1">Profile</div>
+              <div class="fs-4">🧾 My profile</div>
+              <div class="text-secondary mt-2">Totals & recent orders.</div>
+            </div>
+          </a>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}
