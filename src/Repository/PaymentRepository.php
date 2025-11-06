@@ -11,6 +11,18 @@ final class PaymentRepository extends ServiceEntityRepository
 
     public function findOneByPaypalOrderId(string $id): ?Payment
     {
-        return $this->createQueryBuilder('p')->andWhere('p.paypalOrderId = :i')->setParameter('i',$id)->getQuery()->getOneOrNullResult();
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.paypalOrderId = :i')->setParameter('i',$id)
+            ->getQuery()->getOneOrNullResult();
+    }
+
+    /** @return Payment[] */
+    public function findAllForAdmin(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.user','u')->addSelect('u')
+            ->leftJoin('p.client','c')->addSelect('c')
+            ->orderBy('p.createdAt','DESC')
+            ->getQuery()->getResult();
     }
 }

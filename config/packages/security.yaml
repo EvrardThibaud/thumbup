@@ -45,7 +45,7 @@ security:
         - { path: ^/order, roles: IS_AUTHENTICATED_REMEMBERED }
         - { path: ^/dashboard, roles: IS_AUTHENTICATED_REMEMBERED }
         - { path: ^/thumbnails, roles: IS_AUTHENTICATED_REMEMBERED }
-        - { path: ^/payments, roles: ROLE_CLIENT }
+        - { path: ^/payments, roles: IS_AUTHENTICATED_REMEMBERED }
         # - { path: ^/profile, roles: ROLE_USER }
 
 when@test:

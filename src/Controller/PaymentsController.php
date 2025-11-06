@@ -33,20 +33,39 @@ final class PaymentsController extends AbstractController
     }
 
     #[Route('', name: 'app_payments_index', methods: ['GET'])]
-    public function index(OrderRepository $ordersRepo): Response
+    public function index(Request $req, OrderRepository $ordersRepo, PaymentRepository $paymentRepo): Response
     {
+        if ($this->isGranted('ROLE_ADMIN')) {
+            // Vue ADMIN : liste des paiements
+            $payments = $paymentRepo->findAllForAdmin();
+            return $this->render('payments/index.html.twig', [
+                'is_admin' => true,
+                'payments' => $payments,
+                'orders'   => [], // pour éviter des "undefined" côté twig
+            ]);
+        }
+
+        // Vue CLIENT : sélection des commandes à régler
         $this->denyAccessUnlessGranted('ROLE_CLIENT');
-        if ($this->isGranted('ROLE_ADMIN')) { throw $this->createAccessDeniedException(); }
-        $client = $this->getUser()?->getClient(); if (!$client instanceof Client) { throw $this->createAccessDeniedException(); }
+
+        $client = $this->getUser()?->getClient();
+        if (!$client instanceof Client) { throw $this->createAccessDeniedException(); }
+
         $orders = $ordersRepo->findBillableUnpaidByClient($client);
-        return $this->render('payments/index.html.twig', ['orders'=>$orders]);
+        return $this->render('payments/index.html.twig', [
+            'is_admin' => false,
+            'orders'   => $orders,
+            'payments' => [],
+        ]);
     }
 
     #[Route('/checkout/start', name: 'app_payments_checkout_start', methods: ['POST'])]
     public function checkoutStart(Request $req): Response
     {
         $this->denyAccessUnlessGranted('ROLE_CLIENT');
-        if (!$this->isCsrfTokenValid('checkout-start', (string)$req->request->get('_token'))) { throw $this->createAccessDeniedException(); }
+        if (!$this->isCsrfTokenValid('checkout-start', (string)$req->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
         $ids = array_values(array_unique(array_filter(array_map('intval', (array)$req->request->all('orders')))));
         if (!$ids) { $this->addFlash('warning','Please select at least one order.'); return $this->redirectToRoute('app_payments_index'); }
         $req->getSession()->set('checkout.order_ids', $ids);
@@ -114,17 +133,21 @@ final class PaymentsController extends AbstractController
         ];
         $res = $pp->execute($r);
         $paypalOrderId = (string)($res->result->id ?? '');
-
         if ($paypalOrderId && !$payRepo->findOneByPaypalOrderId($paypalOrderId)) {
+            /** @var \App\Entity\User $user */
+            $user = $this->getUser();
             $p = (new Payment())
+                ->setUser($user)
                 ->setClient($client)
+                ->setPaymentMethod('paypal')
                 ->setPaypalOrderId($paypalOrderId)
                 ->setStatus('CREATED')
                 ->setAmountCents($totalCents)
                 ->setCurrency('EUR')
-                ->setOrdersCsv(implode(',',$ids))
+                ->setOrdersCsv(implode(',', $ids))
                 ->setRawPayload(json_encode($res->result));
-            $em->persist($p); $em->flush();
+            $em->persist($p);
+            $em->flush();
         }
 
         $approveUrl = null;
@@ -148,25 +171,26 @@ final class PaymentsController extends AbstractController
 
         $pay = $payRepo->findOneByPaypalOrderId($token);
         if ($pay) {
-            $pay->setRawPayload(json_encode($res->result));
-            if ($status==='COMPLETED') $pay->setStatus('COMPLETED');
+            $pay->setStatus('COMPLETED');
+            $cap = $res->result->purchase_units[0]->payments->captures[0]->id ?? null;
+            if ($cap) { $pay->setPaypalCaptureId((string)$cap); }
+            $em->flush();
         }
 
         $client = $this->getUser()?->getClient();
         $idsCsv = $pay?->getOrdersCsv() ?? (string)$req->getSession()->get('checkout.order_ids_csv','');
         $ids = $idsCsv ? array_filter(array_map('intval', explode(',',$idsCsv))) : (array)$req->getSession()->get('checkout.order_ids', []);
 
-        $updated = 0;
         if ($status==='COMPLETED' && $client instanceof Client) {
+            $updated = 0;
             foreach ($ids as $id) {
                 $o = $ordersRepo->find($id);
                 if ($o instanceof Order && $o->getClient()===$client && !$o->isPaid() && in_array($o->getStatus(), [OrderStatus::DELIVERED, OrderStatus::REVISION, OrderStatus::FINISHED], true)) {
                     $o->setPaid(true); $o->setUpdatedAt(new \DateTimeImmutable()); $updated++;
                 }
             }
-            $em->flush();
+            if ($updated>0) $em->flush();
             $req->getSession()->remove('checkout.order_ids');
-            if ($pay) $em->flush();
             return $this->redirectToRoute('app_payments_success', ['id' => $pay?->getId() ?? 0]);
         }
 
@@ -181,11 +205,9 @@ final class PaymentsController extends AbstractController
         return $this->redirectToRoute('app_payments_checkout', ['step'=>2]);
     }
 
-    // --- Webhook (optionnel, résilience) ---
     #[Route('/webhook/paypal', name: 'app_payments_webhook_paypal', methods: ['POST'])]
     public function webhook(Request $req, OrderRepository $ordersRepo, PaymentRepository $payRepo, EntityManagerInterface $em): Response
     {
-        // Simplifié: en prod, valider les signatures PayPal (Transmission-Id, Cert-Url, Transmission-Sig, Webhook-Id)
         $json = $req->getContent();
         $payload = json_decode($json, true) ?? [];
         $event = (string)($payload['event_type'] ?? '');
