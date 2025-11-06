@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+{% block title %}Payment successful{% endblock %}
+{% block body %}
+<div class="container py-5">
+  <div class="card bg-dark border-0 p-4 text-center">
+    <div class="display-6 mb-2">✅ Payment completed</div>
+    <div class="text-secondary mb-4">Order ID: <span class="font-monospace">{{ p.paypalOrderId }}</span></div>
+
+    <div class="d-inline-block text-start">
+      <div class="d-flex justify-content-between">
+        <span class="text-secondary me-3">Amount</span>
+        <span class="fw-semibold">€ {{ (p.amountCents/100)|number_format(2, ',', ' ') }}</span>
+      </div>
+      <div class="d-flex justify-content-between">
+        <span class="text-secondary me-3">Currency</span>
+        <span>{{ p.currency }}</span>
+      </div>
+      {% if p.ordersCsv %}
+      <div class="d-flex justify-content-between">
+        <span class="text-secondary me-3">Orders</span>
+        <span class="font-monospace">{{ p.ordersCsv }}</span>
+      </div>
+      {% endif %}
+      <div class="d-flex justify-content-between">
+        <span class="text-secondary me-3">Date</span>
+        <span>{{ p.createdAt|date('Y-m-d H:i') }}</span>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-center gap-2">
+      <a href="{{ path('app_payments_index') }}" class="btn btn-primary rounded-1">Back to payments</a>
+      <a href="{{ path('app_order_index') }}" class="btn btn-outline-light rounded-1">My orders</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

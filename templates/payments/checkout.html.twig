@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+{% block title %}Checkout{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">🧾 Checkout</h1>
+    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_payments_index') }}">← Back to selection</a>
+  </div>
+
+  <div class="card bg-dark border-0 mb-3">
+    <div class="card-body">
+      <ol class="steps list-unstyled d-flex justify-content-between m-0">
+        <li class="step" data-step="1"><span class="dot">1</span><span class="label">Summary</span></li>
+        <li class="sep flex-grow-1 align-self-center mx-2"></li>
+        <li class="step" data-step="2"><span class="dot">2</span><span class="label">Payment</span></li>
+      </ol>
+    </div>
+  </div>
+
+  <div id="step-1" class="card bg-dark border-0 mb-3">
+    <div class="card-header border-0"><span class="fw-semibold">Selected orders</span></div>
+    <div class="card-body">
+      <ul class="list-group list-group-flush">
+        {% for o in orders %}
+          <li class="list-group-item bg-dark text-light d-flex justify-content-between">
+            <span class="text-truncate me-3">{{ o.title }}</span>
+            <span class="font-monospace">€ {{ (o.price/100)|number_format(2, ',', ' ') }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="d-flex justify-content-end align-items-center gap-2 mt-3">
+        <span class="text-secondary small">Total</span>
+        <span class="badge text-bg-light text-dark font-monospace">€ {{ (totalCents/100)|number_format(2, ',', ' ') }}</span>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <button class="btn btn-primary rounded-1" id="go-step-2">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="step-2" class="card bg-dark border-0 mb-3" hidden>
+    <div class="card-header border-0"><span class="fw-semibold">Choose payment method</span></div>
+    <div class="card-body">
+      <div class="list-group">
+        <label class="list-group-item bg-dark text-light d-flex justify-content-between align-items-center">
+          <span>🅿️ PayPal</span>
+          <input class="form-check-input" type="radio" name="pm" value="paypal" checked>
+        </label>
+      </div>
+
+      <div class="mt-3 d-flex gap-2">
+        <form method="post" action="{{ path('app_payments_checkout_paypal_create') }}" data-turbo="false">
+          <button class="btn btn-primary rounded-1">Pay with PayPal</button>
+        </form>
+        <button type="button" class="btn btn-outline-light rounded-1" id="back-step-1">Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.steps .step{display:flex;align-items:center;gap:.5rem;opacity:.6}
+.steps .step.active{opacity:1}
+.steps .dot{display:inline-flex;width:28px;height:28px;border-radius:50%;align-items:center;justify-content:center;background:#0d6efd}
+.steps .label{font-weight:600}
+.steps .sep{height:2px;background:rgba(255,255,255,.15)}
+</style>
+
+<script>
+(function(){
+  const s1=document.getElementById('step-1'), s2=document.getElementById('step-2');
+  const go2=document.getElementById('go-step-2'), back1=document.getElementById('back-step-1');
+  const steps=document.querySelectorAll('.steps .step');
+  function setStep(n){ s1.hidden=n!==1; s2.hidden=n!==2; steps.forEach(li=>li.classList.toggle('active', li.dataset.step==String(n))); }
+  go2?.addEventListener('click', ()=>setStep(2));
+  back1?.addEventListener('click', ()=>setStep(1));
+  const initial={{ step|default(1) }};
+  setStep(initial===2?2:1);
+})();
+</script>
+{% endblock %}
