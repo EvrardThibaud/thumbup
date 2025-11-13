@@ -13,7 +13,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use App\Entity\Order;
 use App\Repository\OrderRepository;
 
-
 #[Route('/admin/time-entry')]
 final class TimeEntryController extends AbstractController
 {
@@ -100,5 +99,48 @@ final class TimeEntryController extends AbstractController
             return $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
         }
         return $this->redirectToRoute('app_time_entry_index');
+    }
+
+    #[Route('/orders/{id}/time-from-timer', name: 'app_timeentry_from_timer', methods: ['POST'])]
+    public function createFromTimer(
+        Order $order,
+        Request $request,
+        EntityManagerInterface $em
+    ): Response {
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+
+        $submittedToken = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('timeentry_timer_' . $order->getId(), $submittedToken)) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
+        $elapsedSeconds = max(0, (int) $request->request->get('elapsedSeconds', 0));
+
+        if ($elapsedSeconds < 60) {
+            $this->addFlash('warning', 'Timer must run at least 1 minute.');
+            return $this->redirectToRoute('app_order_show', [
+                'id' => $order->getId(),
+            ]);
+        }
+
+        $minutes = (int) ceil($elapsedSeconds / 60);
+        $note = trim((string) $request->request->get('note', ''));
+
+        $timeEntry = new TimeEntry();
+        $timeEntry->setRelatedOrder($order);
+        $timeEntry->setMinutes($minutes);
+        if ($note !== '') {
+            $timeEntry->setNote($note);
+        }
+        $timeEntry->setCreatedAt(new \DateTimeImmutable());
+
+        $em->persist($timeEntry);
+        $em->flush();
+
+        $this->addFlash('success', sprintf('Time entry of %d minutes created.', $minutes));
+
+        return $this->redirectToRoute('app_order_show', [
+            'id' => $order->getId(),
+        ]);
     }
 }
