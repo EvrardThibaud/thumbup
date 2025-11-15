@@ -62,6 +62,11 @@ class Client
         return $this->name;
     }
 
+    public function __toString(): string
+    {
+        return (string) $this->getName();
+    }
+
     public function setName(string $name): static
     {
         $this->name = $name;
