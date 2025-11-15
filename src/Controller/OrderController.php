@@ -13,6 +13,9 @@ use Symfony\Component\Routing\Attribute\Route;
 use App\Form\OrderFiltersType;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Domain\OrderWorkflow;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 #[Route('/order')]
 final class OrderController extends AbstractController
 {
@@ -74,9 +77,14 @@ final class OrderController extends AbstractController
     }
         
     #[Route('/new', name: 'app_order_new', methods: ['GET','POST'])]
-    public function new(Request $request, EntityManagerInterface $em, \App\Repository\OrderRepository $ordersRepo): Response
-    {
-        $order = new \App\Entity\Order();
+    public function new(
+        Request $request,
+        EntityManagerInterface $em,
+        OrderRepository $ordersRepo,
+        MailerInterface $mailer,
+        UrlGeneratorInterface $urlGenerator
+    ): Response {
+        $order = new Order();
         $now = new \DateTimeImmutable();
         $order->setCreatedAt($now);
         $order->setUpdatedAt($now);
@@ -91,7 +99,10 @@ final class OrderController extends AbstractController
         if ($isClient) {
             /** @var \App\Entity\User $user */
             $user = $this->getUser();
-            if (!$user || null === $user->getClient()) { throw $this->createAccessDeniedException(); }
+            if (!$user || null === $user->getClient()) {
+                throw $this->createAccessDeniedException();
+            }
+
             $order->setClient($user->getClient());
             $order->setDueAt($now->modify('+2 days'));
             $minDueAtAttr = $now->format('Y-m-d\TH:i');
@@ -100,10 +111,13 @@ final class OrderController extends AbstractController
                 ->andWhere('o.client = :c')->setParameter('c', $user->getClient())
                 ->orderBy('o.id', 'DESC')->setMaxResults(1)
                 ->getQuery()->getOneOrNullResult();
-            if ($last) { $lastPriceCents = max(500, (int)$last->getPrice()); }
+
+            if ($last) {
+                $lastPriceCents = max(500, (int) $last->getPrice());
+            }
         }
 
-        $form = $this->createForm(\App\Form\OrderType::class, $order, [
+        $form = $this->createForm(OrderType::class, $order, [
             'is_client' => $isClient,
             'for_edit'  => false,
             'min_due_at'=> $minDueAtAttr,
@@ -114,10 +128,10 @@ final class OrderController extends AbstractController
         if ($form->isSubmitted()) {
             $pretty = $request->request->get('pretty_price');
             if ($pretty !== null) {
-                $normalized = str_replace(['€',' '], '', (string)$pretty);
+                $normalized = str_replace(['€', ' '], '', (string) $pretty);
                 $normalized = str_replace(',', '.', $normalized);
                 if (is_numeric($normalized)) {
-                    $cents = (int) round(((float)$normalized) * 100);
+                    $cents = (int) round(((float) $normalized) * 100);
                     $order->setPrice(max(500, $cents));
                 }
             }
@@ -145,34 +159,76 @@ final class OrderController extends AbstractController
                 }
             }
 
-            // attachments
             /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[] $files */
             $files = $form->get('attachments')->getData() ?: [];
             foreach ($files as $file) {
-                if (!$file) continue;
+                if (!$file) {
+                    continue;
+                }
                 $mime = $file->getMimeType() ?: '';
-                if (!in_array($mime, ['application/pdf','image/png','image/jpeg','image/webp'], true)) continue;
+                if (!in_array($mime, ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'], true)) {
+                    continue;
+                }
 
-                $asset = new \App\Entity\OrderAsset();   // ← fichiers client
+                $asset = new OrderAsset();
                 $asset->setOrder($order);
-                $asset->setFile($file);                  // mapping "order_asset"
+                $asset->setFile($file);
                 $em->persist($asset);
             }
 
             $em->persist($order);
             $em->flush();
 
+            // Notify admin when a client creates a new order
+            if ($isClient) {
+                $adminEmail = 'thibaudevrard@outlook.com';
+                $orderUrl = $urlGenerator->generate(
+                    'app_order_show',
+                    ['id' => $order->getId()],
+                    UrlGeneratorInterface::ABSOLUTE_URL
+                );
+
+                $clientName = $order->getClient() ? $order->getClient()->getName() : 'Unknown client';
+                $priceEur = number_format($order->getPrice() / 100, 2, '.', ' ');
+
+                $email = (new Email())
+                    ->from('thibaud.evrard@outlook.com')
+                    ->to($adminEmail)
+                    ->subject(sprintf('New thumbnail order created (#%d)', $order->getId()))
+                    ->text(
+                        "A new thumbnail order has been created.\n\n" .
+                        "Client: {$clientName}\n" .
+                        "Title: {$order->getTitle()}\n" .
+                        "Price: {$priceEur} EUR\n" .
+                        "Due at: " . ($order->getDueAt() ? $order->getDueAt()->format('Y-m-d H:i') : '—') . "\n\n" .
+                        "Open order: {$orderUrl}\n"
+                    )
+                    ->html(
+                        '<p>A new <strong>thumbnail order</strong> has been created.</p>' .
+                        '<ul>' .
+                        '<li><strong>Client:</strong> ' . htmlspecialchars($clientName, ENT_QUOTES) . '</li>' .
+                        '<li><strong>Title:</strong> ' . htmlspecialchars((string) $order->getTitle(), ENT_QUOTES) . '</li>' .
+                        '<li><strong>Price:</strong> ' . htmlspecialchars($priceEur, ENT_QUOTES) . ' EUR</li>' .
+                        '<li><strong>Due at:</strong> ' . ($order->getDueAt() ? $order->getDueAt()->format('Y-m-d H:i') : '—') . '</li>' .
+                        '</ul>' .
+                        '<p><a href="' . htmlspecialchars($orderUrl, ENT_QUOTES) . '">Open this order in ThumbUp</a></p>'
+                    );
+
+                $mailer->send($email);
+            }
+
             $back = $request->request->get('back') ?: $request->query->get('back');
             return $back ? $this->redirect($back) : $this->redirectToRoute('app_order_index');
         }
 
         $back = $request->query->get('back') ?: $request->headers->get('referer');
+
         return $this->render('order/new.html.twig', [
             'order' => $order,
             'form'  => $form,
             'back'  => $back,
             'lastPriceCents' => $lastPriceCents,
-            'due_min_help'   => (bool)$minDueAtAttr,
+            'due_min_help'   => (bool) $minDueAtAttr,
         ]);
     }
 
