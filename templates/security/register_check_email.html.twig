@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+{% block title %}Check your email{% endblock %}
+
+{% block body %}
+  <div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+      <h1 class="h4 mb-3 text-center">Confirm your email</h1>
+      <p class="text-secondary small mb-3 text-center">
+        If an account was created for <strong class="text-light">{{ email }}</strong>,
+        you’ll receive an email with a link to confirm your account.
+      </p>
+
+      {% for label, messages in app.flashes %}
+        {% for message in messages %}
+          <div class="alert alert-{{ label }} small py-2 mb-2">{{ message }}</div>
+        {% endfor %}
+      {% endfor %}
+
+      <div class="card border-0 p-3 mb-3">
+        <p class="small mb-2">
+          Didn’t receive anything? It may take a few moments or end up in your spam folder.
+        </p>
+
+        <form method="post" action="{{ path('app_register_resend_verification') }}">
+          <button type="submit"
+                  id="resend-button"
+                  class="btn btn-sm btn-outline-light w-100"
+                  {% if seconds_remaining > 0 %}disabled{% endif %}>
+            Resend verification email
+          </button>
+          {% if seconds_remaining > 0 %}
+            <p class="small text-secondary mt-2 mb-0">
+              You can request a new email in
+              <span id="resend-countdown">{{ seconds_remaining }}</span> seconds.
+            </p>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="text-center">
+        <a href="{{ path('app_register') }}" class="small text-secondary">
+          Use a different email address
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if seconds_remaining > 0 %}
+    <script>
+      (function () {
+        const countdownEl = document.getElementById('resend-countdown');
+        const button = document.getElementById('resend-button');
+        if (!countdownEl || !button) {
+          return;
+        }
+
+        let remaining = parseInt(countdownEl.textContent, 10) || 0;
+
+        const intervalId = window.setInterval(function () {
+          remaining -= 1;
+          if (remaining <= 0) {
+            window.clearInterval(intervalId);
+            countdownEl.textContent = '0';
+            button.disabled = false;
+          } else {
+            countdownEl.textContent = String(remaining);
+          }
+        }, 1000);
+      })();
+    </script>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+{% block title %}Email confirmed{% endblock %}
+
+{% block body %}
+  <div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+      <div class="card border-0 p-4 text-center">
+        <h1 class="h4 mb-3">✅ Email confirmed</h1>
+        <p class="small text-secondary mb-3">
+          Your email address has been successfully confirmed.
+        </p>
+        <a href="{{ path('app_login') }}" class="btn btn-sm btn-primary w-100">
+          Go to sign in
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
