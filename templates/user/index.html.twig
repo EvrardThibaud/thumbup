@@ -11,7 +11,13 @@
     <table class="table table-dark table-hover align-middle mb-0">
       <thead class="small text-secondary">
         <tr>
-          <th>ID</th><th>Email</th><th>Roles</th><th>Client</th><th>Created</th><th></th>
+          <th>ID</th>
+          <th>Email</th>
+          <th>Roles</th>
+          <th>Client</th>
+          <th>Verified</th>
+          <th>Created</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -21,13 +27,20 @@
           <td class="fw-medium">{{ u.email }}</td>
           <td>
             {% for r in u.roles %}
-                <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : (r == 'ROLE_CLIENT' ? 'success' : 'secondary') }} rounded-1">{{ r }}</span>
+              <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : (r == 'ROLE_CLIENT' ? 'success' : 'secondary') }} rounded-1">{{ r }}</span>
             {% endfor %}
           </td>
           <td>
             {% if u.client %}
               <a class="link-light link-opacity-75-hover" href="{{ path('app_client_show', {id: u.client.id}) }}">{{ u.client.name }}</a>
             {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if u.isVerified %}
+              <span class="badge text-bg-success rounded-1">Yes</span>
+            {% else %}
+              <span class="badge text-bg-secondary rounded-1">No</span>
+            {% endif %}
           </td>
           <td class="text-secondary">{{ u.createdAt|date('Y-m-d H:i') }}</td>
           <td class="text-end">
@@ -40,7 +53,7 @@
           </td>
         </tr>
       {% else %}
-        <tr><td colspan="6" class="text-secondary">No users.</td></tr>
+        <tr><td colspan="7" class="text-secondary">No users.</td></tr>
       {% endfor %}
       </tbody>
     </table>
