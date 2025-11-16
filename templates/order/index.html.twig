@@ -8,90 +8,91 @@
   </div>
 
   {# Filters #}
-<div class="card bg-dark border-0 p-3 mb-3">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <div>
-      <h2 class="h6 m-0">Filters</h2>
-      <div class="small text-secondary">Narrow results by text, client, status, and dates.</div>
+  <div class="card bg-dark border-0 px-3 py-2 mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="small text-uppercase text-secondary">Filters</span>
     </div>
+
     {% set route = app.request.attributes.get('_route') %}
     {% set qs = app.request.query.all %}
-    <div class="d-flex gap-2">
-      <a href="{{ path(route) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
-      <a class="btn btn-secondary btn-sm rounded-1" href="{{ path('app_order_export', app.request.query.all) }}">Export CSV</a>
-    </div>
-  </div>
 
-  {{ form_start(filters, { attr: { class: 'row g-3 align-items-end' } }) }}
+    {{ form_start(filters, { attr: { class: 'row g-2 align-items-end small' } }) }}
 
-    <div class="col-md-3">
-      {{ form_row(filters.q, {
-        label: 'Search',
-        label_attr: { class: 'form-label mb-1 small text-secondary' },
-        attr: {
-          class: 'form-control form-control-sm bg-dark text-white border-secondary',
-          placeholder: 'Title contains…'
-        }
-      }) }}
-    </div>
-
-    <div class="col-md-3">
-      {% if is_client %}
-        {{ form_label(filters.client, 'Client', { label_attr: { class: 'form-label mb-1 small text-secondary' } }) }}
-        {{ form_widget(filters.client, {
+      <div class="col-md-3 col-lg-3">
+        {{ form_row(filters.q, {
+          label: 'Search',
+          label_attr: { class: 'form-label mb-1 small text-secondary' },
           attr: {
-            disabled: true
+            class: 'form-control form-control-sm bg-dark text-white border-secondary',
+            placeholder: 'Title contains…'
           }
         }) }}
-        {% set boundEntity = filters.client.vars.data %}
-        {% set boundId = boundEntity ? boundEntity.id : (filters.client.vars.value ?? (app.user and app.user.client ? app.user.client.id : '')) %}
-        <input type="hidden" name="{{ filters.client.vars.full_name }}" value="{{ boundId }}">
-      {% else %}
-        {{ form_row(filters.client, {
-          label: 'Client',
-          label_attr: { class: 'form-label mb-1 small text-secondary' },
-        }) }}
-      {% endif %}
-    </div>
+      </div>
 
-    <div class="col-md-2">
-      {{ form_row(filters.status, {
-        label: 'Status',
-        label_attr: { class: 'form-label mb-1 small text-secondary' },
-        attr: { class: 'form-select form-select-sm bg-dark text-white border-secondary' }
-      }) }}
-    </div>
-
-    <div class="col-md-2">
-      {{ form_row(filters.from, {
-        label: 'From',
-        label_attr: { class: 'form-label mb-1 small text-secondary' },
-        attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
-      }) }}
-    </div>
-
-    <div class="col-md-2">
-      {{ form_row(filters.to, {
-        label: 'To',
-        label_attr: { class: 'form-label mb-1 small text-secondary' },
-        attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
-      }) }}
-    </div>
-
-    <div class="col-md-2">
-        {{ form_row(filters.paid, {
-            label: 'Paid',
+      <div class="col-md-3 col-lg-3">
+        {% if is_client %}
+          {{ form_label(filters.client, 'Client', { label_attr: { class: 'form-label mb-1 small text-secondary' } }) }}
+          {{ form_widget(filters.client, {
+            attr: { disabled: true, class: 'form-select form-select-sm bg-dark text-white border-secondary' }
+          }) }}
+          {% set boundEntity = filters.client.vars.data %}
+          {% set boundId = boundEntity ? boundEntity.id : (filters.client.vars.value ?? (app.user and app.user.client ? app.user.client.id : '')) %}
+          <input type="hidden" name="{{ filters.client.vars.full_name }}" value="{{ boundId }}">
+        {% else %}
+          {{ form_row(filters.client, {
+            label: 'Client',
             label_attr: { class: 'form-label mb-1 small text-secondary' },
-        attr: { class: 'form-select form-select-sm bg-dark text-white border-secondary' }
+            attr: { class: 'form-select form-select-sm bg-dark text-white border-secondary' }
+          }) }}
+        {% endif %}
+      </div>
+
+      <div class="col-md-2 col-lg-2">
+        {{ form_row(filters.status, {
+          label: 'Status',
+          label_attr: { class: 'form-label mb-1 small text-secondary' },
+          attr: { class: 'form-select form-select-sm bg-dark text-white border-secondary' }
         }) }}
-    </div>
+      </div>
 
-    <div class="col-12">
-      <button class="btn btn-primary btn-sm rounded-1">Apply filters</button>
-    </div>
+      <div class="col-md-2 col-lg-2">
+        {{ form_row(filters.from, {
+          label: 'From',
+          label_attr: { class: 'form-label mb-1 small text-secondary' },
+          attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
+        }) }}
+      </div>
 
-  {{ form_end(filters) }}
-</div>
+      <div class="col-md-2 col-lg-2">
+        {{ form_row(filters.to, {
+          label: 'To',
+          label_attr: { class: 'form-label mb-1 small text-secondary' },
+          attr: { class: 'form-control form-control-sm bg-dark text-white border-secondary' }
+        }) }}
+      </div>
+
+      <div class="col-md-2 col-lg-2">
+        {{ form_row(filters.paid, {
+          label: 'Paid',
+          label_attr: { class: 'form-label mb-1 small text-secondary' },
+          attr: { class: 'form-select form-select-sm bg-dark text-white border-secondary' }
+        }) }}
+      </div>
+
+      {# Boutons en bas à droite #}
+      <div class="col-12 text-end mt-1">
+        <div class="d-inline-flex gap-2">
+          <a href="{{ path(route) }}" class="btn btn-outline-light btn-sm rounded-1">Reset</a>
+          <a class="btn btn-secondary btn-sm rounded-1"
+            href="{{ path('app_order_export', app.request.query.all) }}">
+            Export CSV
+          </a>
+          <button class="btn btn-primary btn-sm rounded-1 px-4">Apply</button>
+        </div>
+      </div>
+
+    {{ form_end(filters) }}
+  </div>
 
 
 
@@ -111,124 +112,121 @@
   {% endmacro %}
   {% import _self as S %}
 
-    {% set start = total == 0 ? 0 : ((page - 1) * limit) + 1 %}
-    {% set end = (page * limit) > total ? total : (page * limit) %}
-    <p class="text-secondary small mb-2">
+  {% set start = total == 0 ? 0 : ((page - 1) * limit) + 1 %}
+  {% set end = (page * limit) > total ? total : (page * limit) %}
+  <p class="text-secondary small mb-2">
     Showing <strong>{{ start }}</strong>–<strong>{{ end }}</strong> of <strong>{{ total }}</strong>
-    </p>
+  </p>
 
   {# Table #}
   <style>
-  .table-dark.table-striped tbody tr:nth-of-type(odd){ background-color: rgba(255,255,255,.03); }
-  .table-dark.table-striped tbody tr:hover{ background-color: rgba(255,255,255,.07); }
-</style>
+    .table-dark.table-striped tbody tr:nth-of-type(odd){ background-color: rgba(255,255,255,.03); }
+    .table-dark.table-striped tbody tr:hover{ background-color: rgba(255,255,255,.07); }
+  </style>
 
   <div class="card bg-dark border-0">
     <div class="table-responsive">
-      {# templates/order/_table.html.twig (bloc tableau complet, avec colonne Paid + nouveaux statuts) #}
-        <table class="table table-dark table-hover align-middle mb-0 table-striped">
-            <thead class="small text-secondary">
-                {% if is_client %}
-                <tr>
-                    <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
-                    <th style="width:28ch">Brief</th>
-                    <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
-                    <th>Paid</th>
-                    <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
-                    <th></th>
-                </tr>
-                {% else %}
-                <tr>
-                    <th>{{ S.sortLink('ID', 'id', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Client', 'client', sort, dir, route, qs) }}</th>
-                    <th style="width:28ch">Brief</th>
-                    <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
-                    <th>Paid</th>
-                    <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
-                    <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
-                    <th></th>
-                </tr>
-                {% endif %}
-            </thead>
+      <table class="table table-dark table-hover align-middle mb-0 table-striped">
+        <thead class="small text-secondary">
+          {% if is_client %}
+            <tr>
+              <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
+              <th style="width:28ch">Brief</th>
+              <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
+              <th>Paid</th>
+              <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
+              <th></th>
+            </tr>
+          {% else %}
+            <tr>
+              <th>{{ S.sortLink('ID', 'id', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Title', 'title', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Client', 'client', sort, dir, route, qs) }}</th>
+              <th style="width:28ch">Brief</th>
+              <th class="text-nowrap">{{ S.sortLink('Price', 'price', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Status', 'status', sort, dir, route, qs) }}</th>
+              <th>Paid</th>
+              <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
+              <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
+              <th></th>
+            </tr>
+          {% endif %}
+        </thead>
 
-            <tbody>
-            {% for order in orders %}
-                {% set s = order.status.value %}
-                {% set statusLabelMap = {
-                  'created':   'Created',
-                  'refused':   'Refused',
-                  'canceled':  'Canceled',
-                  'accepted':  is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
-                  'doing':     'Doing',
-                  'delivered': 'Delivered',
-                  'finished':  'Finished',
-                  'revision':  'Revision requested'
-                } %}
+        <tbody>
+        {% for order in orders %}
+          {% set s = order.status.value %}
+          {% set statusLabelMap = {
+            'created':   'Created',
+            'refused':   'Refused',
+            'canceled':  'Canceled',
+            'accepted':  is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted',
+            'doing':     'Doing',
+            'delivered': 'Delivered',
+            'finished':  'Finished',
+            'revision':  'Revision requested'
+          } %}
 
-                {% set statusColorMap = {
-                  'created':   'secondary',
-                  'refused':   'danger',
-                  'canceled':  'dark',
-                  'accepted':  'warning',
-                  'doing':     'info',
-                  'delivered': 'primary',
-                  'finished':  'success',
-                  'revision':  'warning'
-                } %}
-                {% set label = statusLabelMap[s] ?? s %}
-                {% set color = statusColorMap[s] ?? 'secondary' %}
+          {% set statusColorMap = {
+            'created':   'secondary',
+            'refused':   'danger',
+            'canceled':  'dark',
+            'accepted':  'warning',
+            'doing':     'info',
+            'delivered': 'primary',
+            'finished':  'success',
+            'revision':  'warning'
+          } %}
+          {% set label = statusLabelMap[s] ?? s %}
+          {% set color = statusColorMap[s] ?? 'secondary' %}
 
-                <tr class="table-row-link"
-                data-href="{{ path('app_order_show', {'id': order.id, 'back': app.request.uri}) }}"
-                style="cursor:pointer">
-                {% if not is_client %}
-                    <td class="text-secondary">#{{ order.id }}</td>
-                {% endif %}
+          <tr class="table-row-link"
+              data-href="{{ path('app_order_show', {'id': order.id, 'back': app.request.uri}) }}"
+              style="cursor:pointer">
+            {% if not is_client %}
+              <td class="text-secondary">#{{ order.id }}</td>
+            {% endif %}
 
-                <td class="fw-medium">{{ order.title }}</td>
+            <td class="fw-medium">{{ order.title }}</td>
 
-                {% if not is_client %}
-                    <td>{{ order.client ? order.client.name : '—' }}</td>
-                {% endif %}
+            {% if not is_client %}
+              <td>{{ order.client ? order.client.name : '—' }}</td>
+            {% endif %}
 
-                <td class="text-secondary text-truncate" style="max-width:16ch">{{ order.brief }}</td>
-                <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
+            <td class="text-secondary text-truncate" style="max-width:16ch">{{ order.brief }}</td>
+            <td>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</td>
 
-                <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
+            <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
 
-                <td>
-                    {% if order.paid %}
-                    <span class="badge text-bg-success rounded-1">Paid</span>
-                    {% else %}
-                    <span class="badge text-bg-warning rounded-1">Unpaid</span>
-                    {% endif %}
-                </td>
+            <td>
+              {% if order.paid %}
+                <span class="badge text-bg-success rounded-1">Paid</span>
+              {% else %}
+                <span class="badge text-bg-warning rounded-1">Unpaid</span>
+              {% endif %}
+            </td>
 
-                <td>{{ order.thumbnails|length }}</td>
+            <td>{{ order.thumbnails|length }}</td>
 
-                <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
-                <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+            <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
+            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
 
-                <td class="text-end">
-                    {% set backList = app.request.uri %}
-                    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
-                </td>
-                </tr>
-            {% else %}
-                <tr>
-                <td colspan="{{ is_client ? 9 : 11 }}" class="text-secondary">No orders found.</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-
-
+            <td class="text-end">
+              {% set backList = app.request.uri %}
+              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="{{ is_client ? 9 : 11 }}" class="text-secondary">No orders found.</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 
