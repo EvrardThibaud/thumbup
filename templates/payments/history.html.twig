@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+{% block title %}Payment history{% endblock %}
+
+{% block body %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">💳 Payment history</h1>
+    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_payments_index') }}">← Back to payments</a>
+  </div>
+
+  <div class="card bg-dark border-0 p-3">
+    {% if payments is empty %}
+      <p class="text-secondary mb-0 small">No payments recorded yet.</p>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead class="small text-secondary">
+            <tr>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Orders</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for p in payments %}
+            {% set status = p.status ?? 'unknown' %}
+            {% set statusLabel = {
+              'completed': 'Completed',
+              'pending':   'Pending',
+              'failed':    'Failed'
+            }[status]|default(status) %}
+
+            {% set statusColor = {
+              'completed': 'success',
+              'pending':   'warning',
+              'failed':    'danger'
+            }[status]|default('secondary') %}
+
+            <tr>
+              <td class="text-secondary">
+                {{ p.createdAt ? p.createdAt|date('Y-m-d H:i', app.user.timezone ?? 'Europe/Paris') : '—' }}
+              </td>
+              <td>
+                {{ (p.amountCents / 100)|number_format(2, ',', ' ') }} {{ p.currency|upper }}
+              </td>
+              <td class="text-secondary">
+                {{ p.paymentMethod|default('paypal')|capitalize }}
+              </td>
+              <td>
+                <span class="badge text-bg-{{ statusColor }} rounded-1">{{ statusLabel }}</span>
+              </td>
+              <td class="text-secondary">
+                {% if p.ordersCsv %}
+                  {{ p.ordersCsv }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

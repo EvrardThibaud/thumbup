@@ -1,6 +1,8 @@
 {% extends 'base.html.twig' %}
 {% block title %}Payment successful{% endblock %}
 {% block body %}
+  {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+
 <div class="container py-5">
   <div class="card bg-dark border-0 p-4 text-center">
     <div class="display-6 mb-2">✅ Payment completed</div>
@@ -23,7 +25,7 @@
       {% endif %}
       <div class="d-flex justify-content-between">
         <span class="text-secondary me-3">Date</span>
-        <span>{{ p.createdAt|date('Y-m-d H:i') }}</span>
+        <span>{{ p.createdAt|date('Y-m-d H:i', tz) }}</span>
       </div>
     </div>
 

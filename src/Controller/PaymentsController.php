@@ -247,4 +247,27 @@ final class PaymentsController extends AbstractController
         }
         return $this->render('payments/success.html.twig', ['p'=>$p]);
     }
+
+    #[Route('/payments/history', name: 'app_payments_history', methods: ['GET'])]
+    #[IsGranted('ROLE_CLIENT')]
+    public function history(PaymentRepository $payments): Response
+    {
+        /** @var \App\Entity\User $user */
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $items = $payments->createQueryBuilder('p')
+            ->andWhere('p.user = :u')
+            ->setParameter('u', $user)
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        return $this->render('payments/history.html.twig', [
+            'payments' => $items,
+            'user'     => $user,
+        ]);
+    }
 }
