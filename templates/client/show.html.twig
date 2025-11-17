@@ -59,6 +59,7 @@
     </div>
 
     {% set invites = client.invitations ?? [] %}
+    {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
     {% if invites is empty %}
       <div class="text-secondary small">No invitations yet.</div>
     {% else %}
@@ -83,8 +84,8 @@
                   {{ link }}
                 </a>
               </td>
-              <td class="text-secondary small">{{ inv.createdAt|date('Y-m-d H:i') }}</td>
-              <td class="text-secondary small">{{ inv.expiresAt ? inv.expiresAt|date('Y-m-d H:i') : '—' }}</td>
+              <td class="text-secondary small">{{ inv.createdAt|date('Y-m-d H:i', tz) }}</td>
+              <td class="text-secondary small">{{ inv.expiresAt ? inv.expiresAt|date('Y-m-d H:i', tz) : '—' }}</td>
               <td>
                 {% if inv.expiresAt and inv.expiresAt < date() %}
                   <span class="badge text-bg-secondary rounded-1">Expired</span>
@@ -179,6 +180,7 @@
         } %}
         {% set label = statusLabelMap[s] ?? s %}
         {% set color = statusColorMap[s] ?? 'secondary' %}
+        {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 
         <tr>
           <td class="text-secondary">#{{ order.id }}</td>
@@ -193,8 +195,8 @@
               <span class="badge text-bg-warning rounded-1">Unpaid</span>
             {% endif %}
           </td>
-          <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
-          <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+          <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}</td>
+          <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i', tz) : '—' }}</td>
           <td class="text-end">
             {% set backUrl = path('app_client_show', {'id': client.id}) %}
             <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_show', {'id': order.id, 'back': backUrl}) }}">Open</a>

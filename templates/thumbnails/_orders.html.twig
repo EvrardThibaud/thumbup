@@ -1,4 +1,4 @@
-{# templates/thumbnails/_orders_thumbnails.html.twig — NEW partial rendering FINAL thumbnails #}
+{% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 {% for order in orders %}
   <div class="card bg-dark border-secondary mb-3">
     <div class="card-header border-secondary d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -9,7 +9,7 @@
         <span class="text-secondary ms-2">· {{ order.client ? order.client.name : '—' }}</span>
       </div>
       <div class="text-secondary small">
-        {{ (order.updatedAt ?? order.createdAt)|date('Y-m-d H:i') }}
+        {{ (order.updatedAt ?? order.createdAt)|date('Y-m-d H:i', tz) }}
       </div>
     </div>
 

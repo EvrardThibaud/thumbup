@@ -21,6 +21,7 @@
         </tr>
       </thead>
       <tbody>
+      {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
       {% for u in users %}
         <tr>
           <td class="text-secondary">#{{ u.id }}</td>
@@ -42,7 +43,7 @@
               <span class="badge text-bg-secondary rounded-1">No</span>
             {% endif %}
           </td>
-          <td class="text-secondary">{{ u.createdAt|date('Y-m-d H:i') }}</td>
+          <td class="text-secondary">{{ u.createdAt|date('Y-m-d H:i', tz) }}</td>
           <td class="text-end">
             <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_show', {id: u.id}) }}">Open</a>
             <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_edit', {id: u.id, back: app.request.uri}) }}">Edit</a>

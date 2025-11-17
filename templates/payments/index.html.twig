@@ -12,6 +12,8 @@
     {% endif %}
   </div>
 
+  {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+
   {# ================= ADMIN VIEW ================= #}
   {% if is_admin %}
     <div class="card bg-dark border-0">
@@ -39,7 +41,7 @@
               <td class="text-secondary">{{ p.user ? p.user.id : '—' }}</td>
               <td>{{ p.client ? p.client.name : '—' }}</td>
               <td><span class="badge text-bg-primary rounded-1">{{ p.paymentMethod|upper }}</span></td>
-              <td class="text-secondary">{{ p.createdAt|date('Y-m-d H:i') }}</td>
+              <td class="text-secondary">{{ p.createdAt|date('Y-m-d H:i', tz) }}</td>
               <td class="text-end font-monospace">€ {{ (p.amountCents/100)|number_format(2, ',', ' ') }}</td>
             </tr>
           {% else %}

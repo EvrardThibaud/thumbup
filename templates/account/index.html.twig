@@ -27,6 +27,11 @@
               {% endfor %}
             </dd>
 
+            <dt class="col-sm-4 text-secondary">Time zone</dt>
+            <dd class="col-sm-8">
+              {{ user.timezone ?? 'Europe/Paris' }}
+            </dd>
+
             {% if user.client is defined and user.client %}
               <dt class="col-sm-4 text-secondary">Client</dt>
               <dd class="col-sm-8">
@@ -48,7 +53,6 @@
         <div class="card-body">
           <p class="text-secondary small mb-2">Manage your password and sessions.</p>
           {# Branch to your existing reset/change password flow if any #}
-          
         </div>
       </div>
     </div>

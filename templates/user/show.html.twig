@@ -2,6 +2,7 @@
 {% block title %}User #{{ user.id }}{% endblock %}
 
 {% block body %}
+{% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="h4 m-0">👤 User <span class="text-secondary">#{{ user.id }}</span></h1>
   <div class="d-flex gap-2">
@@ -34,7 +35,7 @@
     </div>
     <div class="col-md-6">
       <div class="small text-secondary mb-1">Created</div>
-      <div class="text-secondary">{{ user.createdAt|date('Y-m-d H:i') }}</div>
+      <div class="text-secondary">{{ user.createdAt|date('Y-m-d H:i', tz) }}</div>
     </div>
   </div>
 </div>
