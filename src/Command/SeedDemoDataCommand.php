@@ -46,9 +46,13 @@ class SeedDemoDataCommand extends Command
             }
         }
 
-        $conn = $this->em->getConnection();
-        $conn->executeStatement('PRAGMA foreign_keys = ON');
+        // $conn = $this->em->getConnection();
+        // $platform = $conn->getDatabasePlatform();
 
+        // if ($platform instanceof \Doctrine\DBAL\Platforms\SqlitePlatform) {
+        //     $conn->executeStatement('PRAGMA foreign_keys = ON');
+        // }
+        
         if (!$input->getOption('keep')) {
             // Purge in FK-safe order
             $this->em->createQuery('DELETE FROM App\Entity\TimeEntry te')->execute();
