@@ -35,6 +35,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $isVerified = false;
 
+    #[ORM\Column(length: 64)]
+    private ?string $timezone = 'Europe/Paris';
+
+    public function getTimezone(): string
+    {
+        return $this->timezone ?? 'Europe/Paris';
+    }
+
+    public function setTimezone(string $timezone): self
+    {
+        $this->timezone = $timezone;
+        return $this;
+    }
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();

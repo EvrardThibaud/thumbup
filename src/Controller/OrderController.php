@@ -14,6 +14,7 @@ use App\Form\OrderFiltersType;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Domain\OrderWorkflow;
 use Symfony\Component\Mailer\MailerInterface;
+use App\Entity\OrderAsset;
 use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 #[Route('/order')]
@@ -85,11 +86,19 @@ final class OrderController extends AbstractController
         UrlGeneratorInterface $urlGenerator
     ): Response {
         $order = new Order();
-        $now = new \DateTimeImmutable();
-        $order->setCreatedAt($now);
-        $order->setUpdatedAt($now);
+
+        // Tout en UTC côté backend
+        $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $order->setCreatedAt($nowUtc);
+        $order->setUpdatedAt($nowUtc);
         $order->setStatus(\App\Enum\OrderStatus::CREATED);
         $order->setPaid(false);
+
+        /** @var \App\Entity\User|null $user */
+        $user = $this->getUser();
+        $userTz = ($user && method_exists($user, 'getTimezone'))
+            ? $user->getTimezone()
+            : 'Europe/Paris';
 
         $isClient = $this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN');
 
@@ -97,15 +106,19 @@ final class OrderController extends AbstractController
         $lastPriceCents = null;
 
         if ($isClient) {
-            /** @var \App\Entity\User $user */
-            $user = $this->getUser();
             if (!$user || null === $user->getClient()) {
                 throw $this->createAccessDeniedException();
             }
 
             $order->setClient($user->getClient());
-            $order->setDueAt($now->modify('+2 days'));
-            $minDueAtAttr = $now->format('Y-m-d\TH:i');
+
+            // "Maintenant" dans le fuseau du user pour le pré-remplissage
+            $nowUser = $nowUtc->setTimezone(new \DateTimeZone($userTz));
+            $dueUser = $nowUser->modify('+2 days');
+            $dueUtc  = $dueUser->setTimezone(new \DateTimeZone('UTC'));
+
+            $order->setDueAt($dueUtc);
+            $minDueAtAttr = $dueUser->format('Y-m-d\TH:i');
 
             $last = $ordersRepo->createQueryBuilder('o')
                 ->andWhere('o.client = :c')->setParameter('c', $user->getClient())
@@ -117,10 +130,11 @@ final class OrderController extends AbstractController
             }
         }
 
-        $form = $this->createForm(OrderType::class, $order, [
-            'is_client' => $isClient,
-            'for_edit'  => false,
-            'min_due_at'=> $minDueAtAttr,
+        $form = $this->createForm(\App\Form\OrderType::class, $order, [
+            'is_client'     => $isClient,
+            'for_edit'      => false,
+            'min_due_at'    => $minDueAtAttr,
+            'user_timezone' => $userTz,
         ]);
         $form->handleRequest($request);
 
@@ -142,7 +156,8 @@ final class OrderController extends AbstractController
                 $order->setStatus(\App\Enum\OrderStatus::CREATED);
                 $order->setPaid(false);
 
-                if ($order->getDueAt() && $order->getDueAt() < $now) {
+                // Comparaison en UTC
+                if ($order->getDueAt() && $order->getDueAt() < $nowUtc) {
                     $form->get('dueAt')->addError(new \Symfony\Component\Form\FormError('Due date must be in the future.'));
                 }
                 if ($order->getPrice() < 500) {
@@ -150,9 +165,9 @@ final class OrderController extends AbstractController
                 }
                 if (!$form->isValid()) {
                     return $this->render('order/new.html.twig', [
-                        'order' => $order,
-                        'form'  => $form,
-                        'back'  => $request->query->get('back') ?: $request->headers->get('referer'),
+                        'order'          => $order,
+                        'form'           => $form,
+                        'back'           => $request->query->get('back') ?: $request->headers->get('referer'),
                         'lastPriceCents' => $lastPriceCents,
                         'due_min_help'   => true,
                     ]);
@@ -191,6 +206,11 @@ final class OrderController extends AbstractController
                 $clientName = $order->getClient() ? $order->getClient()->getName() : 'Unknown client';
                 $priceEur = number_format($order->getPrice() / 100, 2, '.', ' ');
 
+                $tz = new \DateTimeZone($userTz);
+                $dueForMail = $order->getDueAt()
+                    ? $order->getDueAt()->setTimezone($tz)->format('Y-m-d H:i')
+                    : '—';
+
                 $email = (new Email())
                     ->from('thibaud.evrard@outlook.com')
                     ->to($adminEmail)
@@ -200,7 +220,7 @@ final class OrderController extends AbstractController
                         "Client: {$clientName}\n" .
                         "Title: {$order->getTitle()}\n" .
                         "Price: {$priceEur} EUR\n" .
-                        "Due at: " . ($order->getDueAt() ? $order->getDueAt()->format('Y-m-d H:i') : '—') . "\n\n" .
+                        "Due at: {$dueForMail}\n\n" .
                         "Open order: {$orderUrl}\n"
                     )
                     ->html(
@@ -209,7 +229,7 @@ final class OrderController extends AbstractController
                         '<li><strong>Client:</strong> ' . htmlspecialchars($clientName, ENT_QUOTES) . '</li>' .
                         '<li><strong>Title:</strong> ' . htmlspecialchars((string) $order->getTitle(), ENT_QUOTES) . '</li>' .
                         '<li><strong>Price:</strong> ' . htmlspecialchars($priceEur, ENT_QUOTES) . ' EUR</li>' .
-                        '<li><strong>Due at:</strong> ' . ($order->getDueAt() ? $order->getDueAt()->format('Y-m-d H:i') : '—') . '</li>' .
+                        '<li><strong>Due at:</strong> ' . htmlspecialchars($dueForMail, ENT_QUOTES) . '</li>' .
                         '</ul>' .
                         '<p><a href="' . htmlspecialchars($orderUrl, ENT_QUOTES) . '">Open this order in ThumbUp</a></p>'
                     );
@@ -224,13 +244,14 @@ final class OrderController extends AbstractController
         $back = $request->query->get('back') ?: $request->headers->get('referer');
 
         return $this->render('order/new.html.twig', [
-            'order' => $order,
-            'form'  => $form,
-            'back'  => $back,
+            'order'          => $order,
+            'form'           => $form,
+            'back'           => $back,
             'lastPriceCents' => $lastPriceCents,
             'due_min_help'   => (bool) $minDueAtAttr,
         ]);
     }
+
 
 
     #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]

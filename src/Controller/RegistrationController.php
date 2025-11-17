@@ -54,6 +54,7 @@ final class RegistrationController extends AbstractController
 
             $plain = (string) $form->get('plainPassword')->getData();
             $user->setPassword($hasher->hashPassword($user, $plain));
+            $user->setTimezone('Europe/Paris'); 
 
             if ($inv !== null) {
                 if ($linkedAlready) {

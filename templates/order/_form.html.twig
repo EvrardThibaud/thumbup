@@ -16,8 +16,13 @@
 
   <div>
     <label class="form-label mb-1">⏰ Due at</label>
-    {{ form_widget(form.dueAt, { attr: form.dueAt.vars.attr|merge({'class':'form-control'}) }) }}
-    {{ form_errors(form.dueAt) }}
+      {{ form_widget(form.dueAt, {
+          attr: form.dueAt.vars.attr|merge({
+              'class':'form-control',
+              'min': min_due_at|default(null)
+          })
+      }) }}
+      {{ form_errors(form.dueAt) }}
   </div>
 
   {# ---- Price (pretty) + presets ---- #}

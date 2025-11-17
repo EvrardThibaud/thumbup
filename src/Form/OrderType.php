@@ -25,6 +25,7 @@ final class OrderType extends AbstractType
     {
         $isClient = (bool)$opt['is_client'];
         $minDueAt = $opt['min_due_at']; // 'Y-m-d\TH:i' or null
+        $userTz = $options['user_timezone'] ?? 'Europe/Paris';
 
         $b->add('title', TextType::class, [
                 'label' => '📝 Title',
@@ -41,6 +42,7 @@ final class OrderType extends AbstractType
           ->add('dueAt', DateTimeType::class, [
                 'label' => '⏰ Due at',
                 'widget' => 'single_text',
+                'view_timezone' => $userTz,
                 'required' => true,
                 'html5' => true,
                 'attr' => $minDueAt ? ['min' => $minDueAt] : [],
@@ -97,6 +99,7 @@ final class OrderType extends AbstractType
     {
         $r->setDefaults([
             'data_class' => Order::class,
+            'user_timezone' => 'Europe/Paris',
             'is_client'  => false,
             'for_edit'   => false,
             'min_due_at' => null,

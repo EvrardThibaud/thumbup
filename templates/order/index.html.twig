@@ -183,6 +183,8 @@
           } %}
           {% set label = statusLabelMap[s] ?? s %}
           {% set color = statusColorMap[s] ?? 'secondary' %}
+          {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+
 
           <tr class="table-row-link"
               data-href="{{ path('app_order_show', {'id': order.id, 'back': app.request.uri}) }}"
@@ -212,8 +214,8 @@
 
             <td>{{ order.thumbnails|length }}</td>
 
-            <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i') : '—' }}</td>
-            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i') : '—' }}</td>
+            <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}</td>
+            <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i', tz) : '—' }}</td>
 
             <td class="text-end">
               {% set backList = app.request.uri %}
