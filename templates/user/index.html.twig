@@ -23,7 +23,9 @@
       <tbody>
       {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
       {% for u in users %}
-        <tr>
+        <tr class="table-row-link"
+            data-href="{{ path('app_user_show', {id: u.id}) }}"
+            style="cursor:pointer">
           <td class="text-secondary">#{{ u.id }}</td>
           <td class="fw-medium">{{ u.email }}</td>
           <td>
@@ -33,7 +35,11 @@
           </td>
           <td>
             {% if u.client %}
-              <a class="link-light link-opacity-75-hover" href="{{ path('app_client_show', {id: u.client.id}) }}">{{ u.client.name }}</a>
+              <a class="link-light link-opacity-75-hover"
+                 href="{{ path('app_client_show', {id: u.client.id}) }}"
+                 onclick="event.stopPropagation()">
+                {{ u.client.name }}
+              </a>
             {% else %}—{% endif %}
           </td>
           <td>
@@ -45,12 +51,11 @@
           </td>
           <td class="text-secondary">{{ u.createdAt|date('Y-m-d H:i', tz) }}</td>
           <td class="text-end">
-            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_show', {id: u.id}) }}">Open</a>
-            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_edit', {id: u.id, back: app.request.uri}) }}">Edit</a>
-            <form method="post" action="{{ path('app_user_delete', {id: u.id}) }}" class="d-inline" onsubmit="return confirm('Delete this user?');">
-              <input type="hidden" name="_token" value="{{ csrf_token('delete-user' ~ u.id) }}">
-              <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
-            </form>
+            <a class="btn btn-sm btn-outline-light rounded-1"
+               href="{{ path('app_user_edit', {id: u.id, back: app.request.uri}) }}"
+               onclick="event.stopPropagation()">
+              Edit
+            </a>
           </td>
         </tr>
       {% else %}
@@ -60,4 +65,16 @@
     </table>
   </div>
 </div>
+
+<script>
+  document.addEventListener('click', function (e) {
+    const row = e.target.closest('.table-row-link');
+    if (row && !e.target.closest('a, button, input, form')) {
+      const href = row.getAttribute('data-href');
+      if (href) {
+        window.location = href;
+      }
+    }
+  });
+</script>
 {% endblock %}

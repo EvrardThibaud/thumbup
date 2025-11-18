@@ -3,39 +3,104 @@
 
 {% block body %}
 {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h1 class="h4 m-0">👤 User <span class="text-secondary">#{{ user.id }}</span></h1>
-  <div class="d-flex gap-2">
-    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_index') }}">← Back</a>
-    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_user_edit', {id: user.id, back: app.request.uri}) }}">✏️ Edit</a>
-  </div>
-</div>
 
-<div class="card border-0 p-3">
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">
+      👤 User <span class="text-secondary">#{{ user.id }}</span>
+    </h1>
+    <div class="d-flex gap-2">
+      <a class="btn btn-sm btn-outline-light rounded-1"
+         href="{{ path('app_user_index') }}">
+        ← Back
+      </a>
+      <a class="btn btn-sm btn-outline-light rounded-1"
+         href="{{ path('app_user_edit', {id: user.id, back: app.request.uri}) }}">
+        ✏️ Edit
+      </a>
+      <form method="post"
+            action="{{ path('app_user_delete', {id: user.id}) }}"
+            class="d-inline"
+            onsubmit="return confirm('Delete this user?');">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete-user' ~ user.id) }}">
+        <button class="btn btn-sm btn-outline-danger rounded-1">
+          🗑 Delete
+        </button>
+      </form>
+    </div>
+  </div>
+
   <div class="row g-3">
-    <div class="col-md-6">
-      <div class="small text-secondary mb-1">Email</div>
-      <div class="fw-medium">{{ user.email }}</div>
-    </div>
-    <div class="col-md-6">
-      <div class="small text-secondary mb-1">Roles</div>
-      <div>
-        {% for r in user.roles %}
-            <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : (r == 'ROLE_CLIENT' ? 'success' : 'secondary') }} rounded-1">{{ r }}</span>
-        {% endfor %}
+    <div class="col-12 col-lg-6">
+      <div class="card bg-dark border-secondary rounded-2 h-100">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Profile</span>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4 text-secondary">Email</dt>
+            <dd class="col-sm-8">{{ user.email }}</dd>
+
+            <dt class="col-sm-4 text-secondary">Roles</dt>
+            <dd class="col-sm-8">
+              {% for r in user.roles %}
+                <span class="badge text-bg-{{ r == 'ROLE_ADMIN' ? 'primary' : (r == 'ROLE_CLIENT' ? 'success' : 'secondary') }} rounded-1 me-1">
+                  {{ r }}
+                </span>
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endfor %}
+            </dd>
+
+            <dt class="col-sm-4 text-secondary">Time zone</dt>
+            <dd class="col-sm-8">
+              {{ user.timezone ?? 'Europe/Paris' }}
+            </dd>
+
+            {% if user.client %}
+              <dt class="col-sm-4 text-secondary">Client</dt>
+              <dd class="col-sm-8">
+                <a class="link-light link-opacity-75-hover"
+                   href="{{ path('app_client_show', { id: user.client.id }) }}">
+                  {{ user.client.name }}
+                </a>
+              </dd>
+            {% endif %}
+          </dl>
+        </div>
       </div>
     </div>
-    <div class="col-md-6">
-      <div class="small text-secondary mb-1">Linked client</div>
-      <div>
-        {% if user.client %}
-          <a class="link-light link-opacity-75-hover" href="{{ path('app_client_show', {id: user.client.id}) }}">{{ user.client.name }}</a>
-        {% else %}—{% endif %}
+
+    <div class="col-12 col-lg-6">
+      <div class="card bg-dark border-secondary rounded-2 h-100">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Account status</span>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-sm-4 text-secondary">User ID</dt>
+            <dd class="col-sm-8">#{{ user.id }}</dd>
+
+            <dt class="col-sm-4 text-secondary">Verified</dt>
+            <dd class="col-sm-8">
+              {% if user.isVerified %}
+                <span class="badge text-bg-success rounded-1">Yes</span>
+              {% else %}
+                <span class="badge text-bg-secondary rounded-1">No</span>
+              {% endif %}
+            </dd>
+
+            <dt class="col-sm-4 text-secondary">Created</dt>
+            <dd class="col-sm-8 text-secondary">
+              {{ user.createdAt|date('Y-m-d H:i', tz) }}
+            </dd>
+          </dl>
+
+          <p class="text-secondary small mt-3 mb-0">
+            This page is only visible to admins. Use the buttons above to edit or delete this account.
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="col-md-6">
-      <div class="small text-secondary mb-1">Created</div>
-      <div class="text-secondary">{{ user.createdAt|date('Y-m-d H:i', tz) }}</div>
     </div>
   </div>
 </div>
