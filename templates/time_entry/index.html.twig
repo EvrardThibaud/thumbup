@@ -1,39 +1,75 @@
+{# templates/time_entry/index.html.twig #}
 {% extends 'base.html.twig' %}
-
-{% block title %}TimeEntry index{% endblock %}
+{% block title %}Time entries{% endblock %}
 
 {% block body %}
-    <h1>TimeEntry index</h1>
+{% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Minutes</th>
-                <th>Note</th>
-                <th>CreatedAt</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for time_entry in time_entries %}
-            <tr>
-                <td>{{ time_entry.id }}</td>
-                <td>{{ time_entry.minutes }}</td>
-                <td>{{ time_entry.note }}</td>
-                <td>{{ time_entry.createdAt ? time_entry.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_time_entry_show', {'id': time_entry.id}) }}">show</a>
-                    <a href="{{ path('app_time_entry_edit', {'id': time_entry.id}) }}">edit</a>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="5">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 m-0">⏱ Time entries</h1>
+  <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_time_entry_new') }}">
+    + New time entry
+  </a>
+</div>
+
+<div class="card bg-dark border-0 p-3">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover align-middle mb-0">
+      <thead class="small text-secondary">
+        <tr>
+          <th>ID</th>
+          <th>Order title</th>
+          <th>Minutes</th>
+          <th>Note</th>
+          <th>Created</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for t in time_entries %}
+        <tr class="table-row-link"
+            data-href="{{ path('app_time_entry_show', {id: t.id}) }}"
+            style="cursor:pointer">
+          <td class="text-secondary">#{{ t.id }}</td>
+          <td>
+            {% if t.relatedOrder %}
+              {{ t.relatedOrder.title }}
+            {% else %}
+              <span class="text-secondary">—</span>
+            {% endif %}
+          </td>
+          <td class="fw-medium">{{ t.minutes }}</td>
+          <td class="text-secondary text-truncate" style="max-width: 28ch;">
+            {{ t.note ?: '—' }}
+          </td>
+          <td class="text-secondary">
+            {{ t.createdAt ? t.createdAt|date('Y-m-d H:i', tz) : '—' }}
+          </td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-light rounded-1"
+               href="{{ path('app_time_entry_edit', {id: t.id}) }}"
+               onclick="event.stopPropagation()">
+              Edit
+            </a>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-secondary">No time entries.</td>
+        </tr>
+      {% endfor %}
+      </tbody>
     </table>
+  </div>
+</div>
 
-    <a href="{{ path('app_time_entry_new') }}">Create new</a>
+<script>
+  document.addEventListener('click', function (e) {
+    const row = e.target.closest('.table-row-link');
+    if (row && !e.target.closest('a, button')) {
+      const href = row.getAttribute('data-href');
+      if (href) window.location = href;
+    }
+  });
+</script>
 {% endblock %}

@@ -1,38 +1,71 @@
+{# templates/time_entry/show.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}TimeEntry{% endblock %}
+{% block title %}Time entry #{{ time_entry.id }}{% endblock %}
 
 {% block body %}
-    <h1>TimeEntry</h1>
+{% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+{% set back = time_entry.relatedOrder
+  ? path('app_order_show', {'id': time_entry.relatedOrder.id})
+  : path('app_time_entry_index')
+%}
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ time_entry.id }}</td>
-            </tr>
-            <tr>
-                <th>Minutes</th>
-                <td>{{ time_entry.minutes }}</td>
-            </tr>
-            <tr>
-                <th>Note</th>
-                <td>{{ time_entry.note }}</td>
-            </tr>
-            <tr>
-                <th>CreatedAt</th>
-                <td>{{ time_entry.createdAt ? time_entry.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-            </tr>
-        </tbody>
-    </table>
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 m-0">⏱ Time entry <span class="text-secondary">#{{ time_entry.id }}</span></h1>
+  <div class="d-flex gap-2">
+    <a class="btn btn-sm btn-outline-light rounded-1" href="{{ back }}">← Back</a>
+    <a class="btn btn-sm btn-outline-light rounded-1"
+       href="{{ path('app_time_entry_edit', {id: time_entry.id}) }}">
+      ✏️ Edit
+    </a>
+    <form method="post"
+          action="{{ path('app_time_entry_delete', {id: time_entry.id}) }}"
+          class="d-inline"
+          onsubmit="return confirm('Delete this time entry?');">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ time_entry.id) }}">
+      <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
+    </form>
+  </div>
+</div>
 
-    {% set back = time_entry.relatedOrder
-    ? path('app_order_show', {'id': time_entry.relatedOrder.id})
-    : path('app_time_entry_index') %}
+<div class="card bg-dark border-secondary rounded-2">
+  <div class="card-header border-secondary">
+    <span class="fw-semibold">Details</span>
+  </div>
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-4 text-secondary">Minutes</dt>
+      <dd class="col-sm-8 fw-medium">{{ time_entry.minutes }}</dd>
 
-    <a href="{{ back }}">Back</a>
+      <dt class="col-sm-4 text-secondary">Related order</dt>
+      <dd class="col-sm-8">
+        {% if time_entry.relatedOrder %}
+          <a class="link-light link-opacity-75-hover"
+             href="{{ path('app_order_show', {id: time_entry.relatedOrder.id}) }}">
+            {{ time_entry.relatedOrder.title }}
+          </a>
+        {% else %}
+          <span class="text-secondary">—</span>
+        {% endif %}
+      </dd>
 
-    <a href="{{ path('app_time_entry_edit', {'id': time_entry.id}) }}">edit</a>
+      <dt class="col-sm-4 text-secondary">Note</dt>
+      <dd class="col-sm-8">
+        {% if time_entry.note %}
+          <span class="text-light" style="white-space: pre-wrap">{{ time_entry.note }}</span>
+        {% else %}
+          <span class="text-secondary">—</span>
+        {% endif %}
+      </dd>
 
-    {{ include('time_entry/_delete_form.html.twig') }}
+      <dt class="col-sm-4 text-secondary">Created</dt>
+      <dd class="col-sm-8 text-secondary">
+        {{ time_entry.createdAt ? time_entry.createdAt|date('Y-m-d H:i', tz) : '—' }}
+        {% if time_entry.createdAt %}
+          <span class="ms-1">({{ tz }})</span>
+        {% endif %}
+      </dd>
+    </dl>
+  </div>
+</div>
 {% endblock %}
