@@ -118,15 +118,9 @@
     Showing <strong>{{ start }}</strong>–<strong>{{ end }}</strong> of <strong>{{ total }}</strong>
   </p>
 
-  {# Table #}
-  <style>
-    .table-dark.table-striped tbody tr:nth-of-type(odd){ background-color: rgba(255,255,255,.03); }
-    .table-dark.table-striped tbody tr:hover{ background-color: rgba(255,255,255,.07); }
-  </style>
-
   <div class="card bg-dark border-0">
     <div class="table-responsive">
-      <table class="table table-dark table-hover align-middle mb-0 table-striped">
+      <table class="table table-dark table-hover align-middle mb-0">
         <thead class="small text-secondary">
           {% if is_client %}
             <tr>
@@ -204,11 +198,17 @@
 
             <td><span class="badge text-bg-{{ color }} rounded-1">{{ label }}</span></td>
 
+            {% set showPaid = s in ['delivered', 'finished', 'revision'] %}
+
             <td>
-              {% if order.paid %}
-                <span class="badge text-bg-success rounded-1">Paid</span>
+              {% if showPaid %}
+                {% if order.paid %}
+                  <span class="badge text-bg-success rounded-1">Paid</span>
+                {% else %}
+                  <span class="badge text-bg-warning rounded-1">Unpaid</span>
+                {% endif %}
               {% else %}
-                <span class="badge text-bg-warning rounded-1">Unpaid</span>
+                <span class="text-secondary">—</span>
               {% endif %}
             </td>
 
