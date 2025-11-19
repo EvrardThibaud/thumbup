@@ -1,3 +1,4 @@
+{# templates/account/index.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Account{% endblock %}
 
@@ -51,8 +52,12 @@
           <span class="fw-semibold">Security</span>
         </div>
         <div class="card-body">
-          <p class="text-secondary small mb-2">Manage your password and sessions.</p>
-          {# Branch to your existing reset/change password flow if any #}
+          <p class="text-secondary small mb-3">Manage your password and sessions.</p>
+
+          <a href="{{ path('app_account_password') }}"
+             class="btn btn-sm btn-outline-light rounded-1">
+            Change password
+          </a>
         </div>
       </div>
     </div>
