@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface as EM;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final class InvitationController extends AbstractController
 {
@@ -18,15 +19,25 @@ final class InvitationController extends AbstractController
 
         $inv = (new Invitation())
             ->setClient($client)
-            ->setToken($tokens->generate(24))
-            // optionnel :
+            ->setToken($tokens->generate(24));
             // ->setExpiresAt((new \DateTimeImmutable())->modify('+14 days'))
-        ;
 
         $em->persist($inv);
         $em->flush();
 
-        $this->addFlash('success', 'Invitation créée.');
+        // Génère l’URL d’inscription liée à l’invitation
+        $link = $this->generateUrl(
+            'app_register',
+            ['invite' => $inv->getToken()],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        // Message de succès classique
+        $this->addFlash('success', 'Invitation created and copied to clipboard.');
+
+        // Flash spécial contenant le lien à copier côté JS
+        $this->addFlash('invite_link', $link);
+
         return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
     }
 
