@@ -1,32 +1,95 @@
-{# templates/account/password.html.twig #}
+{# templates/account/edit.html.twig #}
 {% extends 'base.html.twig' %}
-{% block title %}Change password{% endblock %}
+{% block title %}Edit account{% endblock %}
 
 {% block body %}
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 m-0">🔐 Change password</h1>
-    <a href="{{ path('app_account') }}" class="btn btn-sm btn-outline-light rounded-1">← Back to account</a>
+    <h1 class="h4 m-0">👤 Edit account</h1>
+    <a href="{{ path('app_account') }}" class="btn btn-sm btn-outline-light rounded-1">← Back</a>
   </div>
 
+  {# Flash messages (profile + password) #}
+  {% for label, messages in app.flashes %}
+    {% for message in messages %}
+      <div class="alert alert-{{ label }} small py-2 mb-2">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endfor %}
+
   <div class="row g-3">
+    {# PROFILE (username + channel url) #}
     <div class="col-12 col-lg-6">
       <div class="card bg-dark border-secondary rounded-2">
         <div class="card-header border-secondary">
-          <span class="fw-semibold">Update your password</span>
+          <span class="fw-semibold">Profile</span>
         </div>
         <div class="card-body">
+          {% if user.client %}
+            <form method="post"
+                  action="{{ path('app_account_edit') }}"
+                  class="vstack gap-3"
+                  data-turbo="false">
+              <input type="hidden" name="_action" value="profile">
+              <input type="hidden" name="_token" value="{{ csrf_token('edit_profile') }}">
 
-          {# Flash messages #}
-          {% for label, messages in app.flashes %}
-            {% for message in messages %}
-              <div class="alert alert-{{ label }} small py-2 mb-2">
-                {{ message }}
+              <div>
+                <label class="form-label small mb-1">Username</label>
+                <input type="text"
+                       name="username"
+                       value="{{ user.client.name }}"
+                       class="form-control form-control-sm bg-dark text-white border-secondary"
+                       required>
+                <div class="form-text text-secondary small">
+                  This is the name used for your client profile.
+                </div>
               </div>
-            {% endfor %}
-          {% endfor %}
 
-          {{ form_start(passwordForm, { attr: { class: 'vstack gap-3', 'data-turbo': 'false' } }) }}
+              <div>
+                <label class="form-label small mb-1">Channel URL</label>
+                <input type="url"
+                       name="channel_url"
+                       value="{{ user.client.channelUrl }}"
+                       placeholder="https://youtube.com/@yourchannel"
+                       class="form-control form-control-sm bg-dark text-white border-secondary">
+                <div class="form-text text-secondary small">
+                  Optional. A link to your YouTube channel or main profile.
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 pt-2">
+                <button class="btn btn-primary btn-sm rounded-1" type="submit">
+                  Save profile
+                </button>
+              </div>
+            </form>
+          {% else %}
+            <p class="text-secondary small mb-0">
+              No client profile linked to this account.
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# SECURITY (change password) #}
+    <div class="col-12 col-lg-6">
+      <div class="card bg-dark border-secondary rounded-2">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Security</span>
+        </div>
+        <div class="card-body">
+          <p class="text-secondary small mb-2">Update your password.</p>
+
+          {{ form_start(passwordForm, {
+            attr: {
+              class: 'vstack gap-3',
+              'data-turbo': 'false'
+            },
+            action: path('app_account_edit')
+          }) }}
+            <input type="hidden" name="_action" value="password">
 
             {# Current password #}
             <div>
@@ -92,10 +155,6 @@
               <button class="btn btn-primary btn-sm rounded-1">
                 Save new password
               </button>
-              <a href="{{ path('app_account') }}"
-                 class="btn btn-outline-light btn-sm rounded-1">
-                Cancel
-              </a>
             </div>
 
           {{ form_end(passwordForm) }}
@@ -109,7 +168,6 @@
 (function () {
   function initPasswordToggles() {
     document.querySelectorAll('.js-toggle-password').forEach(btn => {
-      // éviter de binder plusieurs fois si Turbo recharge la vue
       if (btn.dataset.bound === '1') {
         return;
       }
@@ -133,5 +191,4 @@
   document.addEventListener('turbo:load', initPasswordToggles);
 })();
 </script>
-
 {% endblock %}

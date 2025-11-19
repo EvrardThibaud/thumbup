@@ -6,6 +6,9 @@
 <div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 m-0">👤 Account</h1>
+    <a href="{{ path('app_account_edit') }}" class="btn btn-sm btn-outline-light rounded-1">
+      ✏️ Edit
+    </a>
   </div>
 
   <div class="row g-3">
@@ -16,48 +19,37 @@
         </div>
         <div class="card-body">
           <dl class="row mb-0">
-            <dt class="col-sm-4 text-secondary">Email</dt>
-            <dd class="col-sm-8">{{ user.email }}</dd>
-
-            <dt class="col-sm-4 text-secondary">Roles</dt>
+            <dt class="col-sm-4 text-secondary">Username</dt>
             <dd class="col-sm-8">
-              {% for r in user.roles %}
-                <span class="badge text-bg-dark border me-1">{{ r }}</span>
+              {% if user.client %}
+                {{ user.client.name }}
               {% else %}
                 <span class="text-secondary">—</span>
-              {% endfor %}
+              {% endif %}
             </dd>
+
+            <dt class="col-sm-4 text-secondary">Email</dt>
+            <dd class="col-sm-8">{{ user.email }}</dd>
 
             <dt class="col-sm-4 text-secondary">Time zone</dt>
             <dd class="col-sm-8">
               {{ user.timezone ?? 'Europe/Paris' }}
             </dd>
 
-            {% if user.client is defined and user.client %}
-              <dt class="col-sm-4 text-secondary">Client</dt>
-              <dd class="col-sm-8">
-                <a class="link-light" href="{{ path('app_client_show', { id: user.client.id }) }}">
-                  {{ user.client.name }}
+            <dt class="col-sm-4 text-secondary">Channel</dt>
+            <dd class="col-sm-8">
+              {% if user.client and user.client.channelUrl %}
+                <a class="link-light link-opacity-75-hover"
+                   href="{{ user.client.channelUrl }}"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  {{ user.client.channelUrl }}
                 </a>
-              </dd>
-            {% endif %}
+              {% else %}
+                <span class="text-secondary">—</span>
+              {% endif %}
+            </dd>
           </dl>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12 col-lg-6">
-      <div class="card bg-dark border-secondary rounded-2">
-        <div class="card-header border-secondary">
-          <span class="fw-semibold">Security</span>
-        </div>
-        <div class="card-body">
-          <p class="text-secondary small mb-3">Manage your password and sessions.</p>
-
-          <a href="{{ path('app_account_password') }}"
-             class="btn btn-sm btn-outline-light rounded-1">
-            Change password
-          </a>
         </div>
       </div>
     </div>

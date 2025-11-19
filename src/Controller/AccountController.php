@@ -1,7 +1,9 @@
 <?php
+// src/Controller/AccountController.php
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Form\ChangePasswordType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -19,71 +21,122 @@ final class AccountController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
+        /** @var User $user */
+        $user = $this->getUser();
+
         return $this->render('account/index.html.twig', [
-            'user' => $this->getUser(),
+            'user' => $user,
         ]);
     }
 
-    #[Route('/password', name: 'app_account_password', methods: ['GET', 'POST'])]
-    public function changePassword(
+    #[Route('/edit', name: 'app_account_edit', methods: ['GET', 'POST'])]
+    public function edit(
         Request $request,
-        UserPasswordHasherInterface $hasher,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $hasher
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
-        /** @var \App\Entity\User $user */
-        $user = $this->getUser();
+        /** @var User $user */
+        $user   = $this->getUser();
+        $client = $user?->getClient();
 
-        $form = $this->createForm(ChangePasswordType::class, null, [
+        // Password form
+        $passwordForm = $this->createForm(ChangePasswordType::class, null, [
             'attr' => [
                 'autocomplete' => 'off',
-                'data-turbo'   => 'false', // pour éviter l’erreur Turbo
+                'data-turbo'   => 'false',
             ],
         ]);
-        $form->handleRequest($request);
+        $passwordForm->handleRequest($request);
 
-        if ($form->isSubmitted()) {
-            $currentPlain  = (string) $form->get('currentPassword')->getData();
-            $newPlain      = (string) $form->get('newPassword')->getData();
-            $confirmPlain  = (string) $form->get('confirmNewPassword')->getData();
+        if ($request->isMethod('POST')) {
+            $action = (string) $request->request->get('_action', '');
 
-            // 1) Vérifier l’ancien mot de passe
-            if (!$hasher->isPasswordValid($user, $currentPlain)) {
-                $form->get('currentPassword')->addError(
-                    new FormError('Current password is incorrect.')
-                );
-            }
+            // --- PROFILE UPDATE ---
+            if ($action === 'profile') {
+                if (!$client) {
+                    throw $this->createAccessDeniedException('No client linked to this account.');
+                }
 
-            // 2) Vérifier que les deux nouveaux mots de passe sont identiques
-            if ($newPlain !== '' && $confirmPlain !== '' && $newPlain !== $confirmPlain) {
-                $form->get('confirmNewPassword')->addError(
-                    new FormError('The two new passwords must match.')
-                );
-            }
+                if (!$this->isCsrfTokenValid('edit_profile', (string) $request->request->get('_token'))) {
+                    throw $this->createAccessDeniedException('Invalid CSRF token.');
+                }
 
-            // 3) Vérifier que le nouveau n’est pas identique à l’ancien
-            if ($newPlain !== '' && $newPlain === $currentPlain) {
-                $form->get('newPassword')->addError(
-                    new FormError('The new password must be different from the current password.')
-                );
-            }
+                $username   = trim((string) $request->request->get('username', ''));
+                $channelUrl = trim((string) $request->request->get('channel_url', ''));
 
-            // Si tout est OK côté contraintes + nos erreurs custom
-            if ($form->isValid()) {
-                $user->setPassword(
-                    $hasher->hashPassword($user, $newPlain)
-                );
+                if ($username === '') {
+                    $this->addFlash('danger', 'Username cannot be empty.');
+                    return $this->redirectToRoute('app_account_edit');
+                }
+
+                if (mb_strlen($username) > 255) {
+                    $this->addFlash('danger', 'Username is too long (max 255 characters).');
+                    return $this->redirectToRoute('app_account_edit');
+                }
+
+                if ($channelUrl !== '' && mb_strlen($channelUrl) > 255) {
+                    $this->addFlash('danger', 'Channel URL is too long (max 255 characters).');
+                    return $this->redirectToRoute('app_account_edit');
+                }
+
+                if ($channelUrl !== '' && !preg_match('#^https?://#i', $channelUrl)) {
+                    $channelUrl = 'https://' . $channelUrl;
+                }
+
+                $client->setName($username);
+                $client->setChannelUrl($channelUrl !== '' ? $channelUrl : null);
+
                 $em->flush();
 
-                $this->addFlash('success', 'Password updated successfully.');
+                $this->addFlash('success', 'Profile updated.');
+                return $this->redirectToRoute('app_account_edit');
+            }
 
-                return $this->redirectToRoute('app_account');
+            // --- PASSWORD UPDATE ---
+            if ($action === 'password' && $passwordForm->isSubmitted()) {
+                $currentPlain = (string) $passwordForm->get('currentPassword')->getData();
+                $newPlain     = (string) $passwordForm->get('newPassword')->getData();
+                $confirmPlain = (string) $passwordForm->get('confirmNewPassword')->getData();
+
+                // 1) Check current password
+                if (!$hasher->isPasswordValid($user, $currentPlain)) {
+                    $passwordForm->get('currentPassword')->addError(
+                        new FormError('Current password is incorrect.')
+                    );
+                }
+
+                // 2) New passwords must match
+                if ($newPlain !== '' && $confirmPlain !== '' && $newPlain !== $confirmPlain) {
+                    $passwordForm->get('confirmNewPassword')->addError(
+                        new FormError('The two new passwords must match.')
+                    );
+                }
+
+                // 3) New password must be different
+                if ($newPlain !== '' && $newPlain === $currentPlain) {
+                    $passwordForm->get('newPassword')->addError(
+                        new FormError('The new password must be different from the current password.')
+                    );
+                }
+
+                if ($passwordForm->isSubmitted() && $passwordForm->isValid()) {
+                    $user->setPassword(
+                        $hasher->hashPassword($user, $newPlain)
+                    );
+                    $em->flush();
+
+                    $this->addFlash('success', 'Password updated successfully.');
+
+                    return $this->redirectToRoute('app_account_edit');
+                }
             }
         }
 
-        return $this->render('account/password.html.twig', [
-            'passwordForm' => $form->createView(),
+        return $this->render('account/edit.html.twig', [
+            'user'         => $user,
+            'passwordForm' => $passwordForm->createView(),
         ]);
     }
 }
