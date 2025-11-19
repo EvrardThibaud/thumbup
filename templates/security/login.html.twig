@@ -67,16 +67,34 @@
 </form>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
+(function () {
+  function initLoginPasswordToggle() {
     const pwd = document.getElementById('inputPassword');
     const btn = document.getElementById('togglePassword');
-    if (!pwd || !btn) return;
 
-    btn.addEventListener('click', function () {
+    if (!pwd || !btn) {
+      console.debug('[login toggle] elements missing', { hasPwd: !!pwd, hasBtn: !!btn });
+      return;
+    }
+
+    // éviter de binder plusieurs fois si Turbo recharge la vue
+    if (btn.dataset.bound === '1') {
+      return;
+    }
+    btn.dataset.bound = '1';
+
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
       const isPassword = pwd.type === 'password';
       pwd.type = isPassword ? 'text' : 'password';
       btn.textContent = isPassword ? '🙈' : '👁';
     });
-  });
+
+    console.debug('[login toggle] listener attached');
+  }
+
+  document.addEventListener('DOMContentLoaded', initLoginPasswordToggle);
+  document.addEventListener('turbo:load', initLoginPasswordToggle);
+})();
 </script>
 {% endblock %}
