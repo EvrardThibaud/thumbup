@@ -1,60 +1,85 @@
-{# templates/order/_form.html.twig — base with live preview + delete for attachments #}
+{# templates/order/_form.html.twig #}
 {{ form_start(form) }}
 
 <div class="vstack gap-3">
   <div>
     <label class="form-label mb-1">📝 Title</label>
-    {{ form_widget(form.title, { attr: form.title.vars.attr|merge({'class':'form-control','placeholder':'E.g. Face close-up, bold text “NEW VIDEO”'}) }) }}
+    {{ form_widget(form.title, {
+      attr: form.title.vars.attr|merge({
+        'class':'form-control',
+        'placeholder':'E.g. Face close-up, bold text “NEW VIDEO”'
+      })
+    }) }}
     {{ form_errors(form.title) }}
   </div>
 
   <div>
     <label class="form-label mb-1">📄 Brief</label>
-    {{ form_widget(form.brief, { attr: form.brief.vars.attr|merge({'class':'form-control','rows':8,'placeholder':'Tell us what you need: style, mood, colors, assets…'}) }) }}
+    {{ form_widget(form.brief, {
+      attr: form.brief.vars.attr|merge({
+        'class':'form-control',
+        'rows':8,
+        'placeholder':'Tell us what you need: style, mood, colors, assets…'
+      })
+    }) }}
     {{ form_errors(form.brief) }}
   </div>
 
-  <div>
-    <label class="form-label mb-1">⏰ Due at</label>
-      {{ form_widget(form.dueAt, {
-          attr: form.dueAt.vars.attr|merge({
-              'class':'form-control',
-              'min': min_due_at|default(null)
-          })
-      }) }}
+  {# ---- Due at + Price side by side ---- #}
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <label class="form-label mb-1">⏰ Due at</label>
+      {% set dueAttr = form.dueAt.vars.attr|merge({'class':'form-control'}) %}
+      {# Client (no "client" field) : bloque les dates passées avec min. Admin : pas de min. #}
+      {% if form.children['client'] is not defined %}
+        {% set dueAttr = dueAttr|merge({'min': min_due_at|default(null)}) %}
+      {% endif %}
+      {{ form_widget(form.dueAt, { attr: dueAttr }) }}
       {{ form_errors(form.dueAt) }}
-  </div>
-
-  {# ---- Price (pretty) + presets ---- #}
-  <div>
-    <label class="form-label mb-1">💶 Price</label>
-    <div class="input-group">
-      <input type="text" class="form-control js-price-euros"
-             name="pretty_price"
-             value=""
-             placeholder="e.g., 15,00" autocomplete="off">
-      <span class="input-group-text">€</span>
-    </div>
-    {{ form_widget(form.price) }} {# hidden cents field #}
-    {{ form_errors(form.price) }}
-
-    <div class="d-flex flex-wrap gap-2 mt-2">
-      {% set presets = [500,1000,1500,2000,2500,3000] %}
-      {% for c in presets %}
-        <button type="button" class="btn btn-sm btn-outline-secondary rounded-1 js-preset" data-cents="{{ c }}">
-          {{ (c/100)|number_format(2, ',', ' ') }} €
-        </button>
-      {% endfor %}
-      {% if lastPriceCents is defined and lastPriceCents %}
-        <button type="button" class="btn btn-sm btn-outline-primary rounded-1 js-preset" data-cents="{{ lastPriceCents }}">
-          Last: {{ (lastPriceCents/100)|number_format(2, ',', ' ') }} €
-        </button>
+      {% if due_min_help|default(false) %}
+        <div class="form-text text-secondary">
+          Due date must be in the future.
+        </div>
       {% endif %}
     </div>
-    <div class="form-text text-secondary">Minimum 5,00 €.</div>
+
+    {# ---- Price (pretty) + presets ---- #}
+    <div class="col-12 col-md-6">
+      <label class="form-label mb-1">💶 Price</label>
+      <div class="input-group">
+        <input type="text" class="form-control js-price-euros"
+               name="pretty_price"
+               value=""
+               placeholder="e.g., 15,00" autocomplete="off">
+        <span class="input-group-text">€</span>
+      </div>
+      {{ form_widget(form.price) }} {# hidden cents field #}
+      {{ form_errors(form.price) }}
+
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        {% set presets = [500,1000,1500,2000,2500,3000] %}
+        {# Last FIRST #}
+        {% if lastPriceCents is defined and lastPriceCents %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary rounded-1 js-preset"
+                  data-cents="{{ lastPriceCents }}">
+            Last: {{ (lastPriceCents/100)|number_format(2, ',', ' ') }} €
+          </button>
+        {% endif %}
+        {# Then the fixed presets #}
+        {% for c in presets %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary rounded-1 js-preset"
+                  data-cents="{{ c }}">
+            {{ (c/100)|number_format(2, ',', ' ') }} €
+          </button>
+        {% endfor %}
+      </div>
+      <div class="form-text text-secondary">Minimum 5,00 €.</div>
+    </div>
   </div>
 
-  {# ---- Attachments with LIVE PREVIEW + DELETE (client-side) ---- #}
+  {# ---- Attachments with Liip (existing) + LIVE PREVIEW (new) ---- #}
   {% set inputId = form.attachments.vars.id %}
   <div>
     <label class="form-label mb-1">📎 Attach files (PDF or images)</label>
@@ -67,36 +92,91 @@
       })
     }) }}
     {{ form_errors(form.attachments) }}
-    <div id="{{ inputId }}__preview" class="row g-2 mt-2"></div>
+
+    {# Existing server-side files (LiipImagine) - optional, if controller passes them #}
+    {% if existingAttachments is defined and existingAttachments %}
+      <div class="row g-1 mt-2" id="{{ inputId }}__existing">
+        {% for att in existingAttachments %}
+          <div class="col-4 col-md-3 col-lg-2">
+            <div class="thumb">
+              {% if att.isImage %}
+                <img
+                  src="{{ att.url|imagine_filter('order_attachment_preview') }}"
+                  alt="{{ att.name }}"
+                >
+              {% else %}
+                <div class="pdf-icon d-flex align-items-center justify-content-center">
+                  <span class="badge text-bg-light text-dark">PDF</span>
+                </div>
+              {% endif %}
+              <div class="small text-truncate mt-1 text-secondary">
+                {{ att.name }}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {# New files preview (client-side) #}
+    <div id="{{ inputId }}__preview" class="row g-1 mt-2"></div>
+
     <div class="form-text text-secondary">PNG/JPG/WebP/PDF, up to 25 MB each.</div>
   </div>
 
-  {% if form.children['client'] is defined %}
-    <div>
-      <label class="form-label mb-1">👤 Client</label>
-      {{ form_widget(form.client, { attr: form.client.vars.attr|merge({'class':'form-select'}) }) }}
-      {{ form_errors(form.client) }}
-    </div>
-  {% endif %}
+  {# ---- Admin-only fields: 3 columns (client / status / paid) ---- #}
+  {% set hasAdminFields =
+    (form.children['client'] is defined) or
+    (form.children['status'] is defined) or
+    (form.children['paid'] is defined)
+  %}
+  {% if hasAdminFields %}
+    <div class="row g-3 pt-2">
+      {% if form.children['client'] is defined %}
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1">👤 Client</label>
+          {{ form_widget(form.client, {
+            attr: form.client.vars.attr|merge({'class':'form-select'})
+          }) }}
+          {{ form_errors(form.client) }}
+        </div>
+      {% endif %}
 
-  {% if form.children['status'] is defined %}
-    <div>
-      <label class="form-label mb-1">🏷️ Status</label>
-      {{ form_widget(form.status, { attr: form.status.vars.attr|merge({'class':'form-select'}) }) }}
-      {{ form_errors(form.status) }}
-    </div>
-  {% endif %}
+      {% if form.children['status'] is defined %}
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1">🏷️ Status</label>
+          {{ form_widget(form.status, {
+            attr: form.status.vars.attr|merge({'class':'form-select'})
+          }) }}
+          {{ form_errors(form.status) }}
+        </div>
+      {% endif %}
 
-  {% if form.children['paid'] is defined %}
-    <div class="form-check">
-      {{ form_widget(form.paid, { attr: {'class':'form-check-input','id':'paid-check'} }) }}
-      <label for="paid-check" class="form-check-label">Paid</label>
-      {{ form_errors(form.paid) }}
+      {% if form.children['paid'] is defined %}
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1 d-block">💰 Paid</label>
+          <div class="form-check form-switch">
+            {{ form_widget(form.paid, {
+              attr: form.paid.vars.attr|merge({
+                'class':'form-check-input',
+                'id': form.paid.vars.id ~ '_switch'
+              })
+            }) }}
+            <label class="form-check-label small"
+                   for="{{ form.paid.vars.id }}_switch">
+              Mark this order as paid
+            </label>
+          </div>
+          {{ form_errors(form.paid) }}
+        </div>
+      {% endif %}
     </div>
   {% endif %}
 
   <div class="d-flex gap-2 pt-2">
-    <button class="btn btn-primary rounded-1">{{ button_label|default('Save') }}</button>
+    <button class="btn btn-primary rounded-1">
+      {{ button_label|default('Save') }}
+    </button>
     {% if back_path is defined and back_path %}
       <a class="btn btn-outline-light rounded-1" href="{{ back_path }}">Cancel</a>
     {% endif %}
@@ -106,29 +186,74 @@
 {{ form_end(form) }}
 
 <style>
-  .form-label{ display:block; }
-  #{{ inputId }}__preview .thumb{
-    position:relative;border:1px solid rgba(255,255,255,.15);
-    border-radius:.5rem;padding:.5rem;background:rgba(255,255,255,.03);
+  .form-label { display: block; }
+
+  #{{ inputId }}__existing .thumb,
+  #{{ inputId }}__preview .thumb {
+    position: relative;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: .4rem;
+    padding: .3rem;
+    background: rgba(255,255,255,.03);
+    max-width: 110px;
+    margin-inline: auto;
   }
+
+  #{{ inputId }}__existing img,
+  #{{ inputId }}__existing .pdf-icon,
   #{{ inputId }}__preview img,
-  #{{ inputId }}__preview .pdf-icon{
-    width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:.35rem;
-    background:rgba(255,255,255,.05);
+  #{{ inputId }}__preview .pdf-icon {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: .35rem;
+    background: rgba(255,255,255,.05);
   }
-  #{{ inputId }}__preview .btn-remove{
-    position:absolute;top:.25rem;right:.25rem;line-height:1;padding:.15rem .4rem;
+
+  #{{ inputId }}__preview .btn-remove {
+    position: absolute;
+    top: .15rem;
+    right: .15rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border-radius: 999px;
+    border: none;
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(220,53,69,.95);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.5);
+    cursor: pointer;
+  }
+
+  #{{ inputId }}__preview .btn-remove:hover {
+    background: #dc3545;
+    transform: scale(1.05);
+  }
+
+  #{{ inputId }}__existing .thumb .small,
+  #{{ inputId }}__preview .thumb .small {
+    font-size: .75rem;
   }
 </style>
 
 <script>
 // Price formatting + presets -> sync hidden cents
 (function(){
-  const centsInput = document.querySelector('input[name$="[price]"]'); // HiddenType
+  const centsInput  = document.querySelector('input[name$="[price]"]'); // HiddenType
   const prettyInput = document.querySelector('.js-price-euros');
-  const presets = document.querySelectorAll('.js-preset');
+  const presets     = document.querySelectorAll('.js-preset');
 
-  function fmt(c){ return (c/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fmt(c){
+    return (c/100).toLocaleString(undefined,{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    });
+  }
+
   function parseToCents(str){
     if(!str) return NaN;
     const n = String(str).replace(/[€\s]/g,'').replace(',','.');
@@ -136,21 +261,44 @@
     if(isNaN(f)) return NaN;
     return Math.round(f*100);
   }
+
   function syncFromPretty(){
     const c = parseToCents(prettyInput.value);
-    if(!isNaN(c)){ const v = Math.max(500,c); centsInput.value = String(v); prettyInput.value = fmt(v); }
+    if(!isNaN(c)){
+      const v = Math.max(500,c);
+      centsInput.value = String(v);
+      prettyInput.value = fmt(v);
+    }
   }
+
   function setCents(c){
     const v = Math.max(500, c|0);
     centsInput.value = String(v);
     prettyInput.value = fmt(v);
   }
 
+  // Initialisation : garder la valeur après erreur de validation
+  if (centsInput && prettyInput) {
+    if (centsInput.value) {
+      const existing = parseInt(centsInput.value, 10);
+      if (!isNaN(existing) && existing > 0) {
+        prettyInput.value = fmt(existing);
+      } else {
+        setCents(500);
+      }
+    } else {
+      setCents(500);
+    }
+  }
+
   prettyInput?.addEventListener('change', syncFromPretty);
   prettyInput?.addEventListener('blur', syncFromPretty);
-  presets.forEach(b => b.addEventListener('click', () => setCents(parseInt(b.dataset.cents||'0',10))));
 
-  if(!centsInput.value){ setCents(500); }
+  presets.forEach(b =>
+    b.addEventListener('click', () =>
+      setCents(parseInt(b.dataset.cents || '0', 10))
+    )
+  );
 })();
 </script>
 
@@ -161,32 +309,36 @@
   const preview = document.getElementById('{{ inputId }}__preview');
   if (!input || !preview) return;
 
-  // Keep an editable FileList via DataTransfer
   let dt = window.DataTransfer ? new DataTransfer() : null;
 
   function rebuildFrom(dtLike){
     preview.innerHTML = '';
     const files = dtLike ? dtLike.files : input.files;
+
     Array.from(files).forEach((file, idx) => {
-      const col  = document.createElement('div'); col.className='col-6 col-md-3';
-      const card = document.createElement('div'); card.className='thumb';
+      const col  = document.createElement('div');
+      col.className = 'col-4 col-md-3 col-lg-2';
+
+      const card = document.createElement('div');
+      card.className = 'thumb';
 
       const close = document.createElement('button');
-      close.type='button';
-      close.className='btn btn-sm btn-outline-danger rounded-1 btn-remove';
-      close.textContent='×';
+      close.type  = 'button';
+      close.className = 'btn-remove';
+      close.textContent = '×';
 
       close.addEventListener('click', () => {
         if (dt) {
           const tmp = new DataTransfer();
-          Array.from(dt.files).forEach((f,i)=>{ if(i!==idx) tmp.items.add(f); });
+          Array.from(dt.files).forEach((f,i) => {
+            if (i !== idx) tmp.items.add(f);
+          });
           dt = tmp;
           input.files = dt.files;
         } else {
-          // Fallback: recreate from current FileList (limited support if no DataTransfer)
-          const arr = Array.from(input.files).filter((_,i)=>i!==idx);
+          const arr = Array.from(input.files).filter((_,i) => i !== idx);
           const tmp = new DataTransfer();
-          arr.forEach(f=>tmp.items.add(f));
+          arr.forEach(f => tmp.items.add(f));
           input.files = tmp.files;
         }
         rebuildFrom(dt);
@@ -201,12 +353,12 @@
         r.readAsDataURL(file);
       } else {
         media = document.createElement('div');
-        media.className='pdf-icon d-flex align-items-center justify-content-center';
+        media.className = 'pdf-icon d-flex align-items-center justify-content-center';
         media.innerHTML = '<span class="badge text-bg-light text-dark">PDF</span>';
       }
 
       const cap = document.createElement('div');
-      cap.className='small text-truncate mt-2 text-secondary';
+      cap.className = 'small text-truncate mt-1 text-secondary';
       cap.textContent = file.name;
 
       card.appendChild(close);
@@ -219,14 +371,12 @@
 
   input.addEventListener('change', () => {
     if (dt) {
-      // accumulate selections
       Array.from(input.files).forEach(f => dt.items.add(f));
       input.files = dt.files;
     }
     rebuildFrom(dt);
   });
 
-  // If Turbo is used, ensure preview survives navigation
   document.addEventListener('turbo:load', () => rebuildFrom(dt));
 })();
 </script>
