@@ -21,7 +21,10 @@
     </div>
   </div>
 
-  {# Flash messages #}
+  {# On récupère d'abord les flashs 'invite_link' pour le JS #}
+  {% set inviteLinks = app.flashes('invite_link') %}
+
+  {# Flash messages classiques (tous les autres) #}
   {% for label, messages in app.flashes %}
     {% for message in messages %}
       <div class="alert alert-{{ label }} small py-2 mb-2">
@@ -123,59 +126,68 @@
           <div class="card-body">
             <p class="text-secondary small mb-3">
               Create an invite link to onboard this client to the portal.
-              After creation, the link is automatically copied to your clipboard.
             </p>
 
             <form method="post"
                   action="{{ path('app_invite_create', {'id': client.id}) }}"
-                  class="m-0"
+                  class="m-0 mb-2"
                   data-turbo="false">
               <button class="btn btn-sm btn-primary rounded-1">+ Create invite</button>
             </form>
 
-            <p class="small text-secondary mt-2 mb-0" id="invite-feedback" hidden>
-              Latest invite link copied to clipboard ✅
-            </p>
+            {% if inviteLink %}
+              <div class="d-flex flex-column gap-1 mt-2">
+                <button type="button"
+                        class="btn btn-sm btn-outline-light rounded-1 text-truncate"
+                        id="copy-invite-btn"
+                        data-link="{{ inviteLink }}">
+                  {{ inviteLink }}
+                </button>
+                <small class="text-success" id="copy-feedback" hidden>
+                  Copied to clipboard ✅
+                </small>
+              </div>
+            {% else %}
+              <p class="small text-secondary mb-0">
+                No active invite link for this client yet.
+              </p>
+            {% endif %}
           </div>
         </div>
       {% endif %}
-      {# Récupération du lien d’invitation (flash) pour le JS #}
-        {% set inviteLinks = app.flashes('invite_link') %}
-        {% if inviteLinks is not empty %}
-          {% set lastInviteLink = inviteLinks|last %}
-          <span id="js-invite-link"
-                data-invite-link="{{ lastInviteLink }}"
-                class="d-none"></span>
-        {% endif %}
+
+
+
+      
     </div>
   </div>
 </div>
 
 <script>
-(function () {
-  const holder = document.getElementById('js-invite-link');
-  if (!holder) return;
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('#copy-invite-btn');
+  if (!btn) return;
 
-  const link = holder.dataset.inviteLink;
-  if (!link) return;
-
-  const feedback = document.getElementById('invite-feedback');
+  const link = btn.dataset.link;
+  const feedback = document.getElementById('copy-feedback');
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(link).then(() => {
-      if (feedback) feedback.hidden = false;
-      console.log('Invite link copied to clipboard:', link);
-      setTimeout(() => {
-        if (feedback) feedback.hidden = true;
-      }, 2500);
+      if (feedback) {
+        feedback.hidden = false;
+        setTimeout(() => {
+          feedback.hidden = true;
+        }, 2000);
+      }
     }).catch(err => {
       console.error('Clipboard copy failed:', err);
-      alert('Invite created. Copy this link manually:\n' + link);
+      alert('Copy this link manually:\n' + link);
     });
   } else {
-    // Fallback si Clipboard API indisponible
-    alert('Invite created. Copy this link manually:\n' + link);
+    alert('Copy this link manually:\n' + link);
   }
-})();
+});
 </script>
+
+
 {% endblock %}

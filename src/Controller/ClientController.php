@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Repository\OrderRepository;
 use App\Repository\UserRepository;
+use App\Repository\InvitationRepository;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 #[Route('/admin/client')]
 final class ClientController extends AbstractController
@@ -68,15 +70,19 @@ final class ClientController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_client_show', methods: ['GET'])]
-    public function show(Client $client, OrderRepository $orderRepo, Request $request, UserRepository $users): Response
-    {
+    public function show(
+        Client $client,
+        OrderRepository $orderRepo,
+        Request $request,
+        UserRepository $users,
+        InvitationRepository $invites,
+    ): Response {
         $this->denyAccessUnlessGranted('CLIENT_VIEW', $client);
+
         $linkedUser = $users->findOneBy(['client' => $client]);
 
-        // Totaux financiers (tu as déjà dueAndPaidForClient)
         $totals = $orderRepo->dueAndPaidForClient($client->getId());
 
-        // Liste des orders de CE client (tri + pagination), sans filtres
         $page  = max(1, (int) $request->query->get('page', 1));
         $limit = 10;
         $sort  = (string) $request->query->get('sort', 'updatedAt');
@@ -94,23 +100,39 @@ final class ClientController extends AbstractController
             sort: $sort,
             dir: $dir
         );
-        
-        [$orders, $total] = $result; // ← déstructuration (indexé)
-        
+
+        [$orders, $total] = $result;
+
+        $inviteLink = null;
+        $lastInvitation = $invites->findOneBy(
+            ['client' => $client],
+            ['createdAt' => 'DESC']
+        );
+
+        if ($lastInvitation && $lastInvitation->isUsable()) {
+            $inviteLink = $this->generateUrl(
+                'app_register',
+                ['invite' => $lastInvitation->getToken()],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            );
+        }
+
         return $this->render('client/show.html.twig', [
-            'client'    => $client,
-            'dueCents'  => $totals['dueCents'],
-            'paidCents' => $totals['paidCents'],
-        
-            'orders' => $orders,
-            'total'  => $total,
-            'page'   => $page,
-            'limit'  => $limit,
-            'sort'   => $sort,
-            'dir'    => strtoupper($dir),
-            'linkedUser' => $linkedUser,
-        ]);        
+            'client'      => $client,
+            'dueCents'    => $totals['dueCents'],
+            'paidCents'   => $totals['paidCents'],
+            'orders'      => $orders,
+            'total'       => $total,
+            'page'        => $page,
+            'limit'       => $limit,
+            'sort'        => $sort,
+            'dir'         => strtoupper($dir),
+            'linkedUser'  => $linkedUser,
+            'inviteLink'  => $inviteLink,
+        ]);
     }
+
+
 
     #[Route('/admin/client/{id}/edit', name: 'app_client_edit', methods: ['GET','POST'])]
     public function edit(Request $request, Client $client, EntityManagerInterface $em, UserRepository $users): Response
