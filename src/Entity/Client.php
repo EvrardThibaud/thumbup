@@ -18,39 +18,25 @@ class Client
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $channelUrl = null;
-    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Invitation::class, cascade: ['persist','remove'], orphanRemoval: true)]
+    /** @var Collection<int, Invitation> */
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Invitation::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $invitations;
 
-    /**
-     * @var Collection<int, Order>
-     */
+    /** @var Collection<int, Order> */
     #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'client')]
     private Collection $orders;
 
+    /** @var Collection<int, YoutubeChannel> */
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: YoutubeChannel::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $youtubeChannels;
+
     public function __construct()
     {
-        $this->orders = new ArrayCollection();
-        $this->invitations = new ArrayCollection();
+        $this->invitations     = new ArrayCollection();
+        $this->orders          = new ArrayCollection();
+        $this->youtubeChannels = new ArrayCollection();
     }
-
-    /** @return Collection<int, Invitation> */
-    public function getInvitations(): Collection { return $this->invitations; }
-    public function addInvitation(Invitation $inv): self {
-        if (!$this->invitations->contains($inv)) {
-            $this->invitations->add($inv);
-            $inv->setClient($this);
-        }
-        return $this;
-    }
-    public function removeInvitation(Invitation $inv): self {
-        if ($this->invitations->removeElement($inv)) {
-            if ($inv->getClient() === $this) { $inv->setClient(null); }
-        }
-        return $this;
-    }
-
 
     public function getId(): ?int
     {
@@ -74,14 +60,31 @@ class Client
         return $this;
     }
 
-    public function getChannelUrl(): ?string
+    /**
+     * @return Collection<int, Invitation>
+     */
+    public function getInvitations(): Collection
     {
-        return $this->channelUrl;
+        return $this->invitations;
     }
 
-    public function setChannelUrl(?string $channelUrl): static
+    public function addInvitation(Invitation $inv): self
     {
-        $this->channelUrl = $channelUrl;
+        if (!$this->invitations->contains($inv)) {
+            $this->invitations->add($inv);
+            $inv->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInvitation(Invitation $inv): self
+    {
+        if ($this->invitations->removeElement($inv)) {
+            if ($inv->getClient() === $this) {
+                $inv->setClient(null);
+            }
+        }
 
         return $this;
     }
@@ -107,9 +110,37 @@ class Client
     public function removeOrder(Order $order): static
     {
         if ($this->orders->removeElement($order)) {
-            // set the owning side to null (unless already changed)
             if ($order->getClient() === $this) {
                 $order->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, YoutubeChannel>
+     */
+    public function getYoutubeChannels(): Collection
+    {
+        return $this->youtubeChannels;
+    }
+
+    public function addYoutubeChannel(YoutubeChannel $channel): self
+    {
+        if (!$this->youtubeChannels->contains($channel)) {
+            $this->youtubeChannels->add($channel);
+            $channel->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeYoutubeChannel(YoutubeChannel $channel): self
+    {
+        if ($this->youtubeChannels->removeElement($channel)) {
+            if ($channel->getClient() === $this) {
+                $channel->setClient(null);
             }
         }
 

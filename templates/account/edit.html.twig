@@ -46,17 +46,60 @@
                 </div>
               </div>
 
+                            {% set channels = user.client.youtubeChannels %}
               <div>
-                <label class="form-label small mb-1">Channel URL</label>
-                <input type="url"
-                       name="channel_url"
-                       value="{{ user.client.channelUrl }}"
-                       placeholder="https://youtube.com/@yourchannel"
-                       class="form-control form-control-sm bg-dark text-white border-secondary">
-                <div class="form-text text-secondary small">
-                  Optional. A link to your YouTube channel or main profile.
+                <label class="form-label small mb-1">YouTube channels</label>
+
+                <div class="vstack gap-2">
+                  {# lignes existantes #}
+                  {% for ch in channels %}
+                    <div class="row g-2 align-items-center">
+                      <input type="hidden"
+                             name="channels[{{ loop.index0 }}][id]"
+                             value="{{ ch.id }}">
+
+                      <div class="col-12 col-md-4">
+                        <input type="text"
+                               name="channels[{{ loop.index0 }}][name]"
+                               value="{{ ch.name }}"
+                               class="form-control form-control-sm bg-dark text-white border-secondary"
+                               placeholder="Title (e.g. Main)">
+                      </div>
+                      <div class="col-12 col-md-8">
+                        <input type="url"
+                               name="channels[{{ loop.index0 }}][url]"
+                               value="{{ ch.url }}"
+                               class="form-control form-control-sm bg-dark text-white border-secondary"
+                               placeholder="https://youtube.com/@yourchannel">
+                      </div>
+                    </div>
+                  {% endfor %}
+
+                  {# une ligne vide en plus pour ajouter une nouvelle chaîne #}
+                  {% set extraIndex = channels|length %}
+                  <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-4">
+                      <input type="text"
+                             name="channels[{{ extraIndex }}][name]"
+                             value=""
+                             class="form-control form-control-sm bg-dark text-white border-secondary"
+                             placeholder="Title (optional)">
+                    </div>
+                    <div class="col-12 col-md-8">
+                      <input type="url"
+                             name="channels[{{ extraIndex }}][url]"
+                             value=""
+                             class="form-control form-control-sm bg-dark text-white border-secondary"
+                             placeholder="https://youtube.com/@newchannel">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-text text-secondary small mt-1">
+                  First channel is treated as main. Leave a row empty to remove it.
                 </div>
               </div>
+
 
               <div class="d-flex gap-2 pt-2">
                 <button class="btn btn-primary btn-sm rounded-1" type="submit">

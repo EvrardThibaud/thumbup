@@ -36,15 +36,25 @@
               {{ user.timezone ?? 'Europe/Paris' }}
             </dd>
 
-            <dt class="col-sm-4 text-secondary">Channel</dt>
+            <dt class="col-sm-4 text-secondary">Channels</dt>
             <dd class="col-sm-8">
-              {% if user.client and user.client.channelUrl %}
-                <a class="link-light link-opacity-75-hover"
-                   href="{{ user.client.channelUrl }}"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                  {{ user.client.channelUrl }}
-                </a>
+              {% if user.client and user.client.youtubeChannels|length > 0 %}
+                <ul class="list-unstyled mb-0 small">
+                  {% for ch in user.client.youtubeChannels %}
+                    <li class="mb-1">
+                      <span class="text-secondary">{{ loop.index }}.</span>
+                      {% if ch.name %}
+                        <span class="fw-semibold">{{ ch.name }}</span>
+                      {% endif %}
+                      <a class="link-light link-opacity-75-hover ms-1"
+                         href="{{ ch.url }}"
+                         target="_blank"
+                         rel="noopener noreferrer">
+                        {{ ch.url }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
               {% else %}
                 <span class="text-secondary">—</span>
               {% endif %}

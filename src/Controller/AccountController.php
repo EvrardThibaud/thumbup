@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Entity\YoutubeChannel;
 
 #[Route('/account')]
 final class AccountController extends AbstractController
@@ -63,8 +64,8 @@ final class AccountController extends AbstractController
                     throw $this->createAccessDeniedException('Invalid CSRF token.');
                 }
 
-                $username   = trim((string) $request->request->get('username', ''));
-                $channelUrl = trim((string) $request->request->get('channel_url', ''));
+                $username = trim((string) $request->request->get('username', ''));
+                $channelsData = $request->request->all('channels') ?? [];
 
                 if ($username === '') {
                     $this->addFlash('danger', 'Username cannot be empty.');
@@ -76,17 +77,71 @@ final class AccountController extends AbstractController
                     return $this->redirectToRoute('app_account_edit');
                 }
 
-                if ($channelUrl !== '' && mb_strlen($channelUrl) > 255) {
-                    $this->addFlash('danger', 'Channel URL is too long (max 255 characters).');
-                    return $this->redirectToRoute('app_account_edit');
+                // Indexe les chaînes existantes par id
+                $existingChannels = [];
+                foreach ($client->getYoutubeChannels() as $ch) {
+                    if (null !== $ch->getId()) {
+                        $existingChannels[$ch->getId()] = $ch;
+                    }
                 }
 
-                if ($channelUrl !== '' && !preg_match('#^https?://#i', $channelUrl)) {
-                    $channelUrl = 'https://' . $channelUrl;
+                $seenIds  = [];
+                $position = 0;
+
+                foreach ($channelsData as $row) {
+                    $id   = isset($row['id']) ? (int) $row['id'] : null;
+                    $name = trim((string) ($row['name'] ?? ''));
+                    $url  = trim((string) ($row['url'] ?? ''));
+
+                    // Ligne vide => on ignore
+                    if ($name === '' && $url === '') {
+                        continue;
+                    }
+
+                    if ($url !== '' && !preg_match('#^https?://#i', $url)) {
+                        $url = 'https://' . $url;
+                    }
+
+                    if ($name !== '' && mb_strlen($name) > 255) {
+                        $this->addFlash('danger', 'Channel title is too long (max 255 characters).');
+                        return $this->redirectToRoute('app_account_edit');
+                    }
+
+                    if ($url !== '' && mb_strlen($url) > 255) {
+                        $this->addFlash('danger', 'Channel URL is too long (max 255 characters).');
+                        return $this->redirectToRoute('app_account_edit');
+                    }
+
+                    if ($url === '') {
+                        $this->addFlash('danger', 'Channel URL cannot be empty if a title is provided.');
+                        return $this->redirectToRoute('app_account_edit');
+                    }
+
+                    if ($id && isset($existingChannels[$id])) {
+                        $channel = $existingChannels[$id];
+                        $seenIds[] = $id;
+                    } else {
+                        $channel = new YoutubeChannel();
+                        $channel->setClient($client);
+                        $em->persist($channel);
+                    }
+
+                    $channel
+                        ->setName($name !== '' ? $name : $url)
+                        ->setUrl($url)
+                        ->setPosition($position++); // 0 = main, 1 = secondaire, etc.
+                }
+
+                // Supprime les chaînes non présentes dans le formulaire
+                foreach ($client->getYoutubeChannels() as $ch) {
+                    $id = $ch->getId();
+                    if ($id !== null && !in_array($id, $seenIds, true)) {
+                        $client->removeYoutubeChannel($ch);
+                        $em->remove($ch);
+                    }
                 }
 
                 $client->setName($username);
-                $client->setChannelUrl($channelUrl !== '' ? $channelUrl : null);
 
                 $em->flush();
 

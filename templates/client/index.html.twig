@@ -33,12 +33,16 @@
             <td class="text-secondary">#{{ client.id }}</td>
             <td class="fw-medium">{{ client.name }}</td>
             <td class="text-secondary">
-              {% if client.channelUrl %}
+              {% set mainChannel = client.youtubeChannels|first %}
+              {% if mainChannel %}
                 <a class="link-light link-opacity-75-hover"
-                   href="{{ client.channelUrl }}"
-                   target="_blank"
-                   onclick="event.stopPropagation()">Open</a>
-              {% else %} — {% endif %}
+                  href="{{ mainChannel.url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onclick="event.stopPropagation()">Open</a>
+              {% else %}
+                —
+              {% endif %}
             </td>
             <td>
               {% if linkedUser %}
