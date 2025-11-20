@@ -257,33 +257,39 @@ class OrderRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('o')
             ->andWhere('o.client = :client')
-            ->andWhere('o.createdAt >= :start')
-            ->andWhere('o.createdAt < :end')
+            ->andWhere('o.dueAt IS NOT NULL')
+            ->andWhere('o.dueAt >= :start')
+            ->andWhere('o.dueAt < :end')
             ->setParameter('client', $client)
             ->setParameter('start', $start)
             ->setParameter('end', $end)
-            ->orderBy('o.createdAt', 'ASC');
+            ->orderBy('o.dueAt', 'ASC');
 
         $orders = $qb->getQuery()->getResult();
 
         // Build month buckets from start..end (inclusive start, exclusive end)
-        $cursor = new \DateTimeImmutable($start->format('Y-m-01 00:00:00'));
+        $cursor   = new \DateTimeImmutable($start->format('Y-m-01 00:00:00'));
         $endMonth = new \DateTimeImmutable($end->format('Y-m-01 00:00:00'));
 
-        $labels = [];
+        $labels     = [];
         $indexByKey = [];
-        while ($cursor <= $endMonth) {
+
+        while ($cursor < $endMonth) {
             $key = $cursor->format('Y-m');
-            $indexByKey[$key] = count($labels);
+            $indexByKey[$key] = \count($labels);
             $labels[] = $key;
             $cursor = $cursor->modify('+1 month');
         }
 
-        $data = array_fill(0, count($labels), 0);
+        $data = array_fill(0, \count($labels), 0);
 
         foreach ($orders as $order) {
             /** @var Order $order */
-            $key = $order->getCreatedAt()->format('Y-m');
+            $dueAt = $order->getDueAt();
+            if (!$dueAt) {
+                continue;
+            }
+            $key = $dueAt->format('Y-m');
             if (isset($indexByKey[$key])) {
                 $data[$indexByKey[$key]]++;
             }
@@ -291,6 +297,7 @@ class OrderRepository extends ServiceEntityRepository
 
         return ['labels' => $labels, 'data' => $data];
     }
+
 
 
     //    /**

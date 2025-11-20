@@ -82,12 +82,14 @@ final class DashboardController extends AbstractController
         // Orders created
         $ordersQb = $orders->createQueryBuilder('o')
             ->select('COUNT(o.id)')
-            ->andWhere('o.createdAt >= :start AND o.createdAt < :end')
+            ->andWhere('o.dueAt IS NOT NULL')
+            ->andWhere('o.dueAt >= :start AND o.dueAt < :end')
             ->setParameter('start', $start)->setParameter('end', $end);
         if ($selectedClient instanceof Client) {
             $ordersQb->andWhere('o.client = :c')->setParameter('c', $selectedClient);
         }
         $totalOrders12m = (int) $ordersQb->getQuery()->getSingleScalarResult();
+
 
         // Time entries minutes
         $timeQb = $times->createQueryBuilder('t')
@@ -99,11 +101,12 @@ final class DashboardController extends AbstractController
         }
         $totalMinutes12m = (int) $timeQb->getQuery()->getSingleScalarResult();
 
-        // Revenue (delivered orders; sum price in cents)
+        // Revenue (paid orders; sum price in cents, bucketed by dueAt)
         $revQb = $orders->createQueryBuilder('o')
             ->select('COALESCE(SUM(o.price),0)')
             ->andWhere('o.paid = :paid')
-            ->andWhere('o.updatedAt >= :start AND o.updatedAt < :end')
+            ->andWhere('o.dueAt IS NOT NULL')
+            ->andWhere('o.dueAt >= :start AND o.dueAt < :end')
             ->setParameter('paid', true)
             ->setParameter('start', $start)->setParameter('end', $end);
         if ($selectedClient instanceof Client) {
@@ -147,10 +150,11 @@ final class DashboardController extends AbstractController
 
             $labels[] = $monthStart->format('Y-m');
 
-            // Orders created in month
+            // Orders whose dueAt is in this month
             $qb1 = $orders->createQueryBuilder('o')
                 ->select('COUNT(o.id)')
-                ->andWhere('o.createdAt >= :ms AND o.createdAt < :me')
+                ->andWhere('o.dueAt IS NOT NULL')
+                ->andWhere('o.dueAt >= :ms AND o.dueAt < :me')
                 ->setParameter('ms', $monthStart)->setParameter('me', $monthEnd);
             if ($selectedClient instanceof Client) {
                 $qb1->andWhere('o.client = :c')->setParameter('c', $selectedClient);
@@ -169,11 +173,12 @@ final class DashboardController extends AbstractController
             $mins = (int) $qb2->getQuery()->getSingleScalarResult();
             $minsPer[] = $mins;
 
-            // Revenue by delivered updated in month (cents)
+            // Revenue by dueAt in this month (cents)
             $qb3 = $orders->createQueryBuilder('o')
                 ->select('COALESCE(SUM(o.price),0)')
                 ->andWhere('o.paid = :paid')
-                ->andWhere('o.updatedAt >= :ms AND o.updatedAt < :me')
+                ->andWhere('o.dueAt IS NOT NULL')
+                ->andWhere('o.dueAt >= :ms AND o.dueAt < :me')
                 ->setParameter('paid', true)
                 ->setParameter('ms', $monthStart)->setParameter('me', $monthEnd);
             if ($selectedClient instanceof Client) {

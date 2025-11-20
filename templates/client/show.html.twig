@@ -50,19 +50,30 @@
               {{ client.name ?? '—' }}
             </dd>
 
-            <dt class="col-sm-4 text-secondary">Channel</dt>
+            <dt class="col-sm-4 text-secondary">Channels</dt>
             <dd class="col-sm-8">
-              {% if client.channelUrl %}
-                <a class="link-light link-opacity-75-hover"
-                   href="{{ client.channelUrl }}"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                  {{ client.channelUrl }}
-                </a>
+              {% if client.youtubeChannels|length > 0 %}
+                <ul class="list-unstyled mb-0 small">
+                  {% for ch in client.youtubeChannels %}
+                    <li class="mb-1">
+                      <span class="text-secondary">{{ loop.index }}.</span>
+                      {% if ch.name %}
+                        <span class="fw-semibold">{{ ch.name }}</span>
+                      {% endif %}
+                      <a class="link-light link-opacity-75-hover ms-1"
+                         href="{{ ch.url }}"
+                         target="_blank"
+                         rel="noopener noreferrer">
+                        {{ ch.url }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
               {% else %}
                 <span class="text-secondary">—</span>
               {% endif %}
             </dd>
+
 
             {% set due = dueCents is defined ? dueCents : 0 %}
             {% set paid = paidCents is defined ? paidCents : 0 %}
