@@ -33,10 +33,7 @@ final class InvitationController extends AbstractController
         );
 
         // Message de succès classique
-        $this->addFlash('success', 'Invitation created and copied to clipboard.');
-
-        // Flash spécial contenant le lien à copier côté JS
-        $this->addFlash('invite_link', $link);
+        $this->addFlash('success', 'Invitation created.');
 
         return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
     }

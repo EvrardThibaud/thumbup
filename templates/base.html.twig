@@ -7,6 +7,44 @@
     <title>{% block title %}Welcome!{% endblock %}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
     {% block stylesheets %}{% endblock %}
+    <style>
+      /* Style "notification iPhone" */
+      .toast-container {
+        pointer-events: none;
+      }
+
+      .toast-iphone {
+        pointer-events: auto;
+        border-radius: 16px;
+        background: rgba(30, 30, 30, 0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        min-width: 260px;
+        max-width: min(360px, 92vw);
+        transform: translateY(-18px);
+        opacity: 0;
+        transition:
+          transform 0.25s ease-out,
+          opacity 0.25s ease-out;
+      }
+
+      .toast-iphone.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      .toast-iphone.hide,
+      .toast-iphone:not(.show) {
+        transform: translateY(-18px);
+        opacity: 0;
+      }
+
+      .toast-iphone .toast-body {
+        font-size: 0.9rem;
+      }
+    </style>
     {% block javascripts %}
       {% block importmap %}{{ importmap('app') }}{% endblock %}
     {% endblock %}
@@ -15,106 +53,114 @@
     {% include '_nav.html.twig' %}
 
     <main class="container-xxl py-4">
-      <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1080;">
+      {# Top-center notification style #}
+      <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:1080;">
         {% for label, messages in app.flashes %}
-            {% set tone = {
+          {% set tone = {
             'success':'success',
             'warning':'warning',
             'danger':'danger',
             'error':'danger',
             'info':'info'
-            }[label]|default('secondary') %}
+          }[label]|default('secondary') %}
 
-            {% for message in messages %}
-            <div class="toast align-items-center text-bg-{{ tone }} border-0"
-                role="alert" aria-live="assertive" aria-atomic="true"
-                data-bs-autohide="true" data-bs-delay="6000">
-                <div class="d-flex">
-                <div class="toast-body">{{ message|raw }}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                        data-bs-dismiss="toast" aria-label="Close"></button>
+          {% for message in messages %}
+            <div class="toast toast-iphone mt-2 text-bg-{{ tone }} border-0"
+                 role="alert" aria-live="assertive" aria-atomic="true"
+                 data-bs-autohide="true" data-bs-delay="4000">
+              <div class="d-flex align-items-center">
+                <div class="toast-body">
+                  {{ message|raw }}
                 </div>
+                <button type="button"
+                        class="btn-close btn-close-white ms-2 me-1"
+                        data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+              </div>
             </div>
-            {% endfor %}
+          {% endfor %}
         {% endfor %}
-        </div>
+      </div>
 
-        <script>
+      <script>
         (function () {
-        function showToasts() {
+          function showToasts() {
             document.querySelectorAll('.toast').forEach(function (el) {
-            bootstrap.Toast.getOrCreateInstance(el).show();
+              bootstrap.Toast.getOrCreateInstance(el).show();
             });
-        }
-        // Premier chargement
-        document.addEventListener('DOMContentLoaded', showToasts);
-        // Navigations Turbo
-        document.addEventListener('turbo:load', showToasts);
+          }
+          document.addEventListener('DOMContentLoaded', showToasts);
+          document.addEventListener('turbo:load', showToasts);
         })();
-        </script>
-        <script>
-          // Helper: créer et afficher un toast programmatique
-          window.showToast = function (message, tone = 'success') {
-            const container = document.querySelector('.toast-container') || (() => {
-              const c = document.createElement('div');
-              c.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-              c.style.zIndex = 1080;
-              document.body.appendChild(c);
-              return c;
-            })();
+      </script>
+      <style>
+        /* Style "notification iPhone" + animations custom */
+        .toast-container {
+          pointer-events: none;
+        }
 
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-bg-${tone} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.setAttribute('aria-live', 'assertive');
-            toast.setAttribute('aria-atomic', 'true');
-            toast.dataset.bsAutohide = 'true';
-            toast.dataset.bsDelay = '2000';
-            toast.innerHTML = `
-              <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-              </div>`;
-            container.appendChild(toast);
-            bootstrap.Toast.getOrCreateInstance(toast).show();
-          };
+        .toast-iphone {
+          pointer-events: auto;
+          border-radius: 16px;
+          background: rgba(30, 30, 30, 0.92);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          min-width: 260px;
+          max-width: min(360px, 92vw);
+          opacity: 0;
+          transform: translateY(-24px);
+        }
 
-          // Copie au clic pour tout élément [data-copy]
-          document.addEventListener('click', async (e) => {
-            const el = e.target.closest('[data-copy]');
-            if (!el) return;
-            e.preventDefault();
-            const text = el.getAttribute('data-copy') || '';
-            try {
-              await navigator.clipboard.writeText(text);
-              showToast('Link copied to clipboard.', 'success');
-            } catch {
-              // Fallback
-              const ta = Object.assign(document.createElement('textarea'), { value: text });
-              ta.style.position = 'fixed';
-              ta.style.opacity = '0';
-              document.body.appendChild(ta);
-              ta.select(); document.execCommand('copy'); ta.remove();
-              showToast('Link copied to clipboard.', 'success');
-            }
-          });
-        </script>
-        <script>
-          document.addEventListener('click', (e) => {
-            const row = e.target.closest('tr[data-href]');
-            if (!row) return;
+        @keyframes toastSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
 
-            // ne pas déclencher si on clique un élément interactif
-            if (e.target.closest('a, button, input, select, textarea, label')) return;
+        @keyframes toastSlideOut {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-24px);
+          }
+        }
 
-            window.location.href = row.dataset.href;
-          });
-          </script>
+        /* Quand Bootstrap affiche le toast */
+        .toast-iphone.showing,
+        .toast-iphone.show {
+          animation: toastSlideIn 0.25s ease-out forwards;
+        }
+
+        /* Quand Bootstrap le cache / après autohide */
+        .toast-iphone.hide,
+        .toast-iphone:not(.show):not(.showing) {
+          animation: toastSlideOut 0.2s ease-in forwards;
+        }
+
+        .toast-iphone .toast-body {
+          font-size: 0.9rem;
+        }
+      </style>
 
 
-      {# --- Breadcrumbs (global) --- #}
-      {# {% set crumbs = breadcrumbs(app.request) %} #}
-      {# {% include 'partials/_breadcrumbs.html.twig' with { crumbs: crumbs } %} #}
+      <script>
+        document.addEventListener('click', (e) => {
+          const row = e.target.closest('tr[data-href]');
+          if (!row) return;
+          if (e.target.closest('a, button, input, select, textarea, label')) return;
+          window.location.href = row.dataset.href;
+        });
+      </script>
 
       {% block body %}{% endblock %}
     </main>
