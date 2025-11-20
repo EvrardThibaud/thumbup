@@ -142,7 +142,6 @@ INSERT INTO "order" (title, brief, price, status, due_at, created_at, updated_at
 INSERT INTO "order"
   (title, brief, price, status, due_at, created_at, updated_at, client_id, paid)
 VALUES
-  -- Octobre (Ashtax, id 6)
   ('Defis 20 wins j2',               NULL, 2500, 'finished', '2025-10-31 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('Defis 20 wins j1',               NULL, 2500, 'finished', '2025-10-28 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('Clashtax tirage triple 2',       NULL, 2500, 'finished', '2025-10-25 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
@@ -150,7 +149,7 @@ VALUES
   ('Clashtax classique 8',           NULL, 2500, 'finished', '2025-10-19 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('Clashtax classique 7',           NULL, 2500, 'finished', '2025-10-16 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('8 pires metrises',               NULL, 2500, 'finished', '2025-10-13 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
-  ('deck aleatoire',                 NULL, 2500, 'finished', '2025-10-10 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
+  ('Deck aléatoire',                 NULL, 2500, 'finished', '2025-10-10 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('Faq',                            NULL, 2500, 'finished', '2025-09-30 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('10000 trophee',                  NULL, 5000, 'finished', '2025-08-31 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('Deck geant surpuissant',         NULL, 2500, 'finished', '2025-08-28 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
@@ -180,3 +179,21 @@ VALUES
   ('Sergio ramos',                   NULL, 2500, 'finished', '2025-03-28 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('Ladder retro',                   NULL, 2500, 'finished', '2025-03-25 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1),
   ('20000 victoires',                NULL, 2500, 'finished', '2025-03-22 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 6, 1);
+
+INSERT INTO time_entry (minutes, note, created_at, related_order_id) VALUES
+  (60,  NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Clashtax classique 7' LIMIT 1)),
+  (120, NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Deck aléatoire' LIMIT 1)),
+  (43,  NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Clashtax tirage triple 2' LIMIT 1)),
+  (50,  NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Clashtax classique 8' LIMIT 1)),
+  (120, NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = '8 pires metrises' LIMIT 1)),
+  (70,  NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Defis 20 wins j2' LIMIT 1)),
+  (70,  NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Defis 20 wins j1' LIMIT 1)),
+  (65,  NULL, CURRENT_TIMESTAMP,
+    (SELECT id FROM "order" WHERE title = 'Clashtax mort subite 3' LIMIT 1));
