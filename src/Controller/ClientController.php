@@ -141,7 +141,57 @@ final class ClientController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // --- gestion des chaînes YouTube (similaire à account/edit) ---
+            /** @var array<string,mixed> $channelsPayload */
+            $channelsPayload = (array) $request->request->all('channels');
+
+            // indexer les existantes par id
+            $existing = [];
+            foreach ($client->getYoutubeChannels() as $ch) {
+                $existing[$ch->getId()] = $ch;
+            }
+
+            $position = 0;
+
+            foreach ($channelsPayload as $row) {
+                $id   = isset($row['id']) ? (int) $row['id'] : null;
+                $name = trim((string) ($row['name'] ?? ''));
+                $url  = trim((string) ($row['url'] ?? ''));
+
+                // ligne vide => suppression si existante
+                if ($name === '' && $url === '') {
+                    if ($id && isset($existing[$id])) {
+                        $em->remove($existing[$id]);
+                        unset($existing[$id]);
+                    }
+                    continue;
+                }
+
+                if ($url !== '' && !preg_match('#^https?://#i', $url)) {
+                    $url = 'https://' . $url;
+                }
+
+                if ($id && isset($existing[$id])) {
+                    $channel = $existing[$id];
+                    unset($existing[$id]);
+                } else {
+                    $channel = new \App\Entity\YoutubeChannel();
+                    $channel->setClient($client);
+                    $em->persist($channel);
+                }
+
+                $channel->setName($name !== '' ? $name : null);
+                $channel->setUrl($url);
+                $channel->setPosition($position++);
+            }
+
+            // ce qui reste dans $existing n’est plus dans le formulaire => on supprime
+            foreach ($existing as $toRemove) {
+                $em->remove($toRemove);
+            }
+
             $em->flush();
+
             $this->addFlash('success', 'Client updated.');
             return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
         }
@@ -151,9 +201,10 @@ final class ClientController extends AbstractController
         return $this->render('client/edit.html.twig', [
             'client'     => $client,
             'form'       => $form,
-            'linkedUser' => $linkedUser, // 👈
+            'linkedUser' => $linkedUser,
         ]);
     }
+
 
     #[Route('/{id}', name: 'app_client_delete', methods: ['POST'])]
     public function delete(Request $request, Client $client, EntityManagerInterface $entityManager): Response

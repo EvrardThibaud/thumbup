@@ -1,25 +1,145 @@
+{# templates/client/edit.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Client{% endblock %}
+{% block title %}Edit client{% endblock %}
 
 {% block body %}
-    <h1>Edit Client</h1>
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 m-0">👤 Edit client</h1>
+    <a href="{{ path('app_client_show', {id: client.id}) }}"
+       class="btn btn-sm btn-outline-light rounded-1">← Back</a>
+  </div>
 
-    {# templates/client/edit.html.twig #}
-    {% if linkedUser %}
-    <div class="alert alert-secondary d-flex align-items-center justify-content-between">
-        <div>
+  {# Flash messages #}
+  {% for label, messages in app.flashes %}
+    {% for message in messages %}
+      <div class="alert alert-{{ label }} small py-2 mb-2">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endfor %}
+
+  {% if linkedUser %}
+    <div class="alert alert-secondary d-flex align-items-center justify-content-between small">
+      <div>
         <div class="fw-medium">Linked account</div>
-        <div class="small text-secondary">👤 {{ linkedUser.email }}</div>
-        </div>
-        <span class="badge text-bg-success rounded-1">Linked</span>
+        <div class="text-secondary">👤 {{ linkedUser.email }}</div>
+      </div>
+      <span class="badge text-bg-success rounded-1">Linked</span>
     </div>
-    {% endif %}
-    
-    {{ include('client/_form.html.twig', {'button_label': 'Update'}) }}
+  {% endif %}
 
-    <a href="{{ path('app_client_index') }}">back to list</a>
+  <div class="row g-3">
+    <div class="col-12 col-lg-7">
+      <div class="card bg-dark border-secondary rounded-2">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Client profile</span>
+        </div>
+        <div class="card-body">
+          {{ form_start(form, {
+            attr: {
+              class: 'vstack gap-3',
+              'data-turbo': 'false'
+            }
+          }) }}
 
-    {{ include('client/_delete_form.html.twig') }}
+            {# Name (via Symfony form) #}
+            <div>
+              <label class="form-label small mb-1">Name</label>
+              {{ form_widget(form.name, {
+                attr: form.name.vars.attr|merge({
+                  class: 'form-control form-control-sm bg-dark text-white border-secondary'
+                })
+              }) }}
+              {{ form_errors(form.name) }}
+              <div class="form-text text-secondary small">
+                Public label for this client.
+              </div>
+            </div>
 
+            {# YouTube channels (manuel, comme dans account/edit) #}
+            {% set channels = client.youtubeChannels %}
+            <div>
+              <label class="form-label small mb-1">YouTube channels</label>
+
+              <div class="vstack gap-2">
+                {# lignes existantes #}
+                {% for ch in channels %}
+                  <div class="row g-2 align-items-center">
+                    <input type="hidden"
+                           name="channels[{{ loop.index0 }}][id]"
+                           value="{{ ch.id }}">
+
+                    <div class="col-12 col-md-4">
+                      <input type="text"
+                             name="channels[{{ loop.index0 }}][name]"
+                             value="{{ ch.name }}"
+                             class="form-control form-control-sm bg-dark text-white border-secondary"
+                             placeholder="Title (e.g. Main)">
+                    </div>
+                    <div class="col-12 col-md-8">
+                      <input type="url"
+                             name="channels[{{ loop.index0 }}][url]"
+                             value="{{ ch.url }}"
+                             class="form-control form-control-sm bg-dark text-white border-secondary"
+                             placeholder="https://youtube.com/@channel">
+                    </div>
+                  </div>
+                {% endfor %}
+
+                {# une ligne vide en plus pour ajouter une nouvelle chaîne #}
+                {% set extraIndex = channels|length %}
+                <div class="row g-2 align-items-center">
+                  <div class="col-12 col-md-4">
+                    <input type="text"
+                           name="channels[{{ extraIndex }}][name]"
+                           value=""
+                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                           placeholder="Title (optional)">
+                  </div>
+                  <div class="col-12 col-md-8">
+                    <input type="url"
+                           name="channels[{{ extraIndex }}][url]"
+                           value=""
+                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                           placeholder="https://youtube.com/@newchannel">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-text text-secondary small mt-1">
+                First channel (position 0) is treated as main.  
+                Leave name + URL empty to remove a row.
+              </div>
+            </div>
+
+            <div class="d-flex gap-2 pt-2">
+              <button class="btn btn-primary btn-sm rounded-1">
+                Save client
+              </button>
+              <a href="{{ path('app_client_show', {id: client.id}) }}"
+                 class="btn btn-sm btn-outline-light rounded-1">Cancel</a>
+            </div>
+
+          {{ form_end(form) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="card bg-dark border-secondary rounded-2">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Danger zone</span>
+        </div>
+        <div class="card-body">
+          <p class="small text-secondary mb-3">
+            Delete this client and all related data (orders, invitations, etc.).
+          </p>
+          {{ include('client/_delete_form.html.twig') }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

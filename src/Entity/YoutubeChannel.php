@@ -19,8 +19,8 @@ class YoutubeChannel
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Client $client = null;
 
-    #[ORM\Column(length: 255)]
-    private string $name;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $name = null;
 
     #[ORM\Column(length: 255)]
     private string $url;
@@ -45,17 +45,18 @@ class YoutubeChannel
         return $this;
     }
 
-    public function getName(): string
+    public function getName(): ?string
     {
         return $this->name;
     }
 
-    public function setName(string $name): self
+    public function setName(?string $name): self
     {
         $this->name = $name;
-
         return $this;
     }
+
+    
 
     public function getUrl(): string
     {
@@ -83,6 +84,6 @@ class YoutubeChannel
 
     public function __toString(): string
     {
-        return $this->name ?: $this->url;
+        return $this->name ?? $this->url;
     }
 }
