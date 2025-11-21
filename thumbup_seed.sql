@@ -27,7 +27,8 @@ INSERT INTO youtube_channel (id, client_id, name, url, position) VALUES
   (11, 10, 'Main channel', 'https://www.youtube.com/@AbaloCoc',                0),
   (12, 11, 'Main channel', 'https://www.youtube.com/@Youyouu',                 0),
   (13, 12, 'Main channel', 'https://www.youtube.com/@Brqko_x',                 0),
-  (14, 13, 'Main channel', 'https://www.youtube.com/@Dess2211',                0);
+  (14, 13, 'Main channel', 'https://www.youtube.com/@Dess2211',                0),
+  (15,  7, 'Second channel', 'https://www.youtube.com/@WoToP-ClashRoyale',    1);
 
 INSERT INTO "order" (title, brief, price, status, due_at, created_at, updated_at, client_id, paid) VALUES
   ('Broken', NULL, 500, 'finished', '2025-10-31 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 5, 1),
@@ -416,7 +417,7 @@ VALUES
   ('Top 1 mon roquette', NULL, 500, 'finished', '2025-02-01 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 4, 1);
 
 
-  INSERT INTO "order" (
+INSERT INTO "order" (
   client_id, title, brief, price, status, due_at, created_at, updated_at, paid
 ) VALUES
   (2, 'Rush ladder', NULL, 500, 'finished', '2025-07-14 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
@@ -424,14 +425,10 @@ VALUES
   (2, 'Rush ladder', NULL, 500, 'finished', '2025-06-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (2, 'Le retour', NULL, 500, 'finished', '2025-06-07 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (2, 'Best result', NULL, 500, 'finished', '2025-06-03 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
-
   (8, 'Lucky drop', NULL, 1000, 'finished', '2025-08-13 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (8, 'Underated cards', NULL, 1000, 'finished', '2025-08-23 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
-
   (10, 'Boxbreak', NULL, 500, 'finished', '2025-08-20 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
-
   (11, 'Titre pam', NULL, 500, 'finished', '2025-06-07 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
-
   (12, 'Top 1', NULL, 300, 'finished', '2025-03-13 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (12, 'Top 1 recrues esprit de glace evo', NULL, 300, 'finished', '2025-05-11 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (12, '3300 elos', NULL, 300, 'finished', '2025-05-08 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
@@ -448,15 +445,48 @@ VALUES
   (12, 'Masterclass', NULL, 300, 'finished', '2025-06-12 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (12, 'Guide hogs', NULL, 300, 'finished', '2025-08-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (12, '20 wins challenge', NULL, 300, 'finished', '2025-10-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
-
   (13, 'Rush ladder', NULL, 0, 'finished', '2024-11-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (13, 'Sorcer evo', NULL, 0, 'finished', '2024-12-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (13, 'Live', NULL, 0, 'finished', '2024-12-02 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (13, 'Tournoi mondiale decembre 2024', NULL, 0, 'finished', '2024-12-13 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (13, '20 wins crl', NULL, 0, 'finished', '2024-12-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
-
   (9, 'Maudit', NULL, 1000, 'finished', '2025-08-16 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (9, 'Sans payer', NULL, 500, 'finished', '2025-06-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (9, 'Level 15', NULL, 500, 'finished', '2025-02-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (9, 'Top 5 combo 2016', NULL, 500, 'finished', '2025-01-12 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
   (9, '3 meilleurs deck', NULL, 500, 'finished', '2025-01-11 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1);
+
+INSERT INTO "order" (
+  client_id, title, brief, price, status, due_at, created_at, updated_at, paid
+) VALUES
+  (7, 'VS Trapa', NULL, 350, 'finished', '2025-09-14 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '3000 elos 2v2', NULL, 350, 'finished', '2025-06-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '3300+ los', NULL, 350, 'finished', '2025-05-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Top 1 Sofiane', NULL, 350, 'finished', '2025-02-25 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Pack opening squad', NULL, 350, 'finished', '2025-01-25 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Royale champion evo recruites', NULL, 350, 'finished', '2025-01-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'CR est mort', NULL, 350, 'finished', '2024-12-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Merci squad noel', NULL, 350, 'finished', '2024-12-26 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '20 wins 2024', NULL, 350, 'finished', '2024-12-20 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Top 1', NULL, 350, 'finished', '2024-12-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'New deck recrues', NULL, 350, 'finished', '2024-12-10 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Noel squad buster', NULL, 350, 'finished', '2024-11-30 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '1hp', NULL, 350, 'finished', '2024-11-29 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '3000 elo 2v2', NULL, 350, 'finished', '2024-11-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '2v2 Ruusskov', NULL, 350, 'finished', '2024-11-26 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '2v2 Ashtax', NULL, 350, 'finished', '2024-11-20 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, '1v2', NULL, 350, 'finished', '2024-11-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Rush ladder 3500+', NULL, 350, 'finished', '2025-05-25 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Bourreau recrues evo', NULL, 350, 'finished', '2025-05-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, "Recrues chevalier d'or", NULL, 350, 'finished', '2025-05-05 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Top 1', NULL, 350, 'finished', '2025-06-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Deck flou cochons recrues', NULL, 350, 'finished', '2025-04-05 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Recrues géant goblin', NULL, 350, 'finished', '2025-04-15 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Recrues cheffe des voleuses', NULL, 350, 'finished', '2025-04-25 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Duchesse sorcier', NULL, 350, 'finished', '2025-03-05 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Top deck retro', NULL, 350, 'finished', '2025-03-11 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Berserker recrues', NULL, 350, 'finished', '2025-03-17 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Void recrues', NULL, 350, 'finished', '2025-03-23 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Evo recrues chasseur evo', NULL, 350, 'finished', '2025-03-29 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Rush ladder', NULL, 350, 'finished', '2025-02-12 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (7, 'Retour nouveau deck', NULL, 350, 'finished', '2025-02-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1);
