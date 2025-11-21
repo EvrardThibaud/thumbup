@@ -414,3 +414,49 @@ VALUES
   ('Détruire le ladder', NULL, 500, 'finished', '2025-02-03 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 4, 1),
   ('Live fin saison', NULL, 500, 'finished', '2025-02-02 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 4, 1),
   ('Top 1 mon roquette', NULL, 500, 'finished', '2025-02-01 12:00:00', '2025-11-20 12:00:00', '2025-11-20 12:00:00', 4, 1);
+
+
+  INSERT INTO "order" (
+  client_id, title, brief, price, status, due_at, created_at, updated_at, paid
+) VALUES
+  (2, 'Rush ladder', NULL, 500, 'finished', '2025-07-14 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (2, 'Nouveau mode', NULL, 500, 'finished', '2025-07-06 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (2, 'Rush ladder', NULL, 500, 'finished', '2025-06-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (2, 'Le retour', NULL, 500, 'finished', '2025-06-07 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (2, 'Best result', NULL, 500, 'finished', '2025-06-03 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+
+  (8, 'Lucky drop', NULL, 1000, 'finished', '2025-08-13 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (8, 'Underated cards', NULL, 1000, 'finished', '2025-08-23 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+
+  (10, 'Boxbreak', NULL, 500, 'finished', '2025-08-20 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+
+  (11, 'Titre pam', NULL, 500, 'finished', '2025-06-07 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+
+  (12, 'Top 1', NULL, 300, 'finished', '2025-03-13 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Top 1 recrues esprit de glace evo', NULL, 300, 'finished', '2025-05-11 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, '3300 elos', NULL, 300, 'finished', '2025-05-08 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Live', NULL, 300, 'finished', '2025-03-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Midladder', NULL, 300, 'finished', '2025-03-17 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Top 1 et top 2', NULL, 300, 'finished', '2025-03-25 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Evo firecracker hogs', NULL, 300, 'finished', '2025-05-19 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Tournoi monde top 33', NULL, 300, 'finished', '2025-05-17 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Top 1 colis royale', NULL, 300, 'finished', '2025-05-21 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, '100% win rate', NULL, 300, 'finished', '2025-05-23 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, '3200 elos', NULL, 300, 'finished', '2025-05-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Hogs ligue 10', NULL, 300, 'finished', '2025-05-30 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Pro tips', NULL, 300, 'finished', '2025-06-06 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Masterclass', NULL, 300, 'finished', '2025-06-12 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, 'Guide hogs', NULL, 300, 'finished', '2025-08-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (12, '20 wins challenge', NULL, 300, 'finished', '2025-10-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+
+  (13, 'Rush ladder', NULL, 0, 'finished', '2024-11-28 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (13, 'Sorcer evo', NULL, 0, 'finished', '2024-12-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (13, 'Live', NULL, 0, 'finished', '2024-12-02 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (13, 'Tournoi mondiale decembre 2024', NULL, 0, 'finished', '2024-12-13 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (13, '20 wins crl', NULL, 0, 'finished', '2024-12-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+
+  (9, 'Maudit', NULL, 1000, 'finished', '2025-08-16 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (9, 'Sans payer', NULL, 500, 'finished', '2025-06-01 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (9, 'Level 15', NULL, 500, 'finished', '2025-02-22 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (9, 'Top 5 combo 2016', NULL, 500, 'finished', '2025-01-12 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1),
+  (9, '3 meilleurs deck', NULL, 500, 'finished', '2025-01-11 12:00:00', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1);
