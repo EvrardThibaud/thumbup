@@ -154,9 +154,6 @@
                         data-link="{{ inviteLink }}">
                   {{ inviteLink }}
                 </button>
-                <small class="text-success" id="copy-feedback" hidden>
-                  Copied to clipboard ✅
-                </small>
               </div>
             {% else %}
               <p class="small text-secondary mb-0">
@@ -166,39 +163,65 @@
           </div>
         </div>
       {% endif %}
-
-
-
-      
     </div>
   </div>
 </div>
 
 <script>
-document.addEventListener('click', function (e) {
-  const btn = e.target.closest('#copy-invite-btn');
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('copy-invite-btn');
   if (!btn) return;
 
-  const link = btn.dataset.link;
-  const feedback = document.getElementById('copy-feedback');
+  // Sauvegarde de l'état initial
+  btn.dataset.originalText  = btn.textContent.trim();
+  btn.dataset.originalClass = btn.className;
+  btn.dataset.copied        = '0';
 
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(link).then(() => {
-      if (feedback) {
-        feedback.hidden = false;
-        setTimeout(() => {
-          feedback.hidden = true;
-        }, 2000);
+  // Hover : "Click to copy"
+  btn.addEventListener('mouseenter', () => {
+    if (btn.dataset.copied === '1') return; // ne pas override l'état "Copied"
+    btn.textContent = 'Click to copy';
+  });
+
+  btn.addEventListener('mouseleave', () => {
+    if (btn.dataset.copied === '1') return;
+    btn.textContent = btn.dataset.originalText;
+  });
+
+  // Click : copie + état vert "Copied..."
+  btn.addEventListener('click', async () => {
+    const link = btn.dataset.link;
+    if (!link) return;
+
+    const applyCopiedState = () => {
+      btn.dataset.copied = '1';
+      btn.textContent = 'Copied to clipboard ✅';
+      btn.className = btn.dataset.originalClass
+        .replace('btn-outline-light', 'btn-success');
+
+      setTimeout(() => {
+        btn.dataset.copied = '0';
+        btn.textContent = btn.dataset.originalText;
+        btn.className = btn.dataset.originalClass;
+      }, 2000);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(link);
+        applyCopiedState();
+      } catch (err) {
+        console.error('Clipboard copy failed:', err);
+        alert('Copy this link manually:\n' + link);
       }
-    }).catch(err => {
-      console.error('Clipboard copy failed:', err);
+    } else {
       alert('Copy this link manually:\n' + link);
-    });
-  } else {
-    alert('Copy this link manually:\n' + link);
-  }
+    }
+  });
 });
 </script>
+
+
 
 
 {% endblock %}
