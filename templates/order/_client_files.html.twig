@@ -3,6 +3,14 @@
 <div class="card bg-dark border-secondary rounded-2 h-100">
   <div class="card-header border-secondary d-flex justify-content-between align-items-center">
     <span class="fw-semibold">Client files</span>
+    {% if is_granted('ROLE_CLIENT') %}
+    <form class="d-flex gap-2" method="post" enctype="multipart/form-data"
+          action="{{ path('app_order_asset_upload', { id: order.id, back: app.request.uri }) }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('asset-upload' ~ order.id) }}">
+      <input class="form-control form-control-sm" type="file" name="asset_files[]" multiple required>
+      <button class="btn btn-sm btn-primary rounded-1">Upload</button>
+    </form>
+    {% endif %}
   </div>
 
   <div class="card-body">
@@ -54,14 +62,6 @@
           </div>
         {% endfor %}
       </div>
-    {% endif %}
-    {% if is_granted('ROLE_CLIENT') %}
-    <form class="d-flex gap-2" method="post" enctype="multipart/form-data"
-          action="{{ path('app_order_asset_upload', { id: order.id, back: app.request.uri }) }}">
-      <input type="hidden" name="_token" value="{{ csrf_token('asset-upload' ~ order.id) }}">
-      <input class="form-control form-control-sm" type="file" name="asset_files[]" multiple required>
-      <button class="btn btn-sm btn-primary rounded-1">Upload</button>
-    </form>
     {% endif %}
   </div>
 </div>

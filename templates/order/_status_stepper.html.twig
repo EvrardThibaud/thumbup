@@ -2,36 +2,40 @@
 {% set s = order.status.value %}
 {% set backUrl = back ?? app.request.uri %}
 
-{# Paid/Unpaid stays as is #}
-<div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-  <span class="badge text-bg-{{ order.paid ? 'success' : 'warning' }} rounded-1 px-2 py-1 small">
-    {{ order.paid ? 'Paid' : 'Unpaid' }}
-  </span>
-</div>
+<div class="card bg-dark border-secondary rounded-2 mb-3">
+  <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+    <div class="d-flex flex-column">
+      <span class="fw-semibold">Status & actions</span>
+      <span class="small text-secondary text-uppercase">{{ s }}</span>
+    </div>
 
-{# -------- Progress Stepper (Created → Accepted → Doing → Delivered → Revision → Finished) -------- #}
-{% set steps = [
-  { key: 'created',   label: 'Created' },
-  { key: 'accepted',  label: is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted' },
-  { key: 'doing',     label: 'Doing' },
-  { key: 'delivered', label: 'Delivered' },
-  { key: 'revision',  label: 'Revision' },
-  { key: 'finished',  label: 'Finished' },
-] %}
-{% set stepIndex = {
-  'created': 1, 'accepted': 2, 'doing': 3, 'delivered': 4, 'revision': 5, 'finished': 6
-}[s] ?? 1 %}
-{% set progress = ((stepIndex - 1) / (steps|length - 1)) * 100 %}
-
-{% if s in ['refused','canceled'] %}
-  <div class="alert alert-{{ s == 'refused' ? 'danger' : 'dark' }} d-flex align-items-center gap-2 py-2 px-3 rounded-1 mb-3">
-    <span class="badge text-bg-{{ s == 'refused' ? 'danger' : 'dark' }} rounded-1 small text-uppercase">{{ s }}</span>
-    <span class="small text-secondary mb-0">This order is {{ s }}. Workflow is closed.</span>
+    <span class="badge text-bg-{{ order.paid ? 'success' : 'warning' }} rounded-1 px-2 py-1 small">
+      {{ order.paid ? 'Paid' : 'Unpaid' }}
+    </span>
   </div>
-{% else %}
-  <div class="card bg-dark border-0 mb-3">
-    <div class="card-body py-3">
-      <div class="order-stepper position-relative pb-3">
+
+  <div class="card-body">
+    {% if s in ['refused','canceled'] %}
+      <div class="alert alert-{{ s == 'refused' ? 'danger' : 'dark' }} d-flex align-items-center gap-2 py-2 px-3 rounded-1 mb-0">
+        <span class="badge text-bg-{{ s == 'refused' ? 'danger' : 'dark' }} rounded-1 small text-uppercase">{{ s }}</span>
+        <span class="small text-secondary mb-0">This order is {{ s }}. Workflow is closed.</span>
+      </div>
+    {% else %}
+      {# -------- Progress Stepper (Created → Accepted → Doing → Delivered → Revision → Finished) -------- #}
+      {% set steps = [
+        { key: 'created',   label: 'Created' },
+        { key: 'accepted',  label: is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted' },
+        { key: 'doing',     label: 'Doing' },
+        { key: 'delivered', label: 'Delivered' },
+        { key: 'revision',  label: 'Revision' },
+        { key: 'finished',  label: 'Finished' },
+      ] %}
+      {% set stepIndex = {
+        'created': 1, 'accepted': 2, 'doing': 3, 'delivered': 4, 'revision': 5, 'finished': 6
+      }[s] ?? 1 %}
+      {% set progress = ((stepIndex - 1) / (steps|length - 1)) * 100 %}
+
+      <div class="order-stepper position-relative pb-3 mb-2">
         <div class="order-stepper-track"></div>
         <div class="order-stepper-fill" style="--progress: {{ progress }}%"></div>
 
@@ -43,7 +47,7 @@
             <div class="step text-center flex-1 px-1">
               <div class="step-dot {{ isDone ? 'done' : '' }} {{ isActive ? 'active' : '' }}">
                 <span class="step-dot-inner">
-                  {% if isDone %}✓{% elseif isActive %}{{ idx }}{% else %}{{ idx }}{% endif %}
+                  {% if isDone %}✓{% else %}{{ idx }}{% endif %}
                 </span>
               </div>
               <div class="step-label small mt-2 {{ isActive ? 'text-white' : 'text-secondary' }}">
@@ -66,21 +70,87 @@
       <div class="mt-2 p-2 rounded-1 small text-secondary border border-secondary-subtle">
         <span class="me-1">ℹ️</span>{{ helpMap[s] ?? 'Status updated.' }}
       </div>
+    {% endif %}
+
+    {# -------- Actions -------- #}
+    <div class="pt-3 mt-3 border-top border-secondary-subtle d-flex flex-wrap align-items-center gap-2">
+      {% if is_granted('ROLE_ADMIN') %}
+        {% if s == 'created' %}
+          <form method="post" action="{{ path('app_order_accept', {id: order.id}) }}">
+            <input type="hidden" name="back" value="{{ backUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('wf-accept' ~ order.id) }}">
+            <button class="btn btn-sm btn-primary rounded-1">Accept</button>
+          </form>
+          <form method="post" action="{{ path('app_order_refuse', {id: order.id}) }}" onsubmit="return confirm('Refuse this order?');">
+            <input type="hidden" name="back" value="{{ backUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('wf-refuse' ~ order.id) }}">
+            <button class="btn btn-sm btn-outline-danger rounded-1">Refuse</button>
+          </form>
+        {% elseif s == 'accepted' %}
+          <form method="post" action="{{ path('app_order_start', {id: order.id}) }}">
+            <input type="hidden" name="back" value="{{ backUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('wf-start' ~ order.id) }}">
+            <button class="btn btn-sm btn-primary rounded-1">Start</button>
+          </form>
+        {% elseif s == 'doing' %}
+          <form method="post" action="{{ path('app_order_deliver', {id: order.id}) }}">
+            <input type="hidden" name="back" value="{{ backUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('wf-deliver' ~ order.id) }}">
+            <button class="btn btn-sm btn-success rounded-1">Deliver</button>
+          </form>
+        {% endif %}
+
+        <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id }) }}">
+          <input type="hidden" name="back" value="{{ backUrl }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('toggle-paid' ~ order.id) }}">
+          <button class="btn btn-sm btn-outline-light rounded-1">
+            {{ order.paid ? 'Unmark as paid' : 'Mark as paid' }}
+          </button>
+        </form>
+      {% endif %}
+
+      {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
+        {% if s == 'created' %}
+          <form method="post" action="{{ path('app_order_cancel', {id: order.id}) }}" onsubmit="return confirm('Cancel this order?');">
+            <input type="hidden" name="back" value="{{ backUrl }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
+            <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
+          </form>
+        {% else %}
+          <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
+          <span class="text-secondary small align-self-center">Cannot cancel at this stage.</span>
+        {% endif %}
+      {% endif %}
+
+      {% if s == 'delivered' and is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
+        <span class="text-secondary mx-1">•</span>
+
+        <form method="post" action="{{ path('app_order_finish', { id: order.id }) }}">
+          <input type="hidden" name="back" value="{{ backUrl }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('wf-finish' ~ order.id) }}">
+          <button class="btn btn-sm btn-outline-success rounded-1">Mark as finished</button>
+        </form>
+
+        <form method="post" action="{{ path('app_order_request_revision', { id: order.id }) }}">
+          <input type="hidden" name="back" value="{{ backUrl }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('wf-revision' ~ order.id) }}">
+          <button class="btn btn-sm btn-outline-warning rounded-1">Request revision</button>
+        </form>
+      {% endif %}
     </div>
   </div>
-{% endif %}
+</div>
 
 <style>
 .order-stepper {
-  --dot: 34px;          /* diamètre des ronds */
-  --track-h: 6px;       /* épaisseur de la barre */
-  --pad-x: 12px;        /* marge latérale du track */
-  --gap: 8px;           /* espace rond ↔ barre */
-  --label-gap: 16px;    /* espace barre ↔ label */
-  --track-y: calc(var(--dot) + var(--gap)); /* place la barre sous les ronds */
+  --dot: 34px;
+  --track-h: 6px;
+  --pad-x: 12px;
+  --gap: 8px;
+  --label-gap: 16px;
+  --track-y: calc(var(--dot) + var(--gap));
 }
 
-/* Barre */
 .order-stepper-track{
   position:absolute; left:var(--pad-x); right:var(--pad-x); top:var(--track-y);
   height:var(--track-h); background:rgba(255,255,255,.08); border-radius:999px; z-index:0;
@@ -93,7 +163,6 @@
   box-shadow:0 0 16px rgba(77,163,255,.25); transition:width .35s ease; z-index:0;
 }
 
-/* Dots */
 .order-stepper-steps .step { min-width:0; }
 .step-dot{
   width:var(--dot); height:var(--dot); border-radius:999px; margin-inline:auto;
@@ -105,76 +174,8 @@
 .step-dot.done{ border-color:rgba(77,163,255,.7); background:rgba(77,163,255,.18); }
 .step-dot.done .step-dot-inner{ color:#fff; }
 
-/* Labels bien sous la barre */
 .order-stepper-steps { padding-bottom: calc(var(--track-h) + var(--label-gap) + 2px); }
 .step-label{ margin-top: calc(var(--gap) + var(--label-gap)) !important; }
 
 @media (max-width:576px){ .step-label{ font-size:.72rem!important; } }
 </style>
-
-{# -------- Actions (unchanged + new for delivered) -------- #}
-<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-  {% if is_granted('ROLE_ADMIN') %}
-    {% if s == 'created' %}
-      <form method="post" action="{{ path('app_order_accept', {id: order.id}) }}">
-        <input type="hidden" name="back" value="{{ backUrl }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('wf-accept' ~ order.id) }}">
-        <button class="btn btn-sm btn-primary rounded-1">Accept</button>
-      </form>
-      <form method="post" action="{{ path('app_order_refuse', {id: order.id}) }}" onsubmit="return confirm('Refuse this order?');">
-        <input type="hidden" name="back" value="{{ backUrl }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('wf-refuse' ~ order.id) }}">
-        <button class="btn btn-sm btn-outline-danger rounded-1">Refuse</button>
-      </form>
-    {% elseif s == 'accepted' %}
-      <form method="post" action="{{ path('app_order_start', {id: order.id}) }}">
-        <input type="hidden" name="back" value="{{ backUrl }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('wf-start' ~ order.id) }}">
-        <button class="btn btn-sm btn-primary rounded-1">Start</button>
-      </form>
-    {% elseif s == 'doing' %}
-      <form method="post" action="{{ path('app_order_deliver', {id: order.id}) }}">
-        <input type="hidden" name="back" value="{{ backUrl }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('wf-deliver' ~ order.id) }}">
-        <button class="btn btn-sm btn-success rounded-1">Deliver</button>
-      </form>
-    {% endif %}
-
-    <form method="post" action="{{ path('app_order_toggle_paid', { id: order.id }) }}">
-      <input type="hidden" name="back" value="{{ backUrl }}">
-      <input type="hidden" name="_token" value="{{ csrf_token('toggle-paid' ~ order.id) }}">
-      <button class="btn btn-sm btn-outline-light rounded-1">
-        {{ order.paid ? 'Unmark as paid' : 'Mark as paid' }}
-      </button>
-    </form>
-  {% endif %}
-
-  {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
-    {% if s == 'created' %}
-      <form method="post" action="{{ path('app_order_cancel', {id: order.id}) }}" onsubmit="return confirm('Cancel this order?');">
-        <input type="hidden" name="back" value="{{ backUrl }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
-        <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
-      </form>
-    {% else %}
-      <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
-      <span class="text-secondary small align-self-center">Cannot cancel at this stage.</span>
-    {% endif %}
-  {% endif %}
-
-  {% if s == 'delivered' and is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
-  <span class="text-secondary mx-1">•</span>
-
-  <form method="post" action="{{ path('app_order_finish', { id: order.id }) }}">
-    <input type="hidden" name="back" value="{{ backUrl }}">
-    <input type="hidden" name="_token" value="{{ csrf_token('wf-finish' ~ order.id) }}">
-    <button class="btn btn-sm btn-outline-success rounded-1">Mark as finished</button>
-  </form>
-
-  <form method="post" action="{{ path('app_order_request_revision', { id: order.id }) }}">
-    <input type="hidden" name="back" value="{{ backUrl }}">
-    <input type="hidden" name="_token" value="{{ csrf_token('wf-revision' ~ order.id) }}">
-    <button class="btn btn-sm btn-outline-warning rounded-1">Request revision</button>
-  </form>
-{% endif %}
-</div>
