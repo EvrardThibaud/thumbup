@@ -1,93 +1,93 @@
+{# templates/home/index.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Home{% endblock %}
 
 {% block body %}
-  <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="h4 m-0">Welcome 👋</h1>
-    <span class="text-secondary small">{{ app.user.email }}</span>
-  </div>
+<div class="container py-4">
+  {% if is_granted('ROLE_ADMIN') %}
+    <div class="card bg-dark border-secondary rounded-2">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">New orders to review</span>
+        <span class="badge text-bg-secondary rounded-1">
+          {{ createdOrders|length }}
+        </span>
+      </div>
 
-  <div class="row g-3">
-    <div class="col-md-4">
-      <a href="{{ path('app_dashboard') }}" class="text-decoration-none">
-        <div class="card bg-dark border-0 p-3 h-100">
-          <div class="small text-secondary mb-1">Overview</div>
-          <div class="fs-4">{{ is_granted('ROLE_ADMIN') ? '📊 Admin dashboard' : '📈 Your dashboard' }}</div>
-          <div class="text-secondary mt-2">KPIs & charts.</div>
-        </div>
-      </a>
+      <div class="card-body p-0">
+        {% if createdOrders is empty %}
+          <p class="text-secondary small m-3 mb-2">
+            No orders waiting for review.
+          </p>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="small text-secondary">
+                <tr>
+                  <th>Title</th>
+                  <th>Client</th>
+                  <th>Due</th>
+                  <th class="text-end">Price</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for order in createdOrders %}
+              {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+                <tr role="button"
+                    onclick="window.location='{{ path('app_client_show', { id: order.client.id }) }}'">
+                  <td class="fw-medium">
+                    {{ order.title }}
+                  </td>
+                  <td class="text-secondary">
+                    {{ order.client ? order.client.name : '—' }}
+                  </td>
+                  <td class="text-secondary">
+                    {{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}
+                  </td>
+                  <td class="text-end">
+                    {{ (order.price / 100)|number_format(2, ',', ' ') }} €
+                  </td>
+                  <td class="text-end">
+                    <div class="d-inline-flex gap-1">
+                      <form method="post"
+                            action="{{ path('app_order_accept', { id: order.id }) }}"
+                            onsubmit="event.stopPropagation();">
+                        <input type="hidden" name="back" value="{{ path('app_home') }}">
+                        <input type="hidden" name="_token"
+                               value="{{ csrf_token('wf-accept' ~ order.id) }}">
+                        <button class="btn btn-sm btn-primary rounded-1"
+                                type="submit"
+                                onclick="event.stopPropagation();">
+                          Accept
+                        </button>
+                      </form>
+
+                      <form method="post"
+                            action="{{ path('app_order_refuse', { id: order.id }) }}"
+                            onsubmit="event.stopPropagation(); return confirm('Refuse this order?');">
+                        <input type="hidden" name="back" value="{{ path('app_home') }}">
+                        <input type="hidden" name="_token"
+                               value="{{ csrf_token('wf-refuse' ~ order.id) }}">
+                        <button class="btn btn-sm btn-outline-danger rounded-1"
+                                type="submit"
+                                onclick="event.stopPropagation();">
+                          Refuse
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
     </div>
-
-    <div class="col-md-4">
-      <a href="{{ path('app_order_index') }}" class="text-decoration-none">
-        <div class="card bg-dark border-0 p-3 h-100">
-          <div class="small text-secondary mb-1">Workflow</div>
-          <div class="fs-4">🗂️ {{ is_granted('ROLE_ADMIN') ? 'Orders' : 'My orders' }}</div>
-          <div class="text-secondary mt-2">Create & track requests.</div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-4">
-      <a href="{{ path('app_thumbnails_index') }}" class="text-decoration-none">
-        <div class="card bg-dark border-0 p-3 h-100">
-          <div class="small text-secondary mb-1">Deliverables</div>
-          <div class="fs-4">🖼️ Thumbnails</div>
-          <div class="text-secondary mt-2">Final images by order.</div>
-        </div>
-      </a>
-    </div>
-
-    {% if is_granted('ROLE_ADMIN') %}
-      <div class="col-md-4">
-        <a href="{{ path('app_client_index') }}" class="text-decoration-none">
-          <div class="card bg-dark border-0 p-3 h-100">
-            <div class="small text-secondary mb-1">Manage</div>
-            <div class="fs-4">👥 Clients</div>
-            <div class="text-secondary mt-2">Profiles & balances.</div>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-4">
-        <a href="{{ path('app_time_entry_index') }}" class="text-decoration-none">
-          <div class="card bg-dark border-0 p-3 h-100">
-            <div class="small text-secondary mb-1">Tracking</div>
-            <div class="fs-4">⏱️ Time</div>
-            <div class="text-secondary mt-2">Work logs.</div>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-4">
-        <a href="{{ path('app_user_index') }}" class="text-decoration-none">
-          <div class="card bg-dark border-0 p-3 h-100">
-            <div class="small text-secondary mb-1">Access</div>
-            <div class="fs-4">👤 Users</div>
-            <div class="text-secondary mt-2">Accounts & roles.</div>
-          </div>
-        </a>
-      </div>
-    {% else %}
-      <div class="col-md-6">
-        <a href="{{ path('app_payments_index') }}" class="text-decoration-none">
-          <div class="card bg-dark border-0 p-3 h-100">
-            <div class="small text-secondary mb-1">Billing</div>
-            <div class="fs-4">💳 Payments</div>
-            <div class="text-secondary mt-2">Pay delivered orders.</div>
-          </div>
-        </a>
-      </div>
-      {% set meClient = app.user and app.user.client ? app.user.client : null %}
-      {% if meClient %}
-        <div class="col-md-6">
-          <a href="{{ path('app_account')}}" class="text-decoration-none">
-            <div class="card bg-dark border-0 p-3 h-100">
-              <div class="small text-secondary mb-1">Profile</div>
-              <div class="fs-4">🧾 My profile</div>
-              <div class="text-secondary mt-2">Totals & recent orders.</div>
-            </div>
-          </a>
-        </div>
-      {% endif %}
-    {% endif %}
-  </div>
+  {% else %}
+    <p class="text-secondary">
+      Welcome to ThumbUp.
+    </p>
+  {% endif %}
+</div>
 {% endblock %}

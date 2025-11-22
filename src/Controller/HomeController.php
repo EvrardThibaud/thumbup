@@ -5,6 +5,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Repository\OrderRepository;
+use App\Enum\OrderStatus;
 
 final class HomeController extends AbstractController
 {
@@ -19,8 +21,22 @@ final class HomeController extends AbstractController
 
     #[Route('/app', name: 'app_home', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function app(): Response
+    public function app(OrderRepository $orderRepo): Response
     {
-        return $this->render('home/index.html.twig');
+        $createdOrders = [];
+
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $createdOrders = $orderRepo->createQueryBuilder('o')
+                ->andWhere('o.status = :st')
+                ->setParameter('st', OrderStatus::CREATED)
+                ->orderBy('o.dueAt', 'ASC')
+                ->addOrderBy('o.id', 'DESC')
+                ->getQuery()
+                ->getResult();
+        }
+
+        return $this->render('home/index.html.twig', [
+            'createdOrders' => $createdOrders,
+        ]);
     }
 }
