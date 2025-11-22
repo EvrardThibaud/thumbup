@@ -21,36 +21,51 @@
 
 {# Delivered thumbnails #}
 {% include 'order/_final_thumbnails.html.twig' with { order: order } %}
-{% include 'order/_client_files.html.twig'   with { order: order } %}
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-6">
+    <div class="card bg-dark border-secondary rounded-2 h-100">
+      <div class="card-header border-secondary">
+        <span class="fw-semibold">Order</span>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4 text-secondary">Title</dt>
+          <dd class="col-sm-8 fw-medium">
+            {{ order.title }}
+          </dd>
 
-  <div class="card border-0 p-3 mb-3">
-    <div class="row g-3">
-      <div class="col-md-6">
-        <div class="small text-secondary mb-1">Title</div>
-        <div class="fw-medium">{{ order.title }}</div>
-      </div>
-      <div class="col-md-3">
-        <div class="small text-secondary mb-1">Client</div>
-        <div>{{ order.client ? order.client.name : '—' }}</div>
-      </div>
-      <div class="col-md-6">
-        <div class="small text-secondary mb-1 ">Brief</div>
-        <div class="text-secondary" style="white-space: pre-wrap">{{ order.brief }}</div>
-      </div>
-      <div class="col-md-2">
-        <div class="small text-secondary mb-1">Price</div>
-        <div>{{ (order.price / 100)|number_format(2, ',', ' ') }} €</div>
-      </div>
-      <div class="col-md-2">
-        <div class="small text-secondary mb-1">Due</div>
-        <div>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}</div>
-      </div>
-      <div class="col-md-2">
-        <div class="small text-secondary mb-1">Updated</div>
-        <div>{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i', tz) : '—' }}</div>
+          <dt class="col-sm-4 text-secondary">Client</dt>
+          <dd class="col-sm-8">
+            {{ order.client ? order.client.name : '—' }}
+          </dd>
+
+          <dt class="col-sm-4 text-secondary">Brief</dt>
+          <dd class="col-sm-8">
+            <div class="text-secondary" style="white-space: pre-wrap">
+              {{ order.brief }}
+            </div>
+          </dd>
+
+          <dt class="col-sm-4 text-secondary">Price</dt>
+          <dd class="col-sm-8">
+            {{ (order.price / 100)|number_format(2, ',', ' ') }} €
+          </dd>
+
+          <dt class="col-sm-4 text-secondary">Due</dt>
+          <dd class="col-sm-8">
+            {{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}
+          </dd>
+        </dl>
       </div>
     </div>
   </div>
+
+  <div class="col-12 col-lg-6">
+    {% include 'order/_client_files.html.twig' with { order: order } %}
+  </div>
+</div>
+
+
 
   {% if not hideTime %}
     {% if is_granted('ROLE_ADMIN') %}

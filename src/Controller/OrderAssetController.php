@@ -18,49 +18,52 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/orders')]
 final class OrderAssetController extends AbstractController
 {
-
     #[Route('/{id}/assets/upload', name: 'app_order_asset_upload', methods: ['POST'])]
     public function upload(Order $order, Request $request, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN');
-        if (!$this->isCsrfTokenValid('asset-upload'.$order->getId(), $request->request->get('_token'))) {
+        $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
+
+        if (!$this->isCsrfTokenValid('asset-upload'.$order->getId(), (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
         }
 
-        // ⚠️ on désactive la CSRF du form car on a déjà le token custom ci-dessus
-        $form = $this->createForm(OrderAssetType::class, null, ['csrf_protection' => false]);
-        $form->handleRequest($request);
-
-        if (!$form->isSubmitted()) {
+        $files = $request->files->all('asset_files');
+        if (!$files || !is_array($files)) {
             $this->addFlash('warning', 'No file submitted.');
-            return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
+            return $this->redirect(
+                $request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id' => $order->getId()])
+            );
         }
 
-        /** @var \Symfony\Component\HttpFoundation\File\UploadedFile[]|null $files */
-        $files = $form->get('file')->getData();   // ⬅️ array quand multiple=true
-        if (!$files || count($files) === 0) {
-            $this->addFlash('danger', 'Upload failed (no images).');
-            return $this->redirect($request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id'=>$order->getId()]));
-        }
+        $valid = 0;
+        foreach ($files as $f) {
+            if (!$f) {
+                continue;
+            }
 
-        foreach ($files as $uploaded) {
             $asset = new OrderAsset();
             $asset->setOrder($order);
-            $asset->setFile($uploaded);
+            $asset->setFile($f);
             $em->persist($asset);
+            $valid++;
         }
 
-        $state = $order->getStatus();
-        if (in_array($state, [OrderStatus::ACCEPTED, OrderStatus::DOING, OrderStatus::REVISION], true)) {
-            $order->setStatus(OrderStatus::DELIVERED);
+        if ($valid === 0) {
+            $this->addFlash('danger', 'Upload failed (no files).');
+            return $this->redirect(
+                $request->headers->get('referer') ?: $this->generateUrl('app_order_show', ['id' => $order->getId()])
+            );
         }
 
         $em->flush();
-
-        $this->addFlash('success', sprintf('%d image(s) uploaded.', count($files)));
-        $back = $request->query->get('back') ?: $request->headers->get('referer');
-        return $back ? $this->redirect($back) : $this->redirectToRoute('app_order_show', ['id' => $order->getId()]);
+        $this->addFlash('success', 'Files uploaded.');
+        return $this->redirect(
+            $request->query->get('back')
+                ?: $request->headers->get('referer')
+                ?: $this->generateUrl('app_order_show', ['id' => $order->getId()])
+        );
     }
+
 
     #[Route('/assets/{id}/download', name: 'app_order_asset_download', methods: ['GET'])]
     public function download(OrderAsset $asset): Response

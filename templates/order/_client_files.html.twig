@@ -1,52 +1,67 @@
 {# templates/order/_client_files.html.twig #}
 {% set assets = order.assets %}
-<div class="card bg-dark border-0 p-3 mb-4">
-  <div class="d-flex align-items-center justify-content-between mb-2">
-    <div class="small text-secondary">Client files</div>
+<div class="card bg-dark border-secondary rounded-2 h-100">
+  <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">Client files</span>
   </div>
 
-  {% if assets|length == 0 %}
-    <div class="text-secondary">No client files.</div>
-  {% else %}
-    <div class="row g-2">
-      {% for a in assets %}
-        <div class="col-6 col-md-2">
-          <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
-            {% if a.mimeType starts with 'image/' %}
-              <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank" class="mb-2">
-                <img src="{{ asset('uploads/order-assets/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
-                     alt="Client file {{ loop.index }}"
-                     class="img-fluid rounded-1"
-                     loading="lazy"
-                     style="aspect-ratio:16/9;object-fit:cover;">
-              </a>
-            {% else %}
-              <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}" target="_blank"
-                 class="mb-2 d-flex align-items-center justify-content-center border rounded-1"
-                 style="aspect-ratio:16/9;">
-                <span class="badge text-bg-light text-dark">PDF</span>
-              </a>
-            {% endif %}
-
-            <div class="small text-secondary mb-2">{{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB</div>
-
-            <div class="mt-auto d-flex gap-2">
-              <a class="btn btn-sm btn-outline-light rounded-1"
-                 href="{{ path('app_order_asset_download', { id: a.id }) }}">Download</a>
-
-              {# Autoriser le client propriétaire (ou admin) à supprimer #}
-              {% if is_granted('ORDER_EDIT', order) %}
-                <form method="post"
-                      action="{{ path('app_order_asset_delete', { id: a.id, back: app.request.uri }) }}"
-                      onsubmit="return confirm('Delete this file?');">
-                  <input type="hidden" name="_token" value="{{ csrf_token('asset-delete' ~ a.id) }}">
-                  <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
-                </form>
+  <div class="card-body">
+    {# LISTE DES FICHIERS EXISTANTS #}
+    {% if assets|length == 0 %}
+      <div class="text-secondary mb-3">No client files.</div>
+    {% else %}
+      <div class="row g-2 mb-3">
+        {% for a in assets %}
+          <div class="col-6 col-md-4">
+            <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
+              {% if a.mimeType starts with 'image/' %}
+                <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}"
+                   target="_blank"
+                   class="mb-2">
+                  <img src="{{ asset('uploads/order-assets/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
+                       alt="Client file {{ loop.index }}"
+                       class="img-fluid rounded-1"
+                       loading="lazy"
+                       style="width:100%;max-height:90px;object-fit:cover;">
+                </a>
+              {% else %}
+                <a href="{{ asset('uploads/order-assets/' ~ a.fileName) }}"
+                   target="_blank"
+                   class="mb-2 d-flex align-items-center justify-content-center border rounded-1"
+                   style="width:100%;max-height:90px;">
+                  <span class="badge text-bg-light text-dark">PDF</span>
+                </a>
               {% endif %}
+
+              <div class="small text-secondary mb-2 text-truncate">
+                {{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB
+              </div>
+
+              <div class="mt-auto d-flex gap-2">
+                <a class="btn btn-sm btn-outline-light rounded-1"
+                   href="{{ path('app_order_asset_download', { id: a.id }) }}">Download</a>
+
+                {% if is_granted('ORDER_EDIT', order) %}
+                  <form method="post"
+                        action="{{ path('app_order_asset_delete', { id: a.id, back: app.request.uri }) }}"
+                        onsubmit="return confirm('Delete this file?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('asset-delete' ~ a.id) }}">
+                    <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
+                  </form>
+                {% endif %}
+              </div>
             </div>
           </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% if is_granted('ROLE_CLIENT') %}
+    <form class="d-flex gap-2" method="post" enctype="multipart/form-data"
+          action="{{ path('app_order_asset_upload', { id: order.id, back: app.request.uri }) }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('asset-upload' ~ order.id) }}">
+      <input class="form-control form-control-sm" type="file" name="asset_files[]" multiple required>
+      <button class="btn btn-sm btn-primary rounded-1">Upload</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
