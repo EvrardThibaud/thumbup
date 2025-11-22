@@ -4,9 +4,10 @@
 
 {% block body %}
 <div class="container py-4">
-  {% if is_granted('ROLE_ADMIN') %}
-    {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+  {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 
+  {# --- ADMIN VIEW --- #}
+  {% if is_granted('ROLE_ADMIN') %}
     {# BOX 1: Accepted = To do #}
     <div class="card bg-dark border-secondary rounded-2 mb-3">
       <div class="card-header border-secondary d-flex justify-content-between align-items-center">
@@ -137,6 +138,62 @@
               {% endfor %}
               </tbody>
             </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  {# --- CLIENT VIEW --- #}
+  {% elseif is_granted('ROLE_CLIENT') %}
+    <div class="card bg-dark border-secondary rounded-2">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Last thumbnails</span>
+        <span class="badge text-bg-secondary rounded-1">
+          {{ clientThumbnails|length }}
+        </span>
+      </div>
+
+      <div class="card-body">
+        {% if clientThumbnails is empty %}
+          <div class="text-secondary small">
+            No thumbnails delivered yet.
+          </div>
+        {% else %}
+          <div class="row g-3">
+            {% for thumb in clientThumbnails %}
+              <div class="col-6 col-md-4">
+                <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
+                  <a href="{{ asset('uploads/order-thumbnails/' ~ thumb.fileName) }}"
+                     target="_blank"
+                     class="mb-2">
+                    <img src="{{ asset('uploads/order-thumbnails/' ~ thumb.fileName) | imagine_filter('thumb_320x180') }}"
+                         alt="Thumbnail {{ loop.index }}"
+                         class="img-fluid rounded-1"
+                         loading="lazy"
+                         style="aspect-ratio:16/9;object-fit:cover;">
+                  </a>
+
+                  <div class="small text-secondary mb-1">
+                    Order:
+                    <a href="{{ path('app_order_show', { id: thumb.order.id }) }}"
+                       class="link-light text-decoration-underline">
+                      {{ thumb.order.title }}
+                    </a>
+                  </div>
+
+                  <div class="small text-secondary mb-2">
+                    {{ (thumb.fileSize/1024)|number_format(0, ',', ' ') }} KB
+                  </div>
+
+                  <div class="mt-auto d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-light rounded-1"
+                       href="{{ path('app_thumbnail_download', { id: thumb.id }) }}">
+                      Download
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
           </div>
         {% endif %}
       </div>
