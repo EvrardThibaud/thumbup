@@ -127,6 +127,7 @@ final class OrderController extends AbstractController
 
             if ($last) {
                 $lastPriceCents = max(500, (int) $last->getPrice());
+                $order->setPrice($lastPriceCents);
             }
         }
 
