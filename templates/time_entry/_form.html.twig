@@ -1,4 +1,45 @@
-{{ form_start(form) }}
-    {{ form_widget(form) }}
-    <button class="btn">{{ button_label|default('Save') }}</button>
+{# templates/time_entry/_form.html.twig #}
+{{ form_start(form, { attr: { class: 'vstack gap-3', 'data-turbo': 'false' } }) }}
+  {{ form_errors(form) }}
+
+  {# Created at = just display, not editable #}
+  {% set createdAt = form.vars.data.createdAt ?? null %}
+  {% if createdAt %}
+    <div class="small text-secondary">
+      Logged at:
+      <span class="text-light">
+        {{ createdAt|date('Y-m-d H:i') }}
+      </span>
+    </div>
+  {% endif %}
+
+  <div>
+    <label class="form-label mb-1">Minutes</label>
+    {{ form_widget(form.minutes, { attr: { class: 'form-control form-control-sm rounded-1', min: 1 } }) }}
+    {{ form_errors(form.minutes) }}
+  </div>
+
+  <div>
+    <label class="form-label mb-1">Note (optional)</label>
+    {{ form_widget(form.note, { attr: { class: 'form-control form-control-sm rounded-1', rows: 2 } }) }}
+    {{ form_errors(form.note) }}
+  </div>
+
+  {% if form.relatedOrder is defined %}
+    <div>
+      <label class="form-label mb-1">Related order</label>
+      {{ form_widget(form.relatedOrder) }}
+      {{ form_errors(form.relatedOrder) }}
+    </div>
+  {% endif %}
+
+  {# Boutons tout en bas #}
+  <div class="d-flex gap-2 mt-3">
+    <button class="btn btn-primary btn-sm rounded-1">
+      {{ button_label|default('Save time entry') }}
+    </button>
+    {% if back is defined %}
+      <a href="{{ back }}" class="btn btn-outline-light btn-sm rounded-1">Cancel</a>
+    {% endif %}
+  </div>
 {{ form_end(form) }}

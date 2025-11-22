@@ -1,15 +1,26 @@
+{# templates/time_entry/new.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}New TimeEntry{% endblock %}
+{% block title %}New time entry{% endblock %}
 
 {% block body %}
-    <h1>Create new TimeEntry</h1>
-
-    {{ include('time_entry/_form.html.twig') }}
-
-    {% set back = time_entry.relatedOrder
+  {% set back = time_entry.relatedOrder
     ? path('app_order_show', {'id': time_entry.relatedOrder.id})
-    : path('app_time_entry_index') %}
+    : path('app_time_entry_index')
+  %}
 
-    <a href="{{ back }}">Back</a>
+  <div class="mb-3 d-flex justify-content-between align-items-center">
+    <h1 class="h4 m-0">⏱ New time entry</h1>
+    <a href="{{ back }}" class="btn btn-sm btn-outline-light rounded-1">
+      ← Back
+    </a>
+  </div>
+
+  <div class="card bg-dark border-0 p-4" style="max-width: 640px;">
+    {{ include('time_entry/_form.html.twig', {
+      form: form,
+      button_label: 'Save time entry',
+      back: back
+    }) }}
+  </div>
 {% endblock %}

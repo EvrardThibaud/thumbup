@@ -51,7 +51,7 @@ final class UserAuthenticator extends AbstractLoginFormAuthenticator
         // 2) Role-based default redirect (works for both login and post-register auto-login)
         $roles = $token->getRoleNames();
         if (in_array('ROLE_ADMIN', $roles, true)) {
-            return new RedirectResponse($this->urlGenerator->generate('admin_home')); // ex: /admin or /
+            return new RedirectResponse($this->urlGenerator->generate('app_home')); // ex: /admin or /
         }
 
         // Clients / regular users

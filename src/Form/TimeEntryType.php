@@ -6,6 +6,8 @@ use App\Entity\Order;
 use App\Entity\TimeEntry;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -14,16 +16,20 @@ class TimeEntryType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('minutes')
-            ->add('note', null, ['required' => false])
-            ->add('createdAt', null, [
-                'widget' => 'single_text',
+            ->add('minutes', IntegerType::class, [
+                'label' => 'Minutes',
             ])
+            ->add('note', TextareaType::class, [
+                'required' => false,
+                'label'    => 'Note',
+            ])
+            // createdAt retiré : défini uniquement dans le controller
             ->add('relatedOrder', EntityType::class, [
-                'class' => Order::class,
-                'choice_label' => 'title',
+                'class'       => Order::class,
+                'choice_label'=> 'title',
                 'placeholder' => 'Sélectionner une commande',
-                'autocomplete' => true,
+                'autocomplete'=> true,
+                'label'       => 'Related order',
             ])
         ;
     }
