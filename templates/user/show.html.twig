@@ -57,15 +57,16 @@
               {{ user.timezone ?? 'Europe/Paris' }}
             </dd>
 
-            {% if user.client %}
               <dt class="col-sm-4 text-secondary">Client</dt>
               <dd class="col-sm-8">
-                <a class="link-light link-opacity-75-hover"
-                   href="{{ path('app_client_show', { id: user.client.id }) }}">
-                  {{ user.client.name }}
-                </a>
+              {% if user.client %}
+                  <a class="link-light link-opacity-75-hover"
+                    href="{{ path('app_client_show', { id: user.client.id }) }}">
+                    {{ user.client.name }}
+                  </a>
+              {% endif %}
+              —
               </dd>
-            {% endif %}
           </dl>
         </div>
       </div>
@@ -81,7 +82,7 @@
             <dt class="col-sm-4 text-secondary">User ID</dt>
             <dd class="col-sm-8">#{{ user.id }}</dd>
 
-            <dt class="col-sm-4 text-secondary">Verified</dt>
+            <dt class="col-sm-4 text-secondary">Email verified</dt>
             <dd class="col-sm-8">
               {% if user.isVerified %}
                 <span class="badge text-bg-success rounded-1">Yes</span>
