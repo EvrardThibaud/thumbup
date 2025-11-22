@@ -30,7 +30,11 @@
         <label class="form-label">Password</label>
         {{ form_widget(registrationForm.plainPassword, { attr: { class: 'form-control rounded-1' } }) }}
         {{ form_errors(registrationForm.plainPassword) }}
+        <div class="form-text small text-secondary mt-1">
+          At least 8 characters, including 1 uppercase letter, 1 lowercase letter, 1 number and 1 special character.
+        </div>
       </div>
+
 
       {% if registrationForm.clientName is defined %}
         <hr class="text-secondary opacity-25">
