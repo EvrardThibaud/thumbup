@@ -5,6 +5,64 @@
 {% block body %}
 <div class="container py-4">
   {% if is_granted('ROLE_ADMIN') %}
+    {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
+
+    {# BOX 1: Accepted = To do #}
+    <div class="card bg-dark border-secondary rounded-2 mb-3">
+      <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Orders to do (accepted)</span>
+        <span class="badge text-bg-secondary rounded-1">
+          {{ acceptedOrders|length }}
+        </span>
+      </div>
+
+      <div class="card-body p-0">
+        {% if acceptedOrders is empty %}
+          <p class="text-secondary small m-3 mb-2">
+            No accepted orders for now.
+          </p>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="small text-secondary">
+                <tr>
+                  <th>Title</th>
+                  <th>Client</th>
+                  <th>Brief</th>
+                  <th>Due</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for order in acceptedOrders %}
+                <tr role="button"
+                    onclick="window.location='{{ path('app_order_show', { id: order.id }) }}'">
+                  <td class="fw-medium">
+                    {{ order.title }}
+                  </td>
+                  <td class="text-secondary">
+                    {{ order.client ? order.client.name : '—' }}
+                  </td>
+                  <td class="text-secondary small">
+                    {% set brief = order.brief ?? '' %}
+                    {% if brief|length > 120 %}
+                      {{ brief|slice(0, 120) ~ '…' }}
+                    {% else %}
+                      {{ brief }}
+                    {% endif %}
+                  </td>
+                  <td class="text-secondary">
+                    {{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# BOX 2: Created = need review #}
     <div class="card bg-dark border-secondary rounded-2">
       <div class="card-header border-secondary d-flex justify-content-between align-items-center">
         <span class="fw-semibold">New orders to review</span>
@@ -32,9 +90,8 @@
               </thead>
               <tbody>
               {% for order in createdOrders %}
-              {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
                 <tr role="button"
-                    onclick="window.location='{{ path('app_client_show', { id: order.client.id }) }}'">
+                    onclick="window.location='{{ path('app_order_show', { id: order.id }) }}'">
                   <td class="fw-medium">
                     {{ order.title }}
                   </td>

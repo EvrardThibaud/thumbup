@@ -23,20 +23,30 @@ final class HomeController extends AbstractController
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function app(OrderRepository $orderRepo): Response
     {
-        $createdOrders = [];
+        $createdOrders  = [];
+        $acceptedOrders = [];
 
         if ($this->isGranted('ROLE_ADMIN')) {
             $createdOrders = $orderRepo->createQueryBuilder('o')
-                ->andWhere('o.status = :st')
-                ->setParameter('st', OrderStatus::CREATED)
+                ->andWhere('o.status = :created')
+                ->setParameter('created', OrderStatus::CREATED)
                 ->orderBy('o.dueAt', 'ASC')
                 ->addOrderBy('o.id', 'DESC')
+                ->getQuery()
+                ->getResult();
+
+            $acceptedOrders = $orderRepo->createQueryBuilder('o2')
+                ->andWhere('o2.status = :accepted')
+                ->setParameter('accepted', OrderStatus::ACCEPTED)
+                ->orderBy('o2.dueAt', 'ASC')
+                ->addOrderBy('o2.id', 'DESC')
                 ->getQuery()
                 ->getResult();
         }
 
         return $this->render('home/index.html.twig', [
-            'createdOrders' => $createdOrders,
+            'createdOrders'  => $createdOrders,
+            'acceptedOrders' => $acceptedOrders,
         ]);
     }
 }
