@@ -132,7 +132,6 @@
               <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
               <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
               <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
-              <th></th>
             </tr>
           {% else %}
             <tr>
@@ -146,7 +145,6 @@
               <th>{{ S.sortLink('Thumbnails', 'thumbnails', sort, dir, route, qs) }}</th>
               <th>{{ S.sortLink('Due', 'dueAt', sort, dir, route, qs) }}</th>
               <th>{{ S.sortLink('Updated', 'updatedAt', sort, dir, route, qs) }}</th>
-              <th></th>
             </tr>
           {% endif %}
         </thead>
@@ -216,11 +214,6 @@
 
             <td>{{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}</td>
             <td class="text-secondary">{{ order.updatedAt ? order.updatedAt|date('Y-m-d H:i', tz) : '—' }}</td>
-
-            <td class="text-end">
-              {% set backList = app.request.uri %}
-              <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_order_edit', {'id': order.id, 'back': backList}) }}">Edit</a>
-            </td>
           </tr>
         {% else %}
           <tr>

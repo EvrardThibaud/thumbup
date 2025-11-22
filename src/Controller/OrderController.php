@@ -271,15 +271,21 @@ final class OrderController extends AbstractController
     {
         $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
 
+        /** @var \App\Entity\User|null $user */
         $user = $this->getUser();
         $isClient = $this->isGranted('ROLE_CLIENT')
             && method_exists($user, 'getClient')
             && $user->getClient() === $order->getClient();
 
+        // Un client ne peut éditer que si l'order est en statut CREATED
+        if ($isClient && $order->getStatus() !== \App\Enum\OrderStatus::CREATED) {
+            throw $this->createAccessDeniedException('You can only edit orders in "Created" status.');
+        }
+
         $back = $request->query->get('back') ?: $request->headers->get('referer');
 
         $form = $this->createForm(OrderType::class, $order, [
-            'is_client' => $isClient, // ← restrict visible/editable fields for clients
+            'is_client' => $isClient,
         ]);
         $form->handleRequest($request);
 
@@ -293,13 +299,13 @@ final class OrderController extends AbstractController
         }
 
         return $this->render('order/edit.html.twig', [
-            'order' => $order,
-            'form'  => $form,
-            'back'  => $back,
+            'order'     => $order,
+            'form'      => $form,
+            'back'      => $back,
             'is_client' => $isClient,
         ]);
     }
-
+    
     #[Route('/{id}', name: 'app_order_delete', methods: ['POST'])]
     public function delete(Request $request, Order $order, EntityManagerInterface $em): Response
     {

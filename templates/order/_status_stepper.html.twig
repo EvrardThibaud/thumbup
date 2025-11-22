@@ -110,17 +110,34 @@
       {% endif %}
 
       {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
-        {% if s == 'created' %}
-          <form method="post" action="{{ path('app_order_cancel', {id: order.id}) }}" onsubmit="return confirm('Cancel this order?');">
-            <input type="hidden" name="back" value="{{ backUrl }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
-            <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
-          </form>
-        {% else %}
-          <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
-          <span class="text-secondary small align-self-center">Cannot cancel at this stage.</span>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            {% if s == 'created' %}
+              {# Edit possible #}
+              <a class="btn btn-sm btn-outline-light rounded-1"
+                href="{{ path('app_order_edit', { id: order.id,  back: path('app_order_show', { id: order.id }) }) }}">
+                ✏️ Edit
+              </a>
+              
+
+              {# Cancel possible #}
+              <form method="post"
+                    action="{{ path('app_order_cancel', {id: order.id}) }}"
+                    onsubmit="return confirm('Cancel this order?');">
+                <input type="hidden" name="back" value="{{ backUrl }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('wf-cancel' ~ order.id) }}">
+                <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
+              </form>
+            {% else %}
+              {# Edit / Cancel impossibles #}
+              <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>✏️ Edit</button>
+              <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
+              <span class="text-secondary small align-self-center">
+                Cannot cancel or edit at this stage.
+              </span>
+            {% endif %}
+          </div>
         {% endif %}
-      {% endif %}
+
 
       {% if s == 'delivered' and is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
         <span class="text-secondary mx-1">•</span>
