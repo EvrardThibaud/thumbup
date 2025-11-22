@@ -31,6 +31,9 @@ final class RegistrationController extends AbstractController
         UserAuthenticator $formAuthenticator,
         MailerInterface $mailer
     ): Response {
+        if ($this->getUser()) {
+            return $this->redirectToRoute('app_home'); // ou ta route dashboard
+        }
         $token = (string) $request->query->get('invite', '');
         $inv   = $token ? $invitations->findUsableByToken($token) : null;
 
