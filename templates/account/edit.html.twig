@@ -152,8 +152,14 @@
               <div class="form-text text-secondary small">
                 Enter your existing password to confirm it’s really you.
               </div>
-              {{ form_errors(passwordForm.currentPassword) }}
+
+              {% if passwordForm.currentPassword.vars.errors|length %}
+                <div class="alert alert-danger small py-1 px-2 mt-1 mb-0 rounded-1">
+                  {{ form_errors(passwordForm.currentPassword) }}
+                </div>
+              {% endif %}
             </div>
+
 
             {# New password #}
             <div>
@@ -171,9 +177,15 @@
                 </button>
               </div>
               <div class="form-text text-secondary small">
-                At least 8 characters, including 1 uppercase letter, 1 lowercase letter, 1 number and 1 special character. Don’t reuse your current password.
+                At least 8 characters, including 1 uppercase letter, 1 lowercase letter,
+                1 number and 1 special character. Don’t reuse your current password.
               </div>
-              {{ form_errors(passwordForm.newPassword) }}
+
+              {% if passwordForm.newPassword.vars.errors|length %}
+                <div class="alert alert-danger small py-1 px-2 mt-1 mb-0 rounded-1">
+                  {{ form_errors(passwordForm.newPassword) }}
+                </div>
+              {% endif %}
             </div>
 
             {# Confirm new password #}
@@ -191,7 +203,12 @@
                   👁
                 </button>
               </div>
-              {{ form_errors(passwordForm.confirmNewPassword) }}
+
+              {% if passwordForm.confirmNewPassword.vars.errors|length %}
+                <div class="alert alert-danger small py-1 px-2 mt-1 mb-0 rounded-1">
+                  {{ form_errors(passwordForm.confirmNewPassword) }}
+                </div>
+              {% endif %}
             </div>
 
             <div class="d-flex gap-2 pt-2">

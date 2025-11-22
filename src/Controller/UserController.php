@@ -65,36 +65,52 @@ final class UserController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_user_edit', methods: ['GET','POST'])]
-    public function edit(User $user, Request $request, EntityManagerInterface $em, UserPasswordHasherInterface $hasher): Response
-    {
+    public function edit(
+        User $user,
+        Request $request,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $hasher
+    ): Response {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $form = $this->createForm(UserType::class, $user, [
             'require_password' => false,
-            'current_user' => $user,
+            'current_user'     => $user,
         ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             if ($user->getClient()) {
-                $other = $em->getRepository(\App\Entity\User::class)->findOneBy(['client' => $user->getClient()]);
+                $other = $em->getRepository(\App\Entity\User::class)
+                    ->findOneBy(['client' => $user->getClient()]);
+
                 if ($other && $other->getId() !== $user->getId()) {
-                    $form->get('client')->addError(new \Symfony\Component\Form\FormError('This client is already linked to another user.'));
-                    return $this->render('user/edit.html.twig', ['form' => $form, 'user' => $user]);
+                    $form->get('client')->addError(
+                        new \Symfony\Component\Form\FormError('This client is already linked to another user.')
+                    );
+
+                    return $this->render('user/edit.html.twig', [
+                        'form' => $form,
+                        'user' => $user,
+                    ]);
                 }
-            }
-            $plain = (string) $form->get('plainPassword')->getData();
-            if ($plain !== '') {
-                $user->setPassword($hasher->hashPassword($user, $plain));
             }
             $em->flush();
             $this->addFlash('success', 'User updated.');
+
             $back = $request->query->get('back') ?: $request->headers->get('referer');
-            return $back ? $this->redirect($back) : $this->redirectToRoute('app_user_show', ['id' => $user->getId()]);
+
+            return $back
+                ? $this->redirect($back)
+                : $this->redirectToRoute('app_user_show', ['id' => $user->getId()]);
         }
 
-        return $this->render('user/edit.html.twig', ['form' => $form, 'user' => $user]);
+        return $this->render('user/edit.html.twig', [
+            'form' => $form,
+            'user' => $user,
+        ]);
     }
+
 
     #[Route('/{id}', name: 'app_user_delete', methods: ['POST'])]
     public function delete(User $user, Request $request, EntityManagerInterface $em): Response

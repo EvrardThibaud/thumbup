@@ -1,17 +1,39 @@
+{# templates/time_entry/edit.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit TimeEntry{% endblock %}
+{% block title %}Edit time entry{% endblock %}
 
 {% block body %}
-    <h1>Edit TimeEntry</h1>
-
-    {{ include('time_entry/_form.html.twig', {'button_label': 'Update'}) }}
-
-    {% set back = time_entry.relatedOrder
+  {% set back = time_entry.relatedOrder
     ? path('app_order_show', {'id': time_entry.relatedOrder.id})
-    : path('app_time_entry_index') %}
+    : path('app_time_entry_index')
+  %}
 
-    <a href="{{ back }}">Back</a>
+  <div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h1 class="h4 m-0">⏱ Edit time entry</h1>
+      <a href="{{ back }}" class="btn btn-sm btn-outline-light rounded-1">
+        ← Back
+      </a>
+    </div>
 
-    {{ include('time_entry/_delete_form.html.twig') }}
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <div class="card bg-dark border-secondary rounded-2 p-4">
+          {{ include('time_entry/_form.html.twig', {
+            form: form,
+            button_label: 'Update time entry',
+            back: back
+          }) }}
+
+          <hr class="text-secondary opacity-25 my-3">
+
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="small text-secondary">Danger zone</span>
+            {{ include('time_entry/_delete_form.html.twig') }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

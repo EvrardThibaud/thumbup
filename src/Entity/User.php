@@ -5,21 +5,21 @@ namespace App\Entity;
 use App\Entity\Client;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[UniqueEntity(fields: ['email'], message: 'This email is already used.')]
+#[UniqueEntity(fields: ['client'], message: 'This client is already linked to another user.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\OneToOne(targetEntity: Client::class)]
     #[ORM\JoinColumn(name: "client_id", referencedColumnName: "id", nullable: true, unique: true, onDelete: "SET NULL")]
     private ?Client $client = null;
-
-    public function getClient(): ?Client { return $this->client; }
-    public function setClient(?Client $c): self { $this->client = $c; return $this; }
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -38,81 +38,67 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 64)]
     private ?string $timezone = 'Europe/Paris';
 
-    public function getTimezone(): string
-    {
-        return $this->timezone ?? 'Europe/Paris';
-    }
+    /**
+     * @var list<string>
+     */
+    #[ORM\Column]
+    private array $roles = [];
 
-    public function setTimezone(string $timezone): self
-    {
-        $this->timezone = $timezone;
-        return $this;
-    }
+    #[ORM\Column]
+    private ?string $password = null;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function isVerified(): bool
+    // --- Client ---
+
+    public function getClient(): ?Client
     {
-        return $this->isVerified;
+        return $this->client;
     }
 
-    public function setIsVerified(bool $isVerified): self
+    public function setClient(?Client $c): self
     {
-        $this->isVerified = $isVerified;
+        $this->client = $c;
 
         return $this;
     }
 
-    /**
-     * @var list<string> The user roles
-     */
-    #[ORM\Column]
-    private array $roles = [];
+    // --- Basics ---
 
-    /**
-     * @var string The hashed password
-     */
-    #[ORM\Column]
-    private ?string $password = null;
+    public function getId(): ?int { return $this->id; }
 
-    public function getId(): ?int
+    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function setCreatedAt(\DateTimeImmutable $dt): self { $this->createdAt = $dt; return $this; }
+
+    public function getEmail(): ?string { return $this->email; }
+    public function setEmail(string $email): static { $this->email = $email; return $this; }
+
+    public function getUserIdentifier(): string { return (string) $this->email; }
+
+    public function isVerified(): bool { return $this->isVerified; }
+    public function setIsVerified(bool $isVerified): self { $this->isVerified = $isVerified; return $this; }
+
+    public function getTimezone(): string { return $this->timezone ?? 'Europe/Paris'; }
+    public function setTimezone(string $timezone): self { $this->timezone = $timezone; return $this; }
+
+    // --- Roles ---
+
+    public function isAdmin(): bool
     {
-        return $this->id;
+        return in_array('ROLE_ADMIN', $this->roles, true);
     }
 
-    public function getEmail(): ?string
+    public function isClientRole(): bool
     {
-        return $this->email;
+        return in_array('ROLE_CLIENT', $this->roles, true);
     }
 
-    public function setEmail(string $email): static
-    {
-        $this->email = $email;
-
-        return $this;
-    }
-
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
-    public function getUserIdentifier(): string
-    {
-        return (string) $this->email;
-    }
-
-    /**
-     * @see UserInterface
-     */
     public function getRoles(): array
     {
-        $roles = $this->roles;
-
-        return array_unique($roles);
+        return array_unique($this->roles);
     }
 
     /**
@@ -120,14 +106,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function setRoles(array $roles): static
     {
-        $this->roles = $roles;
+        $this->roles = array_values(array_unique($roles));
+
+        // Si user devient admin → on coupe le lien client
+        if ($this->isAdmin() && $this->client !== null) {
+            $this->client = null;
+        }
 
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
+    // --- Password ---
+
     public function getPassword(): ?string
     {
         return $this->password;
@@ -136,13 +126,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
         return $this;
     }
 
-    /**
-     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
-     */
     public function __serialize(): array
     {
         $data = (array) $this;
@@ -157,6 +143,50 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // @deprecated, to be removed when upgrading to Symfony 8
     }
 
-    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $dt): self { $this->createdAt = $dt; return $this; }
+    // --- Business validation rules ---
+
+    /**
+     * - si admin → ne doit pas être lié à un client
+     * - si non admin → doit être lié à exactement 1 client
+     */
+    #[Assert\Callback]
+    public function validateClientRelation(ExecutionContextInterface $context): void
+    {
+        if ($this->isAdmin()) {
+            if ($this->client !== null) {
+                $context->buildViolation('Admin users cannot be linked to a client.')
+                    ->atPath('client')
+                    ->addViolation();
+            }
+        } else {
+            if ($this->client === null) {
+                $context->buildViolation('This user must be linked to a client.')
+                    ->atPath('client')
+                    ->addViolation();
+            }
+        }
+    }
+
+    /**
+     * - ne peut PAS avoir ROLE_ADMIN et ROLE_CLIENT en même temps
+     * - doit avoir au moins l’un des deux (admin OU client)
+     */
+    #[Assert\Callback]
+    public function validateRoles(ExecutionContextInterface $context): void
+    {
+        $isAdmin  = $this->isAdmin();
+        $isClient = $this->isClientRole();
+
+        if ($isAdmin && $isClient) {
+            $context->buildViolation('A user cannot have both admin and client roles at the same time.')
+                ->atPath('roles')
+                ->addViolation();
+        }
+
+        if (!$isAdmin && !$isClient) {
+            $context->buildViolation('A user must be either admin or client.')
+                ->atPath('roles')
+                ->addViolation();
+        }
+    }
 }
