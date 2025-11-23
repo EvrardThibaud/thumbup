@@ -182,7 +182,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // @deprecated, to be removed when upgrading to Symfony 8
     }
 
-    #[Assert\Callback]
+    #[Assert\Callback(groups: ['strict_user'])]
     public function validateClientRelation(ExecutionContextInterface $context): void
     {
         if ($this->isAdmin()) {
@@ -200,7 +200,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
     }
 
-    #[Assert\Callback]
+    #[Assert\Callback(groups: ['strict_user'])]
     public function validateRoles(ExecutionContextInterface $context): void
     {
         $isAdmin  = $this->isAdmin();

@@ -73,8 +73,9 @@ final class UserController extends AbstractController
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         $form = $this->createForm(UserType::class, $user, [
-            'require_password' => false,
-            'current_user'     => $user,
+            'require_password'  => false,
+            'current_user'      => $user,
+            'validation_groups' => ['Default', 'strict_user'],
         ]);
         $form->handleRequest($request);
 
@@ -94,6 +95,7 @@ final class UserController extends AbstractController
                     ]);
                 }
             }
+
             $em->flush();
             $this->addFlash('success', 'User updated.');
 
@@ -109,6 +111,7 @@ final class UserController extends AbstractController
             'user' => $user,
         ]);
     }
+
 
 
     #[Route('/{id}', name: 'app_user_delete', methods: ['POST'])]

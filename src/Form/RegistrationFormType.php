@@ -52,6 +52,9 @@ final class RegistrationFormType extends AbstractType
         $r->setDefaults([
             'data_class' => User::class,
             'with_client_fields' => true,
+            'validation_groups' => ['Default'],
+
         ]);
     }
 }
+

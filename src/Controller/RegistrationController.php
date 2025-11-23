@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\YoutubeChannel;
 use App\Entity\Client;
 use App\Entity\User;
 use App\Entity\EmailVerificationToken;
@@ -30,6 +31,7 @@ final class RegistrationController extends AbstractController
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
         }
+
         $token = (string) $request->query->get('invite', '');
         $inv   = $token ? $invitations->findUsableByToken($token) : null;
 
@@ -53,7 +55,7 @@ final class RegistrationController extends AbstractController
 
             $plain = (string) $form->get('plainPassword')->getData();
             $user->setPassword($hasher->hashPassword($user, $plain));
-            $user->setTimezone('Europe/Paris'); 
+            $user->setTimezone('Europe/Paris');
 
             if ($inv !== null) {
                 if ($linkedAlready) {
@@ -80,7 +82,7 @@ final class RegistrationController extends AbstractController
                 }
             } else {
                 $name = trim((string) $form->get('clientName')->getData());
-                $url  = (string) $form->get('channelUrl')->getData();
+                $url  = trim((string) $form->get('channelUrl')->getData());
 
                 if ($name === '') {
                     $this->addFlash('danger', 'Client name is required.');
@@ -93,11 +95,20 @@ final class RegistrationController extends AbstractController
                 }
 
                 $client = (new Client())
-                    ->setName($name)
-                    ->setChannelUrl($url ?: null);
+                    ->setName($name);
 
                 $em->persist($client);
                 $user->setClient($client);
+
+                if ($url !== '') {
+                    $channel = (new YoutubeChannel())
+                        ->setClient($client)
+                        ->setName(null)
+                        ->setUrl($url)
+                        ->setPosition(0);
+
+                    $em->persist($channel);
+                }
             }
 
             $em->persist($user);
