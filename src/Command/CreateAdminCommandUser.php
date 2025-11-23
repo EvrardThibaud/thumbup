@@ -18,7 +18,6 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 )]
 class CreateAdminUserCommand extends Command
 {
-    // fallback au cas où l'attribut ne serait pas pris en compte
     protected static $defaultName = 'app:create-admin';
     protected static $defaultDescription = 'Create an admin user';
 
