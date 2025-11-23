@@ -41,8 +41,8 @@ class OrderRepository extends ServiceEntityRepository
         if ($q)          { $qb->andWhere('o.title LIKE :q')->setParameter('q', '%'.$q.'%'); }
         if ($clientId)   { $qb->andWhere('c.id = :cid')->setParameter('cid', $clientId); }
         if ($status)     { $qb->andWhere('o.status = :st')->setParameter('st', $status->value); }
-        if ($from)       { $qb->andWhere('o.createdAt >= :from')->setParameter('from', $from); }
-        if ($to)         { $qb->andWhere('o.createdAt <= :to')->setParameter('to', $to); }
+        if ($from)       { $qb->andWhere('o.dueAt >= :from')->setParameter('from', $from); }
+        if ($to)         { $qb->andWhere('o.dueAt <= :to')->setParameter('to', $to); }
         if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
 
         // Group pour pouvoir compter les assets
@@ -76,29 +76,29 @@ class OrderRepository extends ServiceEntityRepository
     }
 
     public function paginateOrdersWithAssets(?Client $client, int $page, int $perPage): array
-{
-    $qb = $this->createQueryBuilder('o')
-        ->innerJoin('o.assets', 'a')        // OrderAsset = client files
-        ->addSelect('a')
-        ->groupBy('o.id')
-        ->orderBy('o.updatedAt', 'DESC')
-        ->addOrderBy('o.id', 'DESC');
+    {
+        $qb = $this->createQueryBuilder('o')
+            ->innerJoin('o.assets', 'a')        // OrderAsset = client files
+            ->addSelect('a')
+            ->groupBy('o.id')
+            ->orderBy('o.dueAt', 'DESC')
+            ->addOrderBy('o.id', 'DESC');
 
-    if ($client) {
-        $qb->andWhere('o.client = :c')->setParameter('c', $client);
+        if ($client) {
+            $qb->andWhere('o.client = :c')->setParameter('c', $client);
+        }
+
+        $first = max(0, ($page - 1) * $perPage);
+        $rows  = $qb->setFirstResult($first)
+                    ->setMaxResults($perPage + 1)
+                    ->getQuery()
+                    ->getResult();
+
+        $hasMore = \count($rows) > $perPage;
+        if ($hasMore) { array_pop($rows); }
+
+        return ['items' => $rows, 'page' => $page, 'hasMore' => $hasMore];
     }
-
-    $first = max(0, ($page - 1) * $perPage);
-    $rows  = $qb->setFirstResult($first)
-                ->setMaxResults($perPage + 1)
-                ->getQuery()
-                ->getResult();
-
-    $hasMore = \count($rows) > $perPage;
-    if ($hasMore) { array_pop($rows); }
-
-    return ['items' => $rows, 'page' => $page, 'hasMore' => $hasMore];
-}
 
     public function paginateOrdersWithThumbnails(?Client $client, int $page, int $perPage): array
     {
@@ -106,7 +106,7 @@ class OrderRepository extends ServiceEntityRepository
             ->innerJoin('o.thumbnails', 't')    // Thumbnail = final images (admin)
             ->addSelect('t')
             ->groupBy('o.id')
-            ->orderBy('o.updatedAt', 'DESC')
+            ->orderBy('o.dueAt', 'DESC')
             ->addOrderBy('o.id', 'DESC');
 
         if ($client) {
@@ -160,12 +160,12 @@ class OrderRepository extends ServiceEntityRepository
         }
     
         if ($from) {
-            $qb->andWhere('o.updatedAt >= :from')
+            $qb->andWhere('o.dueAt >= :from')
                ->setParameter('from', $from);
         }
     
         if ($to) {
-            $qb->andWhere('o.updatedAt <= :to')
+            $qb->andWhere('o.dueAt <= :to')
                ->setParameter('to', $to);
         }
     
@@ -186,7 +186,7 @@ class OrderRepository extends ServiceEntityRepository
             'updatedAt' => 'o.updatedAt',
             'createdAt' => 'o.createdAt',
         ];
-        $sortExpr = $allowedSort[$sort] ?? 'o.updatedAt';
+        $sortExpr = $allowedSort[$sort] ?? 'o.dueAt';
         $dir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
     
         $qb->orderBy($sortExpr, $dir);
@@ -248,7 +248,7 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('o.paid = :paid')->setParameter('paid', false)
             ->andWhere('o.status IN (:st)')
             ->setParameter('st', [OrderStatus::DELIVERED, OrderStatus::REVISION, OrderStatus::FINISHED])
-            ->orderBy('o.updatedAt', 'DESC')
+            ->orderBy('o.dueAt', 'DESC')
             ->addOrderBy('o.id', 'DESC')
             ->getQuery()->getResult();
     }
