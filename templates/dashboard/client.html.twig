@@ -1,14 +1,23 @@
-<div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 m-0">📊 Dashboard</h1>
-  </div>
+{% block title %}Dashboard{% endblock %}
 
-  <div class="card bg-dark border-secondary mb-4">
-    <div class="card-header border-secondary">
-      <span class="fw-semibold">Orders per month</span>
+{% block body %}
+  {% if is_admin is defined and is_admin %}
+    {# --- ADMIN VERSION (code du bloc précédent) --- #}
+    {# ... colle ici tout le bloc admin si tu veux tout dans un seul fichier #}
+  {% else %}
+    <div class="container py-4">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h4 m-0">📊 Dashboard</h1>
+      </div>
+
+      <div class="card bg-dark border-secondary mb-4">
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Orders per month (since first order)</span>
+        </div>
+        <div class="card-body">
+          {{ render_chart(ordersByMonthChart, { height: 120 }) }}
+        </div>
+      </div>
     </div>
-    <div class="card-body">
-      {{ render_chart(ordersByMonthChart, {'height': 120}) }}
-    </div>
-  </div>
-</div>
+  {% endif %}
+{% endblock %}

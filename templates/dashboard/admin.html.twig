@@ -1,20 +1,45 @@
-<div class="container py-4">
+{% block title %}Admin dashboard{% endblock %}
 
+{% block body %}
+<div class="container py-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 m-0">📊 Admin dashboard</h1>
 
-    <form method="get" action="{{ path('app_dashboard') }}" class="d-flex align-items-center gap-2">
-        <select name="client" class="form-select form-select-sm bg-dark text-light border-secondary"
-        onchange="if(this.value===''){window.location.href='{{ path('app_dashboard') }}';}else{this.form.submit();}">
-        <option value="" {{ selectedClient is not defined or selectedClient is null ? 'selected':'' }}>All clients</option>
+    <form method="get"
+          action="{{ path('app_dashboard') }}"
+          class="d-flex align-items-center gap-2">
+
+      {# Client filter #}
+      <select name="client"
+              class="form-select form-select-sm bg-dark text-light border-secondary">
+        <option value="" {{ selectedClient is not defined or selectedClient is null ? 'selected':'' }}>
+          All clients
+        </option>
         {% for c in clients %}
           <option value="{{ c.id }}" {{ selectedClient and selectedClient.id == c.id ? 'selected':'' }}>
             {{ c.name }}
           </option>
         {% endfor %}
       </select>
-      {% if selectedClient %}
-        <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_dashboard') }}">Reset</a>
+
+      {# Time range filter #}
+      <select name="range"
+              class="form-select form-select-sm bg-dark text-light border-secondary">
+        <option value="all"   {{ range == 'all'   ? 'selected':'' }}>All time</option>
+        <option value="year"  {{ range == 'year'  ? 'selected':'' }}>Last year</option>
+        <option value="month" {{ range == 'month' ? 'selected':'' }}>Last month</option>
+        <option value="week"  {{ range == 'week'  ? 'selected':'' }}>Last week</option>
+      </select>
+
+      <button class="btn btn-sm btn-outline-light rounded-1" type="submit">
+        Apply
+      </button>
+
+      {% if selectedClient or range != 'year' %}
+        <a class="btn btn-sm btn-outline-secondary rounded-1"
+           href="{{ path('app_dashboard') }}">
+          Reset
+        </a>
       {% endif %}
     </form>
   </div>
@@ -22,61 +47,82 @@
   <div class="row g-3 mb-4">
     <div class="col-md-4">
       <div class="card bg-dark border-0 p-3 h-100">
-        <div class="small text-secondary mb-1">Total time (last 12 months)</div>
-        <div class="fs-3">{{ totalMinutes12m|default(0) }} min</div>
-        <div class="small text-secondary mt-1">
-          Avg: {{ avg.minutes.day }} /day • {{ avg.minutes.week }} /week • {{ avg.minutes.month }} /month • {{ avg.minutes.year }} /year
+        <div class="small text-secondary mb-1">Total time ({{ periodLabel }})</div>
+        <div class="fs-3">{{ totalMinutes|default(0) }} min</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-dark border-0 p-3 h-100">
+        <div class="small text-secondary mb-1">Total revenue ({{ periodLabel }})</div>
+        <div class="fs-3">
+          {{ totalRevenue|number_format(2, ',', ' ') }} €
         </div>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card bg-dark border-0 p-3 h-100">
-        <div class="small text-secondary mb-1">Total revenue (last 12 months)</div>
-        <div class="fs-3">{{ totalRevenue12m|number_format(2, ',', ' ') }} €</div>
-        <div class="small text-secondary mt-1">
-          Avg: {{ avg.revenueEuros.day|number_format(2, ',', ' ') }} €/day •
-               {{ avg.revenueEuros.week|number_format(2, ',', ' ') }} €/week •
-               {{ avg.revenueEuros.month|number_format(2, ',', ' ') }} €/month •
-               {{ avg.revenueEuros.year|number_format(2, ',', ' ') }} €/year
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card bg-dark border-0 p-3 h-100">
-        <div class="small text-secondary mb-1">Total thumbnails (last 12 months)</div>
-        <div class="fs-3">{{ totalOrders12m|default(0) }}</div>
-        <div class="small text-secondary mt-1">
-          Avg: {{ avg.orders.day }} /day • {{ avg.orders.week }} /week • {{ avg.orders.month }} /month • {{ avg.orders.year }} /year
-        </div>
+        <div class="small text-secondary mb-1">Total thumbnails ({{ periodLabel }})</div>
+        <div class="fs-3">{{ totalOrders|default(0) }}</div>
       </div>
     </div>
   </div>
+
+  {# Charts #}
+  {% set unitLabel = (range in ['month','week']) ? 'day' : 'month' %}
 
   <div class="row g-3">
     <div class="col-lg-6">
       <div class="card bg-dark border-secondary mb-3">
-        <div class="card-header border-secondary"><span class="fw-semibold">Thumbnails per month</span></div>
-        <div class="card-body">{{ render_chart(ordersByMonthChart, {'height': 120}) }}</div>
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Thumbnails per {{ unitLabel }}</span>
+        </div>
+        <div class="card-body">
+          {{ render_chart(ordersChart, { height: 120 }) }}
+        </div>
       </div>
     </div>
+
     <div class="col-lg-6">
       <div class="card bg-dark border-secondary mb-3">
-        <div class="card-header border-secondary"><span class="fw-semibold">Time spent per month (min)</span></div>
-        <div class="card-body">{{ render_chart(timeByMonthChart, {'height': 120}) }}</div>
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Time spent per {{ unitLabel }} (min)</span>
+        </div>
+        <div class="card-body">
+          {{ render_chart(timeChart, { height: 120 }) }}
+        </div>
       </div>
     </div>
+
     <div class="col-lg-6">
       <div class="card bg-dark border-secondary mb-3">
-        <div class="card-header border-secondary"><span class="fw-semibold">Average time per thumbnail (min)</span></div>
-        <div class="card-body">{{ render_chart(avgTimePerOrderChart, {'height': 120}) }}</div>
-      </div>
-    </div>
-    <div class="col-lg-6">
-      <div class="card bg-dark border-secondary mb-3">
-        <div class="card-header border-secondary"><span class="fw-semibold">Revenue per month (€)</span></div>
-        <div class="card-body">{{ render_chart(revenueByMonthChart, {'height': 120}) }}</div>
+        <div class="card-header border-secondary">
+          <span class="fw-semibold">Revenue per {{ unitLabel }} (€)</span>
+        </div>
+        <div class="card-body">
+          {{ render_chart(revenueChart, { height: 120 }) }}
+        </div>
       </div>
     </div>
   </div>
-
 </div>
+ {% if cumOrdersChart and cumRevenueChart %}
+    <div class="mt-4">
+      <div class="card bg-dark border-secondary">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Cumulative overview (all time)</span>
+          <span class="small text-secondary">Unit: month · No filters applied</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              {{ render_chart(cumOrdersChart, { height: 120 }) }}
+            </div>
+            <div class="col-lg-6">
+              {{ render_chart(cumRevenueChart, { height: 120 }) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

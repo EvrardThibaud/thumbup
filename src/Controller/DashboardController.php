@@ -4,6 +4,7 @@
 namespace App\Controller;
 
 use App\Entity\Client;
+use App\Entity\Order;
 use App\Enum\OrderStatus;
 use App\Repository\ClientRepository;
 use App\Repository\OrderRepository;
@@ -25,16 +26,33 @@ final class DashboardController extends AbstractController
         TimeEntryRepository $times,
         ChartBuilderInterface $charts
     ): Response {
-        // If CLIENT (non-admin): keep existing client dashboard only
+        // --- CLIENT DASHBOARD (non admin) ---
         if ($this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN')) {
+            /** @var \App\Entity\User|null $user */
             $user   = $this->getUser();
             $client = (is_object($user) && method_exists($user, 'getClient')) ? $user->getClient() : null;
             if (!$client instanceof Client) {
                 throw $this->createAccessDeniedException('No client linked to this user.');
             }
 
-            $end   = new \DateTimeImmutable('first day of next month 00:00:00');
-            $start = $end->modify('-12 months');
+            // Start = first order dueAt for this client, End = first day of next month
+            $end = new \DateTimeImmutable('first day of next month 00:00:00');
+
+            $minDue = $orders->createQueryBuilder('o')
+                ->select('MIN(o.dueAt)')
+                ->andWhere('o.client = :c')
+                ->andWhere('o.dueAt IS NOT NULL')
+                ->setParameter('c', $client)
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            if ($minDue) {
+                $minDueAt = new \DateTimeImmutable($minDue);
+                $start    = new \DateTimeImmutable($minDueAt->format('Y-m-01 00:00:00'));
+            } else {
+                // fallback : 12 derniers mois si aucune commande
+                $start = $end->modify('-12 months');
+            }
 
             $series = $orders->getMonthlyCountsByClient($start, $end, $client);
 
@@ -43,8 +61,8 @@ final class DashboardController extends AbstractController
                 'labels' => $series['labels'],
                 'datasets' => [[
                     'label' => 'Orders per month',
-                    'data' => $series['data'],
-                    'fill' => false,
+                    'data'  => $series['data'],
+                    'fill'  => false,
                     'tension' => 0.25,
                     'pointRadius' => 4,
                     'pointHoverRadius' => 6,
@@ -55,7 +73,7 @@ final class DashboardController extends AbstractController
                 'responsive' => true,
                 'plugins' => [
                     'legend' => ['display' => true, 'position' => 'top'],
-                    'title'  => ['display' => true, 'text' => '📈 Orders per month (last 12 months)'],
+                    'title'  => ['display' => true, 'text' => '📈 Orders per month (since first order)'],
                     'tooltip'=> ['mode' => 'index', 'intersect' => false],
                 ],
                 'interaction' => ['mode' => 'index', 'intersect' => false],
@@ -67,191 +85,375 @@ final class DashboardController extends AbstractController
 
             return $this->render('dashboard/index.html.twig', [
                 'ordersByMonthChart' => $ordersByMonthChart,
+                'is_admin'           => false,
             ]);
         }
 
-        // ADMIN dashboard (with optional client filter)
+        // --- ADMIN DASHBOARD ---
+
+        // Client filter
         $raw = trim((string) $request->query->get('client', ''));
         $selectedClient = (ctype_digit($raw) && $raw !== '') ? $clientsRepo->find((int) $raw) : null;
 
+        // Time range filter
+        $range = (string) $request->query->get('range', 'year'); // all, year, month, week
+        if (!in_array($range, ['all', 'year', 'month', 'week'], true)) {
+            $range = 'year';
+        }
 
-        $end   = new \DateTimeImmutable('first day of next month 00:00:00');
-        $start = $end->modify('-12 months');
+        // Grouping: month (all/year) or day (month/week)
+        $groupBy = in_array($range, ['month', 'week'], true) ? 'day' : 'month';
 
-        // --- Totals & averages (last 12 months) ---
-        // Orders created
+        $now = new \DateTimeImmutable('now');
+
+        // Compute [start, end) window based on range
+        if ($range === 'all') {
+            $minQb = $orders->createQueryBuilder('o')
+                ->select('MIN(o.dueAt)')
+                ->andWhere('o.dueAt IS NOT NULL');
+
+            if ($selectedClient instanceof Client) {
+                $minQb->andWhere('o.client = :c')->setParameter('c', $selectedClient);
+            }
+
+            $minDue = $minQb->getQuery()->getSingleScalarResult();
+            if ($minDue) {
+                $start = new \DateTimeImmutable($minDue);
+            } else {
+                $start = $now->modify('-1 year'); // fallback
+            }
+            $end = $now;
+        } elseif ($range === 'month') {
+            $end   = $now;
+            $start = $now->modify('-31 days');
+        } elseif ($range === 'week') {
+            $end   = $now;
+            $start = $now->modify('-7 days');
+        } else { // 'year'
+            $end   = $now;
+            $start = $now->modify('-1 year');
+        }
+
+        $periodLabel = match ($range) {
+            'all'   => 'All time',
+            'year'  => 'Last year',
+            'month' => 'Last month',
+            'week'  => 'Last week',
+            default => 'Last year',
+        };
+
+        // --- Totals dépendant du client + période ---
+
+        // Total thumbnails = orders whose dueAt in window
         $ordersQb = $orders->createQueryBuilder('o')
             ->select('COUNT(o.id)')
             ->andWhere('o.dueAt IS NOT NULL')
             ->andWhere('o.dueAt >= :start AND o.dueAt < :end')
-            ->setParameter('start', $start)->setParameter('end', $end);
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
         if ($selectedClient instanceof Client) {
             $ordersQb->andWhere('o.client = :c')->setParameter('c', $selectedClient);
         }
-        $totalOrders12m = (int) $ordersQb->getQuery()->getSingleScalarResult();
+        $totalOrders = (int) $ordersQb->getQuery()->getSingleScalarResult();
 
-
-        // Time entries minutes
+        // Total time = sum minutes des TimeEntry liés à des orders dont dueAt dans la fenêtre
         $timeQb = $times->createQueryBuilder('t')
-            ->select('COALESCE(SUM(t.minutes),0)')
-            ->andWhere('t.createdAt >= :start AND t.createdAt < :end')
-            ->setParameter('start', $start)->setParameter('end', $end);
+            ->select('COALESCE(SUM(t.minutes), 0)')
+            ->join('t.relatedOrder', 'to')
+            ->andWhere('to.dueAt IS NOT NULL')
+            ->andWhere('to.dueAt >= :start AND to.dueAt < :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
         if ($selectedClient instanceof Client) {
-            $timeQb->leftJoin('t.relatedOrder', 'to')->andWhere('to.client = :c')->setParameter('c', $selectedClient);
+            $timeQb->andWhere('to.client = :c')->setParameter('c', $selectedClient);
         }
-        $totalMinutes12m = (int) $timeQb->getQuery()->getSingleScalarResult();
+        $totalMinutes = (int) $timeQb->getQuery()->getSingleScalarResult();
 
-        // Revenue (paid orders; sum price in cents, bucketed by dueAt)
+        // Total revenue = sum price des orders paid=true whose dueAt in window
         $revQb = $orders->createQueryBuilder('o')
-            ->select('COALESCE(SUM(o.price),0)')
+            ->select('COALESCE(SUM(o.price), 0)')
             ->andWhere('o.paid = :paid')
             ->andWhere('o.dueAt IS NOT NULL')
             ->andWhere('o.dueAt >= :start AND o.dueAt < :end')
             ->setParameter('paid', true)
-            ->setParameter('start', $start)->setParameter('end', $end);
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
         if ($selectedClient instanceof Client) {
             $revQb->andWhere('o.client = :c')->setParameter('c', $selectedClient);
         }
-        $totalCents12m = (int) $revQb->getQuery()->getSingleScalarResult();
+        $totalCents = (int) $revQb->getQuery()->getSingleScalarResult();
+        $totalRevenue = round($totalCents / 100, 2);
 
-        // Averages over the last 12 months window
-        $avg = [
-            'orders' => [
-                'day'   => round($totalOrders12m / 365, 2),
-                'week'  => round($totalOrders12m / 52, 2),
-                'month' => round($totalOrders12m / 12, 2),
-                'year'  => $totalOrders12m,
-            ],
-            'minutes' => [
-                'day'   => round($totalMinutes12m / 365, 1),
-                'week'  => round($totalMinutes12m / 52, 1),
-                'month' => round($totalMinutes12m / 12, 1),
-                'year'  => $totalMinutes12m,
-            ],
-            'revenueEuros' => [
-                'day'   => round(($totalCents12m/100) / 365, 2),
-                'week'  => round(($totalCents12m/100) / 52, 2),
-                'month' => round(($totalCents12m/100) / 12, 2),
-                'year'  => round(($totalCents12m/100), 2),
-            ],
-        ];
+        // --- Séries pour charts : thumbnails, time, revenue ---
 
-        // --- Monthly series (last 12 months, labels oldest..newest) ---
         $labels   = [];
         $countPer = [];
         $minsPer  = [];
         $revPer   = [];
-        $avgTimePerOrder = [];
 
-        $cursor = new \DateTimeImmutable($start->format('Y-m-01 00:00:00'));
-        while ($cursor < $end) {
-            $monthStart = $cursor;
-            $monthEnd   = $cursor->modify('+1 month');
+        if ($groupBy === 'month') {
+            $cursor = new \DateTimeImmutable($start->format('Y-m-01 00:00:00'));
+            $limit  = (new \DateTimeImmutable($end->format('Y-m-01 00:00:00')))->modify('+1 month');
 
-            $labels[] = $monthStart->format('Y-m');
+            while ($cursor < $limit) {
+                $bucketStart = $cursor;
+                $bucketEnd   = $cursor->modify('+1 month');
 
-            // Orders whose dueAt is in this month
-            $qb1 = $orders->createQueryBuilder('o')
-                ->select('COUNT(o.id)')
-                ->andWhere('o.dueAt IS NOT NULL')
-                ->andWhere('o.dueAt >= :ms AND o.dueAt < :me')
-                ->setParameter('ms', $monthStart)->setParameter('me', $monthEnd);
-            if ($selectedClient instanceof Client) {
-                $qb1->andWhere('o.client = :c')->setParameter('c', $selectedClient);
+                $labels[] = $bucketStart->format('Y-m');
+
+                // Orders count
+                $qb1 = $orders->createQueryBuilder('o')
+                    ->select('COUNT(o.id)')
+                    ->andWhere('o.dueAt IS NOT NULL')
+                    ->andWhere('o.dueAt >= :bs AND o.dueAt < :be')
+                    ->setParameter('bs', $bucketStart)
+                    ->setParameter('be', $bucketEnd);
+                if ($selectedClient instanceof Client) {
+                    $qb1->andWhere('o.client = :c')->setParameter('c', $selectedClient);
+                }
+                $countPer[] = (int) $qb1->getQuery()->getSingleScalarResult();
+
+                // Time minutes
+                $qb2 = $times->createQueryBuilder('t')
+                    ->select('COALESCE(SUM(t.minutes), 0)')
+                    ->join('t.relatedOrder', 'to2')
+                    ->andWhere('to2.dueAt IS NOT NULL')
+                    ->andWhere('to2.dueAt >= :bs AND to2.dueAt < :be')
+                    ->setParameter('bs', $bucketStart)
+                    ->setParameter('be', $bucketEnd);
+                if ($selectedClient instanceof Client) {
+                    $qb2->andWhere('to2.client = :c')->setParameter('c', $selectedClient);
+                }
+                $minsPer[] = (int) $qb2->getQuery()->getSingleScalarResult();
+
+                // Revenue euros
+                $qb3 = $orders->createQueryBuilder('o')
+                    ->select('COALESCE(SUM(o.price), 0)')
+                    ->andWhere('o.paid = :paid')
+                    ->andWhere('o.dueAt IS NOT NULL')
+                    ->andWhere('o.dueAt >= :bs AND o.dueAt < :be')
+                    ->setParameter('paid', true)
+                    ->setParameter('bs', $bucketStart)
+                    ->setParameter('be', $bucketEnd);
+                if ($selectedClient instanceof Client) {
+                    $qb3->andWhere('o.client = :c')->setParameter('c', $selectedClient);
+                }
+                $cents = (int) $qb3->getQuery()->getSingleScalarResult();
+                $revPer[] = round($cents / 100, 2);
+
+                $cursor = $bucketEnd;
             }
-            $count = (int) $qb1->getQuery()->getSingleScalarResult();
-            $countPer[] = $count;
+        } else {
+            // groupBy === 'day'
+            $cursor = new \DateTimeImmutable($start->format('Y-m-d 00:00:00'));
+            $limit  = (new \DateTimeImmutable($end->format('Y-m-d 00:00:00')))->modify('+1 day');
 
-            // Time minutes in month
-            $qb2 = $times->createQueryBuilder('t')
-                ->select('COALESCE(SUM(t.minutes),0)')
-                ->andWhere('t.createdAt >= :ms AND t.createdAt < :me')
-                ->setParameter('ms', $monthStart)->setParameter('me', $monthEnd);
-            if ($selectedClient instanceof Client) {
-                $qb2->leftJoin('t.relatedOrder', 'to2')->andWhere('to2.client = :c')->setParameter('c', $selectedClient);
+            while ($cursor < $limit) {
+                $bucketStart = $cursor;
+                $bucketEnd   = $cursor->modify('+1 day');
+
+                $labels[] = $bucketStart->format('Y-m-d');
+
+                // Orders count
+                $qb1 = $orders->createQueryBuilder('o')
+                    ->select('COUNT(o.id)')
+                    ->andWhere('o.dueAt IS NOT NULL')
+                    ->andWhere('o.dueAt >= :bs AND o.dueAt < :be')
+                    ->setParameter('bs', $bucketStart)
+                    ->setParameter('be', $bucketEnd);
+                if ($selectedClient instanceof Client) {
+                    $qb1->andWhere('o.client = :c')->setParameter('c', $selectedClient);
+                }
+                $countPer[] = (int) $qb1->getQuery()->getSingleScalarResult();
+
+                // Time minutes
+                $qb2 = $times->createQueryBuilder('t')
+                    ->select('COALESCE(SUM(t.minutes), 0)')
+                    ->join('t.relatedOrder', 'to2')
+                    ->andWhere('to2.dueAt IS NOT NULL')
+                    ->andWhere('to2.dueAt >= :bs AND to2.dueAt < :be')
+                    ->setParameter('bs', $bucketStart)
+                    ->setParameter('be', $bucketEnd);
+                if ($selectedClient instanceof Client) {
+                    $qb2->andWhere('to2.client = :c')->setParameter('c', $selectedClient);
+                }
+                $minsPer[] = (int) $qb2->getQuery()->getSingleScalarResult();
+
+                // Revenue euros
+                $qb3 = $orders->createQueryBuilder('o')
+                    ->select('COALESCE(SUM(o.price), 0)')
+                    ->andWhere('o.paid = :paid')
+                    ->andWhere('o.dueAt IS NOT NULL')
+                    ->andWhere('o.dueAt >= :bs AND o.dueAt < :be')
+                    ->setParameter('paid', true)
+                    ->setParameter('bs', $bucketStart)
+                    ->setParameter('be', $bucketEnd);
+                if ($selectedClient instanceof Client) {
+                    $qb3->andWhere('o.client = :c')->setParameter('c', $selectedClient);
+                }
+                $cents = (int) $qb3->getQuery()->getSingleScalarResult();
+                $revPer[] = round($cents / 100, 2);
+
+                $cursor = $bucketEnd;
             }
-            $mins = (int) $qb2->getQuery()->getSingleScalarResult();
-            $minsPer[] = $mins;
-
-            // Revenue by dueAt in this month (cents)
-            $qb3 = $orders->createQueryBuilder('o')
-                ->select('COALESCE(SUM(o.price),0)')
-                ->andWhere('o.paid = :paid')
-                ->andWhere('o.dueAt IS NOT NULL')
-                ->andWhere('o.dueAt >= :ms AND o.dueAt < :me')
-                ->setParameter('paid', true)
-                ->setParameter('ms', $monthStart)->setParameter('me', $monthEnd);
-            if ($selectedClient instanceof Client) {
-                $qb3->andWhere('o.client = :c')->setParameter('c', $selectedClient);
-            }
-            $cents = (int) $qb3->getQuery()->getSingleScalarResult();
-            $revPer[] = round($cents/100, 2);
-
-            // Avg time per thumbnail this month (minutes/order)
-            $avgTimePerOrder[] = $count > 0 ? round($mins / $count, 1) : 0.0;
-
-            $cursor = $monthEnd;
         }
 
+        $unitLabel = ($groupBy === 'day') ? 'day' : 'month';
+
         // Build charts
-        $ordersByMonthChart = $charts->createChart(Chart::TYPE_LINE);
-        $ordersByMonthChart->setData([
+        $ordersChart = $charts->createChart(Chart::TYPE_LINE);
+        $ordersChart->setData([
             'labels' => $labels,
             'datasets' => [[
-                'label' => 'Thumbnails per month',
+                'label' => 'Thumbnails per ' . $unitLabel,
                 'data'  => $countPer,
-                'fill' => false,
+                'fill'  => false,
                 'tension' => 0.25,
                 'pointRadius' => 3,
                 'borderColor' => '#7aa2f7',
             ]],
         ]);
 
-        $timeByMonthChart = $charts->createChart(Chart::TYPE_LINE);
-        $timeByMonthChart->setData([
+        $timeChart = $charts->createChart(Chart::TYPE_LINE);
+        $timeChart->setData([
             'labels' => $labels,
             'datasets' => [[
-                'label' => 'Time spent per month (min)',
+                'label' => 'Time spent per ' . $unitLabel . ' (min)',
                 'data'  => $minsPer,
-                'fill' => false,
+                'fill'  => false,
                 'tension' => 0.25,
                 'pointRadius' => 3,
                 'borderColor' => '#98c379',
             ]],
         ]);
 
-        $avgTimePerOrderChart = $charts->createChart(Chart::TYPE_LINE);
-        $avgTimePerOrderChart->setData([
+        $revenueChart = $charts->createChart(Chart::TYPE_LINE);
+        $revenueChart->setData([
             'labels' => $labels,
             'datasets' => [[
-                'label' => 'Average time per thumbnail (min)',
-                'data'  => $avgTimePerOrder,
-                'fill' => false,
-                'tension' => 0.25,
-                'pointRadius' => 3,
-                'borderColor' => '#e5c07b',
-            ]],
-        ]);
-
-        $revenueByMonthChart = $charts->createChart(Chart::TYPE_LINE);
-        $revenueByMonthChart->setData([
-            'labels' => $labels,
-            'datasets' => [[
-                'label' => 'Revenue per month (€)',
+                'label' => 'Revenue per ' . $unitLabel . ' (€)',
                 'data'  => $revPer,
-                'fill' => false,
+                'fill'  => false,
                 'tension' => 0.25,
                 'pointRadius' => 3,
                 'borderColor' => '#d3869b',
             ]],
         ]);
 
-        foreach ([$ordersByMonthChart, $timeByMonthChart, $avgTimePerOrderChart, $revenueByMonthChart] as $chart) {
+                // --- CUMULATIF GLOBAL (depuis le début, sans filtres) ---
+
+        $firstDue = $orders->createQueryBuilder('o')
+            ->select('MIN(o.dueAt)')
+            ->andWhere('o.dueAt IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $lastDue = $orders->createQueryBuilder('o')
+            ->select('MAX(o.dueAt)')
+            ->andWhere('o.dueAt IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $cumOrdersChart   = null;
+        $cumRevenueChart  = null;
+
+        if ($firstDue && $lastDue) {
+            $startCum = (new \DateTimeImmutable($firstDue))->modify('first day of this month 00:00:00');
+            $endCum   = (new \DateTimeImmutable($lastDue))->modify('first day of next month 00:00:00');
+
+            $labelsCum      = [];
+            $cumOrdersData  = [];
+            $cumRevenueData = [];
+
+            $cursor      = $startCum;
+            $totalOrdersCum   = 0;
+            $totalRevenueCum  = 0.0;
+
+            while ($cursor < $endCum) {
+                $monthStart = $cursor;
+                $monthEnd   = $cursor->modify('+1 month');
+
+                $labelsCum[] = $monthStart->format('Y-m');
+
+                // Orders in this month (toutes, sans filtres)
+                $countMonth = (int) $orders->createQueryBuilder('o')
+                    ->select('COUNT(o.id)')
+                    ->andWhere('o.dueAt IS NOT NULL')
+                    ->andWhere('o.dueAt >= :ms AND o.dueAt < :me')
+                    ->setParameter('ms', $monthStart)
+                    ->setParameter('me', $monthEnd)
+                    ->getQuery()
+                    ->getSingleScalarResult();
+
+                $totalOrdersCum += $countMonth;
+                $cumOrdersData[] = $totalOrdersCum;
+
+                // Revenue paid=true dans ce mois
+                $centsMonth = (int) $orders->createQueryBuilder('o')
+                    ->select('COALESCE(SUM(o.price), 0)')
+                    ->andWhere('o.paid = :paid')
+                    ->andWhere('o.dueAt IS NOT NULL')
+                    ->andWhere('o.dueAt >= :ms AND o.dueAt < :me')
+                    ->setParameter('paid', true)
+                    ->setParameter('ms', $monthStart)
+                    ->setParameter('me', $monthEnd)
+                    ->getQuery()
+                    ->getSingleScalarResult();
+
+                $totalRevenueCum += round($centsMonth / 100, 2);
+                $cumRevenueData[] = $totalRevenueCum;
+
+                $cursor = $monthEnd;
+            }
+
+            $cumOrdersChart = $charts->createChart(Chart::TYPE_LINE);
+            $cumOrdersChart->setData([
+                'labels' => $labelsCum,
+                'datasets' => [[
+                    'label' => 'Cumulative thumbnails (all time)',
+                    'data'  => $cumOrdersData,
+                    'fill'  => false,
+                    'tension' => 0.25,
+                    'pointRadius' => 3,
+                    'borderColor' => '#61afef',
+                ]],
+            ]);
+
+            $cumRevenueChart = $charts->createChart(Chart::TYPE_LINE);
+            $cumRevenueChart->setData([
+                'labels' => $labelsCum,
+                'datasets' => [[
+                    'label' => 'Cumulative revenue (all time, €)',
+                    'data'  => $cumRevenueData,
+                    'fill'  => false,
+                    'tension' => 0.25,
+                    'pointRadius' => 3,
+                    'borderColor' => '#c678dd',
+                ]],
+            ]);
+
+            foreach ([$cumOrdersChart, $cumRevenueChart] as $chart) {
+                $chart->setOptions([
+                    'responsive' => true,
+                    'plugins' => [
+                        'legend'  => ['display' => true, 'position' => 'top'],
+                        'tooltip' => ['mode' => 'index', 'intersect' => false],
+                    ],
+                    'interaction' => ['mode' => 'index', 'intersect' => false],
+                    'scales' => [
+                        'y' => ['beginAtZero' => true],
+                        'x' => ['ticks' => ['autoSkip' => true, 'maxTicksLimit' => 12]],
+                    ],
+                ]);
+            }
+        }
+
+        foreach ([$ordersChart, $timeChart, $revenueChart] as $chart) {
             $chart->setOptions([
                 'responsive' => true,
                 'plugins' => [
-                    'legend' => ['display' => true, 'position' => 'top'],
-                    'tooltip'=> ['mode' => 'index', 'intersect' => false],
+                    'legend'  => ['display' => true, 'position' => 'top'],
+                    'tooltip' => ['mode' => 'index', 'intersect' => false],
                 ],
                 'interaction' => ['mode' => 'index', 'intersect' => false],
                 'scales' => [
@@ -266,16 +468,22 @@ final class DashboardController extends AbstractController
             ->orderBy('c.name', 'ASC')->getQuery()->getResult();
 
         return $this->render('dashboard/index.html.twig', [
-            'clients' => $clients,
-            'selectedClient' => $selectedClient,
-            'totalMinutes12m' => $totalMinutes12m,
-            'totalOrders12m'  => $totalOrders12m,
-            'totalRevenue12m' => round($totalCents12m / 100, 2),
-            'avg' => $avg,
-            'ordersByMonthChart' => $ordersByMonthChart,
-            'timeByMonthChart' => $timeByMonthChart,
-            'avgTimePerOrderChart' => $avgTimePerOrderChart,
-            'revenueByMonthChart' => $revenueByMonthChart,
+            'is_admin'        => true,
+            'clients'         => $clients,
+            'selectedClient'  => $selectedClient,
+            'range'           => $range,
+            'periodLabel'     => $periodLabel,
+            'totalMinutes'    => $totalMinutes,
+            'totalOrders'     => $totalOrders,
+            'totalRevenue'    => $totalRevenue,
+            'ordersChart'     => $ordersChart,
+            'timeChart'       => $timeChart,
+            'revenueChart'    => $revenueChart,
+            'ordersChart'     => $ordersChart,
+            'timeChart'       => $timeChart,
+            'revenueChart'    => $revenueChart,
+            'cumOrdersChart'  => $cumOrdersChart,
+            'cumRevenueChart' => $cumRevenueChart,
         ]);
     }
 }
