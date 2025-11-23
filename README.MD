@@ -1,11 +1,10 @@
-````markdown
+
 # ThumbUp 🎨📊
 
 ThumbUp est un outil interne pour gérer des **commandes de miniatures YouTube** pour des clients (YouTubeurs) :
 - Les **admins** gèrent les clients, les commandes, le temps passé, les paiements…
 - Les **clients** peuvent créer des commandes, uploader des assets, suivre le statut et récupérer leurs miniatures.
 
-> 💻 Version actuelle : projet surtout pensé pour un **rendu scolaire**.  
 > 🔗 Démo en production : https://thumb-up.byevti.com/  
 > ⚠️ En prod, **la confirmation d’email ne fonctionne pas encore** pour la création de compte (les mails ne partent pas).
 
@@ -16,8 +15,8 @@ ThumbUp est un outil interne pour gérer des **commandes de miniatures YouTube**
 - **PHP** ≥ 8.2
 - **Symfony** 7+
 - **Doctrine ORM**
-- **Twig** (pas de front SPA, que du serveur-side)
-- **SQLite** en développement (plus simple à lancer)
+- **Twig**
+- **SQLite** en développement
 - **MariaDB/MySQL** en production
 - Bundles principaux :
   - symfony/security-bundle
@@ -45,7 +44,7 @@ ThumbUp est un outil interne pour gérer des **commandes de miniatures YouTube**
 ### 1. Cloner le dépôt
 
 ```bash
-git clone <URL_DU_REPO> thumbup
+git clone https://github.com/EvrardThibaud/thumbup.git thumbup
 cd thumbup
 ````
 
@@ -57,20 +56,8 @@ composer install
 
 En dev, les dépendances de debug (profiler, maker, fixtures…) sont installées.
 
-### 3. Configurer l’environnement
+### 3. Générer le schéma + migrations
 
-Par défaut, le projet utilise **SQLite en développement**.
-Vérifie que dans `.env` ou `.env.local` tu as quelque chose de ce genre :
-
-```env
-DATABASE_URL="sqlite:///%kernel.project_dir%/var/data.db"
-```
-
-(Si tu utilises un autre DSN, adapte les commandes de DB en conséquence.)
-
-### 4. Générer le schéma + migrations
-
-Si tu veux utiliser les migrations :
 
 ```bash
 php bin/console doctrine:database:create
@@ -128,11 +115,6 @@ L’admin peut :
 * consulter les paiements / time entries
 * gérer les utilisateurs
 
-### Comptes clients
-
-En dev, les fixtures peuvent aussi créer des **clients** et des **users ROLE_CLIENT** (selon configuration actuelle des fixtures).
-Sinon, un admin peut créer un Client et un User depuis le back-office.
-
 ---
 
 ## 🌐 Environnement de production
@@ -141,76 +123,79 @@ Sinon, un admin peut créer un Client et un User depuis le back-office.
 * Base de données : **MariaDB** (configurée via `DATABASE_URL` côté Infomaniak)
 * PHP : 8.3
 
-Limitations actuelles en prod (important pour le rendu scolaire) :
+Limitations actuelles en prod :
 
-* La **confirmation d’email** lors de l’inscription ne fonctionne pas encore (problème de configuration d’envoi de mails).
-* Le reste du site (auth, back-office, création d’orders, upload de fichiers…) est fonctionnel.
-
----
-
-## 🧪 Quelques commandes utiles
-
-Recréer le schéma à partir des entités (en dev uniquement, à manipuler avec précaution) :
-
-```bash
-php bin/console doctrine:schema:update --force
-```
-
-Voir les migrations disponibles :
-
-```bash
-php bin/console doctrine:migrations:list
-```
-
-Générer une nouvelle migration après modification des entités :
-
-```bash
-php bin/console doctrine:migrations:diff
-```
+* La création de compte fonctionne, mais il est impossible de se connecter car l’email ne peut pas être validé.
+→ Le système de vérification fonctionne en développement via Mailtrap, mais pas encore configuré en production (les emails ne sont pas envoyés).
 
 ---
 
-## 📁 Structure générale (simplifiée)
+## 💳 Configuration des paiements PayPal (sandbox)
 
-* `src/Entity`
+Le projet utilise l’API **PayPal Orders** en mode **sandbox** pour les paiements.
 
-  * `User` : utilisateur (admin / client)
-  * `Client` : client (YouTubeur)
-  * `Order` : commande de miniature
-  * `TimeEntry` : temps passé sur une commande
-  * `OrderAsset` : fichiers / assets fournis par le client
-  * `Thumbnail` : miniatures finales
-  * `Payment` : paiement lié à un utilisateur / client
-  * `Invitation` : token d’invitation pour créer un compte
-  * `YoutubeChannel` : chaînes YouTube liées à un client
-* `src/Controller`
+### 1. Créer / configurer le compte développeur
 
-  * `HomeController` : dashboard / landing
-  * `OrderController`, `ClientController`, `UserController`, etc.
-  * `RegistrationController` : inscription + verification email
-* `templates/` : vues Twig (dark theme, Bootstrap)
+1. Aller sur : [https://developer.paypal.com/tools/sandbox/](https://developer.paypal.com/tools/sandbox/)
+2. Se connecter (ou créer un compte PayPal Developer).
+3. Créer une **application sandbox** pour obtenir :
+
+   * un **Client ID**
+   * un **Client Secret**
+
+Ensuite, mettre ces infos dans `.env.local` :
+
+```env
+PAYPAL_MODE=sandbox
+PAYPAL_CLIENT_ID="..."
+PAYPAL_CLIENT_SECRET="..."
+```
+
+### 2. Créer un compte sandbox “payer”
+
+Important :
+Le compte utilisé dans `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` correspond au **compte marchand**, c’est celui qui **reçoit** l’argent.
+
+Pour tester un vrai paiement :
+
+1. Dans la section **Sandbox > Accounts**, créer un **compte personnel sandbox** (un faux utilisateur PayPal).
+2. Lors du checkout, se connecter avec **ce** faux compte personnel (payer).
+3. Le compte marchand (lié au Client ID/Secret) ne doit **pas** être le même que celui qui paie.
+
 
 ---
 
-## ✅ État actuel (pour le rendu)
+## ✉️ Configuration des emails (validation, reset password, notifications)
 
-* Fonctionnel :
+Plusieurs fonctionnalités reposent sur l’envoi d’emails :
 
-  * Authentification (login / logout)
-  * Compte admin via fixtures
-  * Gestion des clients, orders, assets, thumbnails
-  * Dashboard admin / client
-  * Suivi du temps et des statuts de commandes
-* Partiellement fonctionnel :
+* **Validation d’email** lors de l’inscription
+* **Mot de passe oublié** (reset password)
+* **Notification admin** quand une nouvelle commande est créée
 
-  * Système d’inscription + email de vérification (**OK en logique**, mais email non fonctionnel en prod).
-* À améliorer plus tard :
+En dev, tout est pensé pour fonctionner avec **Mailtrap** (sandbox email).
 
-  * Gestion complète des paiements (PayPal/Stripe)
-  * Emailing robuste en prod
-  * Plus de dashboards / stats
+### 1. Créer un compte Mailtrap
+
+1. Aller sur : [https://mailtrap.io](https://mailtrap.io)
+2. Créer un compte gratuit.
+3. Dans l’interface, aller dans la section **Sandbox**.
+4. Récupérer le **DSN Symfony** proposé (ou les identifiants SMTP).
+
+Ça ressemble à quelque chose comme :
+
+```env
+MAILER_DSN="smtp://<USER>:<PASSWORD>@sandbox.smtp.mailtrap.io:2525"
+```
+
+(Coller cette ligne dans ton `.env.local`.)
+
+### 2. Résultat
+
+Une fois `MAILER_DSN` configuré :
+
+* La **validation d’email** à l’inscription fonctionne en dev (le lien de confirmation arrive dans Mailtrap).
+* Le **forgot password** pourra aussi envoyer un lien.
+* Les notifications d’orders fonctionnent : l'admin reçoit un email dès qu’un client crée une nouvelle commande.
 
 ---
-
-```
-```
