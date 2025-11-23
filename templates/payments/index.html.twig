@@ -14,17 +14,16 @@
 
   {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 
-  {# ================= ADMIN VIEW ================= #}
   {% if is_admin %}
     <div class="card bg-dark border-0">
       <div class="table-responsive">
         <table class="table table-dark table-hover align-middle mb-0">
           <colgroup>
-            <col style="width: 120px;">  {# user id #}
-            <col>                        {# client #}
-            <col style="width: 140px;">  {# method #}
-            <col style="width: 180px;">  {# date #}
-            <col style="width: 160px;">  {# amount #}
+            <col style="width: 120px;">
+            <col>
+            <col style="width: 140px;">
+            <col style="width: 180px;">
+            <col style="width: 160px;">
           </colgroup>
           <thead class="small text-secondary">
             <tr>
@@ -52,7 +51,6 @@
       </div>
     </div>
 
-  {# ================= CLIENT VIEW ================= #}
   {% else %}
     <form method="post" action="{{ path('app_payments_checkout_start') }}" id="pay-form" class="card bg-dark border-0 mb-3">
       <input type="hidden" name="_token" value="{{ csrf_token('checkout-start') }}">

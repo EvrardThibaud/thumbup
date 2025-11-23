@@ -1,6 +1,5 @@
 <form method="post" action="{{ path('app_order_delete', {'id': order.id}) }}" onsubmit="return confirm('Delete this order?');">
   <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ order.id) }}">
-  {# propage back si existant #}
   {% if back is defined and back %}
     <input type="hidden" name="back" value="{{ back }}">
   {% endif %}

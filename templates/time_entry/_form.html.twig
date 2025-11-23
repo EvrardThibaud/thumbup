@@ -1,8 +1,6 @@
-{# templates/time_entry/_form.html.twig #}
 {{ form_start(form, { attr: { class: 'vstack gap-3', 'data-turbo': 'false' } }) }}
   {{ form_errors(form) }}
 
-  {# Created at = just display, not editable #}
   {% set createdAt = form.vars.data.createdAt ?? null %}
   {% if createdAt %}
     <div class="small text-secondary">
@@ -33,7 +31,6 @@
     </div>
   {% endif %}
 
-  {# Boutons tout en bas #}
   <div class="d-flex gap-2 mt-3">
     <button class="btn btn-primary btn-sm rounded-1">
       {{ button_label|default('Save time entry') }}

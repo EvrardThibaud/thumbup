@@ -1,4 +1,3 @@
-{# templates/home/index.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Home{% endblock %}
 
@@ -6,9 +5,7 @@
 <div class="container py-4">
   {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 
-  {# --- ADMIN VIEW --- #}
   {% if is_granted('ROLE_ADMIN') %}
-    {# BOX 1: Accepted = To do #}
     <div class="card bg-dark border-secondary rounded-2 mb-3">
       <div class="card-header border-secondary d-flex justify-content-between align-items-center">
         <span class="fw-semibold">Orders to do (accepted)</span>
@@ -63,7 +60,6 @@
       </div>
     </div>
 
-    {# BOX 2: Created = need review #}
     <div class="card bg-dark border-secondary rounded-2">
       <div class="card-header border-secondary d-flex justify-content-between align-items-center">
         <span class="fw-semibold">New orders to review</span>
@@ -143,7 +139,6 @@
       </div>
     </div>
 
-  {# --- CLIENT VIEW --- #}
   {% elseif is_granted('ROLE_CLIENT') %}
     <div class="card bg-dark border-secondary rounded-2">
       <div class="card-header border-secondary d-flex justify-content-between align-items-center">

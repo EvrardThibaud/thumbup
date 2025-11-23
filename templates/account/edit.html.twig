@@ -1,4 +1,4 @@
-{# templates/account/edit.html.twig #}
+
 {% extends 'base.html.twig' %}
 {% block title %}Edit account{% endblock %}
 
@@ -8,8 +8,6 @@
     <h1 class="h4 m-0">👤 Edit account</h1>
     <a href="{{ path('app_account') }}" class="btn btn-sm btn-outline-light rounded-1">← Back</a>
   </div>
-
-  {# Flash messages (profile + password) #}
   {% for label, messages in app.flashes %}
     {% for message in messages %}
       <div class="alert alert-{{ label }} small py-2 mb-2">
@@ -19,7 +17,6 @@
   {% endfor %}
 
   <div class="row g-3">
-    {# PROFILE (username + channel url) #}
     <div class="col-12 col-lg-6">
       <div class="card bg-dark border-secondary rounded-2">
         <div class="card-header border-secondary">
@@ -51,7 +48,7 @@
                 <label class="form-label small mb-1">YouTube channels</label>
 
                 <div class="vstack gap-2">
-                  {# lignes existantes #}
+            
                   {% for ch in channels %}
                     <div class="row g-2 align-items-center">
                       <input type="hidden"
@@ -75,7 +72,7 @@
                     </div>
                   {% endfor %}
 
-                  {# une ligne vide en plus pour ajouter une nouvelle chaîne #}
+            
                   {% set extraIndex = channels|length %}
                   <div class="row g-2 align-items-center">
                     <div class="col-12 col-md-4">
@@ -116,7 +113,6 @@
       </div>
     </div>
 
-    {# SECURITY (change password) #}
     <div class="col-12 col-lg-6">
       <div class="card bg-dark border-secondary rounded-2">
         <div class="card-header border-secondary">
@@ -133,8 +129,6 @@
             action: path('app_account_edit')
           }) }}
             <input type="hidden" name="_action" value="password">
-
-            {# Current password #}
             <div>
               <label class="form-label small mb-1">Current password</label>
               <div class="input-group input-group-sm">
@@ -159,9 +153,6 @@
                 </div>
               {% endif %}
             </div>
-
-
-            {# New password #}
             <div>
               <label class="form-label small mb-1">New password</label>
               <div class="input-group input-group-sm">
@@ -187,8 +178,6 @@
                 </div>
               {% endif %}
             </div>
-
-            {# Confirm new password #}
             <div>
               <label class="form-label small mb-1">Confirm new password</label>
               <div class="input-group input-group-sm">

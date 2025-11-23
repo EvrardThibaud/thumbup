@@ -1,6 +1,4 @@
-{# templates/order/_form.html.twig #}
 {{ form_start(form) }}
-
 <div class="vstack gap-3">
   <div>
     <label class="form-label mb-1">📝 Title</label>
@@ -24,13 +22,10 @@
     }) }}
     {{ form_errors(form.brief) }}
   </div>
-
-  {# ---- Due at + Price side by side ---- #}
   <div class="row g-3">
     <div class="col-12 col-md-6">
       <label class="form-label mb-1">⏰ Due at</label>
       {% set dueAttr = form.dueAt.vars.attr|merge({'class':'form-control'}) %}
-      {# Client (no "client" field) : bloque les dates passées avec min. Admin : pas de min. #}
       {% if form.children['client'] is not defined %}
         {% set dueAttr = dueAttr|merge({'min': min_due_at|default(null)}) %}
       {% endif %}
@@ -42,8 +37,6 @@
         </div>
       {% endif %}
     </div>
-
-    {# ---- Price (pretty) + presets ---- #}
     <div class="col-12 col-md-6">
       <label class="form-label mb-1">💶 Price</label>
       <div class="input-group">
@@ -53,12 +46,11 @@
                placeholder="e.g., 15,00" autocomplete="off">
         <span class="input-group-text">€</span>
       </div>
-      {{ form_widget(form.price) }} {# hidden cents field #}
+      {{ form_widget(form.price) }}
       {{ form_errors(form.price) }}
 
       <div class="d-flex flex-wrap gap-2 mt-2">
         {% set presets = [500,1000,1500,2000,2500,3000] %}
-        {# Last FIRST #}
         {% if lastPriceCents is defined and lastPriceCents %}
           <button type="button"
                   class="btn btn-sm btn-outline-primary rounded-1 js-preset"
@@ -66,7 +58,6 @@
             Last: {{ (lastPriceCents/100)|number_format(2, ',', ' ') }} €
           </button>
         {% endif %}
-        {# Then the fixed presets #}
         {% for c in presets %}
           <button type="button"
                   class="btn btn-sm btn-outline-secondary rounded-1 js-preset"
@@ -78,8 +69,6 @@
       <div class="form-text text-secondary">Minimum 5,00 €.</div>
     </div>
   </div>
-
-  {# ---- Attachments with Liip (existing) + LIVE PREVIEW (new) ---- #}
   {% set inputId = form.attachments.vars.id %}
   <div>
     <label class="form-label mb-1">📎 Attach files (PDF or images)</label>
@@ -92,8 +81,6 @@
       })
     }) }}
     {{ form_errors(form.attachments) }}
-
-    {# Existing server-side files (LiipImagine) - optional, if controller passes them #}
     {% if existingAttachments is defined and existingAttachments %}
       <div class="row g-1 mt-2" id="{{ inputId }}__existing">
         {% for att in existingAttachments %}
@@ -117,14 +104,10 @@
         {% endfor %}
       </div>
     {% endif %}
-
-    {# New files preview (client-side) #}
     <div id="{{ inputId }}__preview" class="row g-1 mt-2"></div>
 
     <div class="form-text text-secondary">PNG/JPG/WebP/PDF, up to 25 MB each.</div>
   </div>
-
-  {# ---- Admin-only fields: 3 columns (client / status / paid) ---- #}
   {% set hasAdminFields =
     (form.children['client'] is defined) or
     (form.children['status'] is defined) or
@@ -241,9 +224,8 @@
 </style>
 
 <script>
-// Price formatting + presets -> sync hidden cents
 (function(){
-  const centsInput  = document.querySelector('input[name$="[price]"]'); // HiddenType
+  const centsInput  = document.querySelector('input[name$="[price]"]');
   const prettyInput = document.querySelector('.js-price-euros');
   const presets     = document.querySelectorAll('.js-preset');
 
@@ -277,7 +259,6 @@
     prettyInput.value = fmt(v);
   }
 
-  // Initialisation : garder la valeur après erreur de validation
   if (centsInput && prettyInput) {
     if (centsInput.value) {
       const existing = parseInt(centsInput.value, 10);
@@ -303,7 +284,6 @@
 </script>
 
 <script>
-// Attachments preview + client-side delete using DataTransfer
 (function initAttachments(){
   const input   = document.getElementById('{{ inputId }}');
   const preview = document.getElementById('{{ inputId }}__preview');

@@ -26,10 +26,7 @@
 # Uploads originaux (Vich)
 public/uploads/
 var/uploads/
-
-# Thumbnails/cache générés
 public/media-cache/
 
-# Garder le dossier vide en prod si besoin :
 !public/uploads/.gitkeep
 !public/media-cache/.gitkeep

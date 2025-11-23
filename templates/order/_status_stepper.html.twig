@@ -1,4 +1,3 @@
-{# templates/order/_status_stepper_and_actions.html.twig #}
 {% set s = order.status.value %}
 {% set backUrl = back ?? app.request.uri %}
 
@@ -21,7 +20,6 @@
         <span class="small text-secondary mb-0">This order is {{ s }}. Workflow is closed.</span>
       </div>
     {% else %}
-      {# -------- Progress Stepper (Created → Accepted → Doing → Delivered → Revision → Finished) -------- #}
       {% set steps = [
         { key: 'created',   label: 'Created' },
         { key: 'accepted',  label: is_granted('ROLE_ADMIN') ? 'To do' : 'Accepted' },
@@ -57,8 +55,6 @@
           {% endfor %}
         </div>
       </div>
-
-      {# Help hint #}
       {% set helpMap = {
         'created':   'We received your request. It’s waiting for review. You can still cancel it.',
         'accepted':  'Your order was accepted. It will be scheduled and started soon.',
@@ -71,8 +67,6 @@
         <span class="me-1">ℹ️</span>{{ helpMap[s] ?? 'Status updated.' }}
       </div>
     {% endif %}
-
-    {# -------- Actions -------- #}
     <div class="pt-3 mt-3 border-top border-secondary-subtle d-flex flex-wrap align-items-center gap-2">
       {% if is_granted('ROLE_ADMIN') %}
         {% if s == 'created' %}
@@ -112,14 +106,10 @@
       {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
           <div class="d-flex flex-wrap align-items-center gap-2">
             {% if s == 'created' %}
-              {# Edit possible #}
               <a class="btn btn-sm btn-outline-light rounded-1"
                 href="{{ path('app_order_edit', { id: order.id,  back: path('app_order_show', { id: order.id }) }) }}">
                 ✏️ Edit
               </a>
-              
-
-              {# Cancel possible #}
               <form method="post"
                     action="{{ path('app_order_cancel', {id: order.id}) }}"
                     onsubmit="return confirm('Cancel this order?');">
@@ -128,7 +118,6 @@
                 <button class="btn btn-sm btn-outline-warning rounded-1">Cancel</button>
               </form>
             {% else %}
-              {# Edit / Cancel impossibles #}
               <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>✏️ Edit</button>
               <button class="btn btn-sm btn-outline-secondary rounded-1" disabled>Cancel</button>
               <span class="text-secondary small align-self-center">

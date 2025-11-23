@@ -1,4 +1,3 @@
-{# templates/order/_client_files.html.twig #}
 {% set assets = order.assets %}
 <div class="card bg-dark border-secondary rounded-2 h-100">
   <div class="card-header border-secondary d-flex justify-content-between align-items-center">
@@ -14,7 +13,6 @@
   </div>
 
   <div class="card-body">
-    {# LISTE DES FICHIERS EXISTANTS #}
     {% if assets|length == 0 %}
       <div class="text-secondary mb-3">No client files.</div>
     {% else %}

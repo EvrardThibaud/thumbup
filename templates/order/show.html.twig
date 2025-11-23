@@ -18,7 +18,6 @@
     </div>
   </div>
 
-{# Progress stepper #}
 {% include 'order/_status_stepper.html.twig' with { order: order } %}
 
 {% set status = order.status.value %}
@@ -28,7 +27,6 @@
 {% set tz = app.user ? app.user.timezone : 'Europe/Paris' %}
 
 <div class="mb-3">
-  {# Delivered thumbnails #}
   {% include 'order/_final_thumbnails.html.twig' with { order: order } %}
 </div>
 
@@ -75,8 +73,6 @@
     {% include 'order/_client_files.html.twig' with { order: order } %}
   </div>
 </div>
-
-
 
 {% if not hideTime %}
   <div class="row g-3">
@@ -289,7 +285,4 @@
     })();
   </script>
 {% endif %}
-
-
-
 {% endblock %}

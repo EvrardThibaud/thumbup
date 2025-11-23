@@ -1,4 +1,3 @@
-{# templates/client/index.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Clients{% endblock %}
 
@@ -16,7 +15,7 @@
             <th>ID</th>
             <th>Name</th>
             <th>Channel</th>
-            <th>Linked</th> {# 🆕 #}
+            <th>Linked</th>
             <th>Payment</th>
             <th class="text-end">Actions</th>
           </tr>
@@ -24,7 +23,7 @@
         <tbody>
         {% for client in clients %}
           {% set due = (dueMap[client.id] ?? 0) / 100 %}
-          {% set linkedUser = linkedMap[client.id] ?? null %} {# 🆕 #}
+          {% set linkedUser = linkedMap[client.id] ?? null %}
 
           <tr class="table-row-link"
               role="button"

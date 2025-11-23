@@ -1,4 +1,3 @@
-{# templates/client/edit.html.twig #}
 {% extends 'base.html.twig' %}
 
 {% block title %}Edit client{% endblock %}
@@ -11,7 +10,6 @@
        class="btn btn-sm btn-outline-light rounded-1">← Back</a>
   </div>
 
-  {# Flash messages #}
   {% for label, messages in app.flashes %}
     {% for message in messages %}
       <div class="alert alert-{{ label }} small py-2 mb-2">
@@ -43,8 +41,6 @@
               'data-turbo': 'false'
             }
           }) }}
-
-            {# Name (via Symfony form) #}
             <div>
               <label class="form-label small mb-1">Name</label>
               {{ form_widget(form.name, {
@@ -57,14 +53,11 @@
                 Public label for this client.
               </div>
             </div>
-
-            {# YouTube channels (manuel, comme dans account/edit) #}
             {% set channels = client.youtubeChannels %}
             <div>
               <label class="form-label small mb-1">YouTube channels</label>
 
               <div class="vstack gap-2">
-                {# lignes existantes #}
                 {% for ch in channels %}
                   <div class="row g-2 align-items-center">
                     <input type="hidden"
@@ -87,8 +80,6 @@
                     </div>
                   </div>
                 {% endfor %}
-
-                {# une ligne vide en plus pour ajouter une nouvelle chaîne #}
                 {% set extraIndex = channels|length %}
                 <div class="row g-2 align-items-center">
                   <div class="col-12 col-md-4">
@@ -121,7 +112,6 @@
               <a href="{{ path('app_client_show', {id: client.id}) }}"
                  class="btn btn-sm btn-outline-light rounded-1">Cancel</a>
             </div>
-
           {{ form_end(form) }}
         </div>
       </div>
