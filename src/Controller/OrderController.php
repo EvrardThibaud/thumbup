@@ -235,7 +235,7 @@ final class OrderController extends AbstractController
                         '<p><a href="' . htmlspecialchars($orderUrl, ENT_QUOTES) . '">Open this order in ThumbUp</a></p>'
                     );
 
-                // $mailer->send($email);
+                $mailer->send($email);
             }
 
             $back = $request->request->get('back') ?: $request->query->get('back');
