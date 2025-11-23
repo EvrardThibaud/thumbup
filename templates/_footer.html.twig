@@ -1,97 +1,98 @@
 {# templates/_footer.html.twig #}
 <footer class="border-top border-secondary mt-5 pt-3">
-  <div class="container-xxl py-3 small text-secondary">
+  <div class="container-xxl py-3 text-secondary">
     <div class="row g-3">
       <div class="col-12 col-md-4">
         <div class="fw-semibold text-light mb-1">ThumbUp</div>
-        <p class="mb-2">
+        <p class="mb-2 mb-md-3 small">
           Internal dashboard to manage YouTube thumbnail orders, clients and payments.
         </p>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 small">
           {% if is_granted('IS_AUTHENTICATED_FULLY') %}
             <a href="{{ path('app_dashboard') }}"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Dashboard
             </a>
             <span>·</span>
             <a href="{{ path('app_order_index') }}"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Orders
             </a>
 
             {% if is_granted('ROLE_ADMIN') %}
               <span>·</span>
               <a href="{{ path('app_client_index') }}"
-                 class="link-secondary link-opacity-75-hover">
+                 class="link-secondary link-opacity-75-hover text-decoration-none">
                 Clients
               </a>
             {% elseif is_granted('ROLE_CLIENT') %}
               <span>·</span>
               <a href="{{ path('app_thumbnails_index') }}"
-                 class="link-secondary link-opacity-75-hover">
+                 class="link-secondary link-opacity-75-hover text-decoration-none">
                 Thumbnails
               </a>
               <span>·</span>
               <a href="{{ path('app_payments_index') }}"
-                 class="link-secondary link-opacity-75-hover">
+                 class="link-secondary link-opacity-75-hover text-decoration-none">
                 Payments
               </a>
             {% endif %}
           {% else %}
             <a href="{{ path('app_login') }}"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Sign in
             </a>
+            <span>·</span>
             <a href="{{ path('app_register') }}"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Register
             </a>
           {% endif %}
         </div>
       </div>
 
-      <div class="col-6 col-md-4">
+      <div class="col-12 col-md-4">
         <div class="fw-semibold text-light mb-1">Support</div>
-        <ul class="list-unstyled mb-0">
-          <li>
+        <ul class="list-unstyled mb-0 small">
+          <li class="mb-1">
             <a href="#"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Contact
             </a>
           </li>
-          <li>
+          <li class="mb-1">
             <a href="#"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Help center
             </a>
           </li>
           <li>
             <a href="#"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Status
             </a>
           </li>
         </ul>
       </div>
 
-      <div class="col-6 col-md-4">
+      <div class="col-12 col-md-4">
         <div class="fw-semibold text-light mb-1">Legal</div>
-        <ul class="list-unstyled mb-0">
-          <li>
+        <ul class="list-unstyled mb-0 small">
+          <li class="mb-1">
             <a href="#"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Legal notice
             </a>
           </li>
-          <li>
+          <li class="mb-1">
             <a href="#"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Privacy policy
             </a>
           </li>
           <li>
             <a href="#"
-               class="link-secondary link-opacity-75-hover">
+               class="link-secondary link-opacity-75-hover text-decoration-none">
               Terms of use
             </a>
           </li>

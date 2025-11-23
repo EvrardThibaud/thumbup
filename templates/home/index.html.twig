@@ -24,7 +24,7 @@
           </p>
         {% else %}
           <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
+            <table class="table table-sm align-middle mb-0 home-table">
               <thead class="small text-secondary">
                 <tr>
                   <th>Title</th>
@@ -37,13 +37,13 @@
               {% for order in acceptedOrders %}
                 <tr role="button"
                     onclick="window.location='{{ path('app_order_show', { id: order.id }) }}'">
-                  <td class="fw-medium">
+                  <td class="fw-medium" data-label="Title">
                     {{ order.title }}
                   </td>
-                  <td class="text-secondary">
+                  <td class="text-secondary" data-label="Client">
                     {{ order.client ? order.client.name : '—' }}
                   </td>
-                  <td class="text-secondary small">
+                  <td class="text-secondary small" data-label="Brief">
                     {% set brief = order.brief ?? '' %}
                     {% if brief|length > 120 %}
                       {{ brief|slice(0, 120) ~ '…' }}
@@ -51,7 +51,7 @@
                       {{ brief }}
                     {% endif %}
                   </td>
-                  <td class="text-secondary">
+                  <td class="text-secondary" data-label="Due">
                     {{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}
                   </td>
                 </tr>
@@ -79,7 +79,7 @@
           </p>
         {% else %}
           <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
+            <table class="table table-sm align-middle mb-0 home-table">
               <thead class="small text-secondary">
                 <tr>
                   <th>Title</th>
@@ -93,19 +93,19 @@
               {% for order in createdOrders %}
                 <tr role="button"
                     onclick="window.location='{{ path('app_order_show', { id: order.id }) }}'">
-                  <td class="fw-medium">
+                  <td class="fw-medium" data-label="Title">
                     {{ order.title }}
                   </td>
-                  <td class="text-secondary">
+                  <td class="text-secondary" data-label="Client">
                     {{ order.client ? order.client.name : '—' }}
                   </td>
-                  <td class="text-secondary">
+                  <td class="text-secondary" data-label="Due">
                     {{ order.dueAt ? order.dueAt|date('Y-m-d H:i', tz) : '—' }}
                   </td>
-                  <td class="text-end">
+                  <td class="text-end" data-label="Price">
                     {{ (order.price / 100)|number_format(2, ',', ' ') }} €
                   </td>
-                  <td class="text-end">
+                  <td class="text-end" data-label="Actions">
                     <div class="d-inline-flex gap-1">
                       <form method="post"
                             action="{{ path('app_order_accept', { id: order.id }) }}"
@@ -204,4 +204,49 @@
     </p>
   {% endif %}
 </div>
+
+<style>
+@media (max-width: 576px) {
+  .home-table thead {
+    display: none;
+  }
+
+  .home-table tbody tr {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .home-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .home-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    width: 100%;
+    padding: 0.2rem 0;
+    border: 0;
+    font-size: 0.85rem;
+  }
+
+  .home-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    margin-right: 0.75rem;
+    flex: 0 0 auto;
+  }
+
+  .home-table tbody td.fw-medium {
+    font-size: 0.9rem;
+  }
+
+  .home-table tbody td .btn {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.75rem;
+  }
+}
+</style>
 {% endblock %}

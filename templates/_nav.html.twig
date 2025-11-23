@@ -1,16 +1,39 @@
 {# templates/_nav.html.twig #}
+<style>
+  .navbar .navbar-toggler {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    background: transparent;
+  }
+  .navbar-toggler .toggler-icon-close {
+    display: none;
+  }
+  .navbar-toggler[aria-expanded="true"] .toggler-icon-close {
+    display: inline;
+  }
+  .navbar-toggler[aria-expanded="true"] .toggler-icon-bars {
+    display: none;
+  }
+</style>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-body-tertiary border-bottom">
   <div class="container-fluid">
     <a class="navbar-brand fw-semibold" href="{{ path('site_landing') }}">👍 ThumbUp</a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
-            aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
+    <button class="navbar-toggler ms-auto"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#mainNav"
+            aria-controls="mainNav"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+      <span class="toggler-icon-bars fs-4">☰</span>
+      <span class="toggler-icon-close fs-4">&times;</span>
     </button>
 
-    <div class="collapse navbar-collapse" id="mainNav">
+    <div class="collapse navbar-collapse mt-2 mt-lg-0" id="mainNav">
       <div class="navbar-nav me-auto">
-        {# ADMIN #}
         {% if is_granted('ROLE_ADMIN') %}
           <a class="nav-link" href="{{ path('app_dashboard') }}">Dashboard</a>
           <a class="nav-link" href="{{ path('app_client_index') }}">Clients</a>
@@ -21,50 +44,51 @@
           <a class="nav-link" href="{{ path('app_payments_index') }}">Payments</a>
         {% endif %}
 
-        {# CLIENT (non-admin) #}
         {% if is_granted('ROLE_CLIENT') and not is_granted('ROLE_ADMIN') %}
-            <a class="nav-link" href="{{ path('app_dashboard') }}">Dashboard</a>
-            <a class="nav-link" href="{{ path('app_order_index') }}">Orders</a>
-            <a class="nav-link" href="{{ path('app_thumbnails_index') }}">Thumbnails</a>
-            <a class="nav-link" href="{{ path('app_payments_index') }}">Payments</a>
-          
+          <a class="nav-link" href="{{ path('app_dashboard') }}">Dashboard</a>
+          <a class="nav-link" href="{{ path('app_order_index') }}">Orders</a>
+          <a class="nav-link" href="{{ path('app_thumbnails_index') }}">Thumbnails</a>
+          <a class="nav-link" href="{{ path('app_payments_index') }}">Payments</a>
         {% endif %}
       </div>
-      
-        <div class="d-flex align-items-center">
-            {% if app.user %}
-            <div class="dropdown">
-                <button class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center p-0"
-                        type="button" id="accountMenu" data-bs-toggle="dropdown" aria-expanded="false"
-                        style="width: 40px; height: 40px;">
-                {# Icône temporaire (remplacée plus tard par l’avatar) #}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 12c2.9 0 5-2.5 5-5.5S14.9 1 12 1 7 3.5 7 6.5 9.1 12 12 12zm0 2c-4.4 0-8 2.3-8 5.2V22h16v-2.8c0-2.9-3.6-5.2-8-5.2z"/>
-                </svg>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="accountMenu">
-                <li class="px-3 py-2 small">
-                    <div class="fw-semibold">{{ app.user.email }}</div>
-                    {% if app.user.roles is defined %}
-                    <div class="text-secondary">
-                        {% for r in app.user.roles %}
-                        <span class="badge text-bg-dark border">{{ r }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="{{ path('app_account') }}">Account</a></li>
-                <li><a class="dropdown-item" href="{{ path('app_payments_history') }}">Payments history</a></li>
-                <li><a class="dropdown-item text-danger" href="{{ path('app_logout') }}">Logout</a></li>
-                </ul>
-            </div>
-            {% else %}
-            <a class="btn btn-sm btn-primary rounded-1 me-2" href="{{ path('app_login') }}">Login</a>
-            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_register') }}">Register</a>
-            {% endif %}
-        </div>
 
+      <div class="d-flex align-items-center mt-2 mt-lg-0 ms-lg-3">
+        {% if app.user %}
+          <div class="dropdown ms-auto">
+            <button class="btn btn-outline-light rounded-circle d-flex align-items-center justify-content-center p-0"
+                    type="button"
+                    id="accountMenu"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style="width: 40px; height: 40px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 12c2.9 0 5-2.5 5-5.5S14.9 1 12 1 7 3.5 7 6.5 9.1 12 12 12zm0 2c-4.4 0-8 2.3-8 5.2V22h16v-2.8c0-2.9-3.6-5.2-8-5.2z"/>
+              </svg>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="accountMenu">
+              <li class="px-3 py-2 small">
+                <div class="fw-semibold">{{ app.user.email }}</div>
+                {% if app.user.roles is defined %}
+                  <div class="text-secondary">
+                    {% for r in app.user.roles %}
+                      <span class="badge text-bg-dark border">{{ r }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="{{ path('app_account') }}">Account</a></li>
+              <li><a class="dropdown-item" href="{{ path('app_payments_history') }}">Payments history</a></li>
+              <li><a class="dropdown-item text-danger" href="{{ path('app_logout') }}">Logout</a></li>
+            </ul>
+          </div>
+        {% else %}
+          <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-sm btn-primary rounded-1" href="{{ path('app_login') }}">Login</a>
+            <a class="btn btn-sm btn-outline-light rounded-1" href="{{ path('app_register') }}">Register</a>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 </nav>

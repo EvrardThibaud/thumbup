@@ -2,44 +2,52 @@
 
 {% block body %}
 <div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
     <h1 class="h4 m-0">📊 Admin dashboard</h1>
 
     <form method="get"
           action="{{ path('app_dashboard') }}"
-          class="d-flex align-items-center gap-2">
+          class="row g-2 align-items-center">
 
       {# Client filter #}
-      <select name="client"
-              class="form-select form-select-sm bg-dark text-light border-secondary">
-        <option value="" {{ selectedClient is not defined or selectedClient is null ? 'selected':'' }}>
-          All clients
-        </option>
-        {% for c in clients %}
-          <option value="{{ c.id }}" {{ selectedClient and selectedClient.id == c.id ? 'selected':'' }}>
-            {{ c.name }}
+      <div class="col-12 col-md-auto">
+        <select name="client"
+                class="form-select bg-dark text-light border-secondary">
+          <option value="" {{ selectedClient is not defined or selectedClient is null ? 'selected':'' }}>
+            All clients
           </option>
-        {% endfor %}
-      </select>
+          {% for c in clients %}
+            <option value="{{ c.id }}" {{ selectedClient and selectedClient.id == c.id ? 'selected':'' }}>
+              {{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
 
       {# Time range filter #}
-      <select name="range"
-              class="form-select form-select-sm bg-dark text-light border-secondary">
-        <option value="all"   {{ range == 'all'   ? 'selected':'' }}>All time</option>
-        <option value="year"  {{ range == 'year'  ? 'selected':'' }}>Last year</option>
-        <option value="month" {{ range == 'month' ? 'selected':'' }}>Last month</option>
-        <option value="week"  {{ range == 'week'  ? 'selected':'' }}>Last week</option>
-      </select>
+      <div class="col-12 col-md-auto">
+        <select name="range"
+                class="form-select bg-dark text-light border-secondary">
+          <option value="all"   {{ range == 'all'   ? 'selected':'' }}>All time</option>
+          <option value="year"  {{ range == 'year'  ? 'selected':'' }}>Last year</option>
+          <option value="month" {{ range == 'month' ? 'selected':'' }}>Last month</option>
+          <option value="week"  {{ range == 'week'  ? 'selected':'' }}>Last week</option>
+        </select>
+      </div>
 
-      <button class="btn btn-sm btn-outline-light rounded-1" type="submit">
-        Apply
-      </button>
+      <div class="col-6 col-md-auto">
+        <button class="btn btn-sm btn-outline-light rounded-1 w-100 w-md-auto" type="submit">
+          Apply
+        </button>
+      </div>
 
       {% if selectedClient or range != 'year' %}
-        <a class="btn btn-sm btn-outline-secondary rounded-1"
-           href="{{ path('app_dashboard') }}">
-          Reset
-        </a>
+        <div class="col-6 col-md-auto">
+          <a class="btn btn-sm btn-outline-secondary rounded-1 w-100 w-md-auto"
+             href="{{ path('app_dashboard') }}">
+            Reset
+          </a>
+        </div>
       {% endif %}
     </form>
   </div>
@@ -77,7 +85,7 @@
           <span class="fw-semibold">Thumbnails per {{ unitLabel }}</span>
         </div>
         <div class="card-body">
-          {{ render_chart(ordersChart, { height: 120 }) }}
+          {{ render_chart(ordersChart, { height: 200 }) }}
         </div>
       </div>
     </div>
@@ -88,7 +96,7 @@
           <span class="fw-semibold">Time spent per {{ unitLabel }} (min)</span>
         </div>
         <div class="card-body">
-          {{ render_chart(timeChart, { height: 120 }) }}
+          {{ render_chart(timeChart, { height: 200 }) }}
         </div>
       </div>
     </div>
@@ -99,30 +107,31 @@
           <span class="fw-semibold">Revenue per {{ unitLabel }} (€)</span>
         </div>
         <div class="card-body">
-          {{ render_chart(revenueChart, { height: 120 }) }}
+          {{ render_chart(revenueChart, { height: 200 }) }}
         </div>
       </div>
     </div>
   </div>
-</div>
- {% if cumOrdersChart and cumRevenueChart %}
+
+  {% if cumOrdersChart and cumRevenueChart %}
     <div class="mt-4">
       <div class="card bg-dark border-secondary">
-        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+        <div class="card-header border-secondary d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-1">
           <span class="fw-semibold">Cumulative overview (all time)</span>
           <span class="small text-secondary">Unit: month · No filters applied</span>
         </div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-lg-6">
-              {{ render_chart(cumOrdersChart, { height: 120 }) }}
+              {{ render_chart(cumOrdersChart, { height: 200 }) }}
             </div>
             <div class="col-lg-6">
-              {{ render_chart(cumRevenueChart, { height: 120 }) }}
+              {{ render_chart(cumRevenueChart, { height: 200 }) }}
             </div>
           </div>
         </div>
       </div>
     </div>
   {% endif %}
+</div>
 {% endblock %}

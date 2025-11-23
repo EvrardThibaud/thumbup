@@ -1,30 +1,26 @@
-{# templates/client/show.html.twig #}
 {% extends 'base.html.twig' %}
 {% block title %}Client #{{ client.id }}{% endblock %}
 
 {% block body %}
 <div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
     <h1 class="h4 m-0">👤 {{ client.name }}</h1>
-    <div class="d-flex gap-2">
-      <a class="btn btn-sm btn-outline-light rounded-1"
+    <div class="d-flex flex-wrap gap-2 justify-content-start justify-content-md-end">
+      <a class="btn btn-sm btn-outline-light rounded-1 text-nowrap"
          href="{{ path('app_client_index') }}">← Back to list</a>
-      <a class="btn btn-sm btn-outline-light rounded-1"
+      <a class="btn btn-sm btn-outline-light rounded-1 text-nowrap"
          href="{{ path('app_client_edit', {'id': client.id}) }}">✏️ Edit</a>
       <form method="post"
             action="{{ path('app_client_delete', {'id': client.id}) }}"
             onsubmit="return confirm('Delete this client?');"
             class="m-0">
-        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ client.id) }}">
-        <button class="btn btn-sm btn-danger rounded-1">Delete</button>
+        <button class="btn btn-sm btn-danger rounded-1 text-nowrap">Delete</button>
       </form>
     </div>
   </div>
 
-  {# On récupère d'abord les flashs 'invite_link' pour le JS #}
   {% set inviteLinks = app.flashes('invite_link') %}
 
-  {# Flash messages classiques (tous les autres) #}
   {% for label, messages in app.flashes %}
     {% for message in messages %}
       <div class="alert alert-{{ label }} small py-2 mb-2">
@@ -34,7 +30,6 @@
   {% endfor %}
 
   <div class="row g-3">
-    {# LEFT: Profile / payment / linked user #}
     <div class="col-12 col-lg-6">
       <div class="card bg-dark border-secondary rounded-2">
         <div class="card-header border-secondary">
@@ -74,7 +69,6 @@
               {% endif %}
             </dd>
 
-
             {% set due = dueCents is defined ? dueCents : 0 %}
             {% set paid = paidCents is defined ? paidCents : 0 %}
 
@@ -111,7 +105,6 @@
       </div>
     </div>
 
-    {# RIGHT: Orders box + (optional) invite box #}
     <div class="col-12 col-lg-6">
       <div class="card bg-dark border-secondary rounded-2 mb-3">
         <div class="card-header border-secondary">
@@ -128,7 +121,6 @@
         </div>
       </div>
 
-      {# Invitations only if no linked user #}
       {% if not linkedUser %}
         <div class="card bg-dark border-secondary rounded-2 mt-3">
           <div class="card-header border-secondary">
@@ -172,14 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('copy-invite-btn');
   if (!btn) return;
 
-  // Sauvegarde de l'état initial
   btn.dataset.originalText  = btn.textContent.trim();
   btn.dataset.originalClass = btn.className;
   btn.dataset.copied        = '0';
 
-  // Hover : "Click to copy"
   btn.addEventListener('mouseenter', () => {
-    if (btn.dataset.copied === '1') return; // ne pas override l'état "Copied"
+    if (btn.dataset.copied === '1') return;
     btn.textContent = 'Click to copy';
   });
 
@@ -188,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.textContent = btn.dataset.originalText;
   });
 
-  // Click : copie + état vert "Copied..."
   btn.addEventListener('click', async () => {
     const link = btn.dataset.link;
     if (!link) return;
@@ -220,8 +209,4 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
-
-
-
-
 {% endblock %}

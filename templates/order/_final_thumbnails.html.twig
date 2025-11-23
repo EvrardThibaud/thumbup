@@ -1,61 +1,68 @@
 {# templates/order/_thumbnails.html.twig #}
 {% set thumbs = order.thumbnails %}
-
 <div class="card bg-dark border-secondary rounded-2 h-100">
-  <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-    <span class="fw-semibold">Final thumbnails</span>
+  <div class="card-header border-secondary d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+    <span class="fw-semibold text-nowrap">Final thumbnails</span>
 
     {% if is_granted('ROLE_ADMIN') %}
-      <form class="d-flex gap-2" method="post" enctype="multipart/form-data"
+      <form class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto"
+            method="post"
+            enctype="multipart/form-data"
             action="{{ path('app_thumbnail_upload', { id: order.id, back: app.request.uri }) }}">
         <input type="hidden" name="_token" value="{{ csrf_token('thumb-upload' ~ order.id) }}">
-        <input class="form-control form-control-sm"
+
+        <input class="form-control form-control-sm bg-dark text-light border-secondary w-100"
                type="file"
                name="thumb_files[]"
                accept="image/png,image/jpeg,image/webp"
                multiple
                required>
-        <button class="btn btn-sm btn-primary rounded-1">Upload</button>
+
+        <button class="btn btn-sm btn-primary rounded-1 flex-shrink-0 text-nowrap">
+          Upload
+        </button>
       </form>
     {% endif %}
   </div>
 
   <div class="card-body">
-    {% if thumbs|length == 0 %}
-      <div class="text-secondary">No final thumbnails yet.</div>
+    {% if order.thumbnails is empty %}
+      <p class="text-secondary small mb-0">No thumbnails yet.</p>
     {% else %}
-      <div class="row g-3">
-        {% for a in thumbs %}
-          <div class="col-6 col-md-3">
-            <div class="bg-dark border rounded-1 p-2 h-100 d-flex flex-column">
-              <a href="{{ asset('uploads/order-thumbnails/' ~ a.fileName) }}"
+      <div class="row g-2">
+        {% for thumb in order.thumbnails %}
+          <div class="col-6 col-md-4 col-lg-3">
+            <div class="card bg-dark border-secondary h-100">
+              <a href="{{ vich_uploader_asset(thumb, 'file') }}"
                  target="_blank"
-                 class="mb-2">
-                <img src="{{ asset('uploads/order-thumbnails/' ~ a.fileName) | imagine_filter('thumb_320x180') }}"
-                     alt="Thumbnail {{ loop.index }}"
-                     class="img-fluid rounded-1"
-                     loading="lazy"
-                     style="aspect-ratio:16/9;object-fit:cover;">
+                 rel="noopener noreferrer">
+                <img
+                  src="{{ vich_uploader_asset(thumb, 'file') }}"
+                  class="card-img-top img-fluid"
+                  alt="Thumbnail #{{ loop.index }}"
+                >
               </a>
+              <div class="card-body p-2">
+                <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                  <a class="btn btn-sm btn-outline-light rounded-1 d-flex align-items-center justify-content-center text-nowrap"
+                     href="{{ vich_uploader_asset(thumb, 'file') }}"
+                     download>
+                    Download
+                  </a>
 
-              <div class="small text-secondary mb-2">
-                {{ (a.fileSize/1024)|number_format(0, ',', ' ') }} KB
-              </div>
-
-              <div class="mt-auto d-flex gap-2">
-                <a class="btn btn-sm btn-outline-light rounded-1"
-                   href="{{ path('app_thumbnail_download', { id: a.id }) }}">
-                  Download
-                </a>
-
-                {% if is_granted('ROLE_ADMIN') %}
-                  <form method="post"
-                        action="{{ path('app_thumbnail_delete', { id: a.id, back: app.request.uri }) }}"
-                        onsubmit="return confirm('Delete this final thumbnail?');">
-                    <input type="hidden" name="_token" value="{{ csrf_token('thumb-delete' ~ a.id) }}">
-                    <button class="btn btn-sm btn-outline-danger rounded-1">Delete</button>
-                  </form>
-                {% endif %}
+                  {% if is_granted('ROLE_ADMIN') %}
+                    <form method="post"
+                          action="{{ path('app_thumbnail_delete', { id: thumb.id, back: app.request.uri }) }}"
+                          onsubmit="return confirm('Delete this thumbnail?');"
+                          class="m-0 d-flex">
+                      <input type="hidden" name="_token" value="{{ csrf_token('delete-thumb' ~ thumb.id) }}">
+                      <button class="btn btn-sm btn-danger rounded-1 d-flex align-items-center justify-content-center text-nowrap"
+                              type="submit">
+                        Delete
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
