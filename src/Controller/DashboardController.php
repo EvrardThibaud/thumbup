@@ -1,11 +1,8 @@
 <?php
-// src/Controller/DashboardController.php
 
 namespace App\Controller;
 
 use App\Entity\Client;
-use App\Entity\Order;
-use App\Enum\OrderStatus;
 use App\Repository\ClientRepository;
 use App\Repository\OrderRepository;
 use App\Repository\TimeEntryRepository;
@@ -26,16 +23,16 @@ final class DashboardController extends AbstractController
         TimeEntryRepository $times,
         ChartBuilderInterface $charts
     ): Response {
-        // --- CLIENT DASHBOARD (non admin) ---
+        // Client dashboard (non admin)
         if ($this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN')) {
             /** @var \App\Entity\User|null $user */
             $user   = $this->getUser();
             $client = (is_object($user) && method_exists($user, 'getClient')) ? $user->getClient() : null;
+
             if (!$client instanceof Client) {
                 throw $this->createAccessDeniedException('No client linked to this user.');
             }
 
-            // Start = first order dueAt for this client, End = first day of next month
             $end = new \DateTimeImmutable('first day of next month 00:00:00');
 
             $minDue = $orders->createQueryBuilder('o')
@@ -50,7 +47,6 @@ final class DashboardController extends AbstractController
                 $minDueAt = new \DateTimeImmutable($minDue);
                 $start    = new \DateTimeImmutable($minDueAt->format('Y-m-01 00:00:00'));
             } else {
-                // fallback : 12 derniers mois si aucune commande
                 $start = $end->modify('-12 months');
             }
 
@@ -61,8 +57,8 @@ final class DashboardController extends AbstractController
                 'labels' => $series['labels'],
                 'datasets' => [[
                     'label' => 'Orders per month',
-                    'data'  => $series['data'],
-                    'fill'  => false,
+                    'data' => $series['data'],
+                    'fill' => false,
                     'tension' => 0.25,
                     'pointRadius' => 4,
                     'pointHoverRadius' => 6,
@@ -73,8 +69,8 @@ final class DashboardController extends AbstractController
                 'responsive' => true,
                 'plugins' => [
                     'legend' => ['display' => true, 'position' => 'top'],
-                    'title'  => ['display' => true, 'text' => '📈 Orders per month (since first order)'],
-                    'tooltip'=> ['mode' => 'index', 'intersect' => false],
+                    'title' => ['display' => true, 'text' => '📈 Orders per month (since first order)'],
+                    'tooltip' => ['mode' => 'index', 'intersect' => false],
                 ],
                 'interaction' => ['mode' => 'index', 'intersect' => false],
                 'scales' => [
@@ -89,24 +85,20 @@ final class DashboardController extends AbstractController
             ]);
         }
 
-        // --- ADMIN DASHBOARD ---
+        // Admin dashboard
 
-        // Client filter
-        $raw = trim((string) $request->query->get('client', ''));
+        $raw            = trim((string) $request->query->get('client', ''));
         $selectedClient = (ctype_digit($raw) && $raw !== '') ? $clientsRepo->find((int) $raw) : null;
 
-        // Time range filter
         $range = (string) $request->query->get('range', 'year'); // all, year, month, week
         if (!in_array($range, ['all', 'year', 'month', 'week'], true)) {
             $range = 'year';
         }
 
-        // Grouping: month (all/year) or day (month/week)
         $groupBy = in_array($range, ['month', 'week'], true) ? 'day' : 'month';
 
         $now = new \DateTimeImmutable('now');
 
-        // Compute [start, end) window based on range
         if ($range === 'all') {
             $minQb = $orders->createQueryBuilder('o')
                 ->select('MIN(o.dueAt)')
@@ -120,7 +112,7 @@ final class DashboardController extends AbstractController
             if ($minDue) {
                 $start = new \DateTimeImmutable($minDue);
             } else {
-                $start = $now->modify('-1 year'); // fallback
+                $start = $now->modify('-1 year');
             }
             $end = $now;
         } elseif ($range === 'month') {
@@ -129,7 +121,7 @@ final class DashboardController extends AbstractController
         } elseif ($range === 'week') {
             $end   = $now;
             $start = $now->modify('-7 days');
-        } else { // 'year'
+        } else {
             $end   = $now;
             $start = $now->modify('-1 year');
         }
@@ -142,21 +134,21 @@ final class DashboardController extends AbstractController
             default => 'Last year',
         };
 
-        // --- Totals dépendant du client + période ---
+        // Totals for the selected period
 
-        // Total thumbnails = orders whose dueAt in window
         $ordersQb = $orders->createQueryBuilder('o')
             ->select('COUNT(o.id)')
             ->andWhere('o.dueAt IS NOT NULL')
             ->andWhere('o.dueAt >= :start AND o.dueAt < :end')
             ->setParameter('start', $start)
             ->setParameter('end', $end);
+
         if ($selectedClient instanceof Client) {
             $ordersQb->andWhere('o.client = :c')->setParameter('c', $selectedClient);
         }
+
         $totalOrders = (int) $ordersQb->getQuery()->getSingleScalarResult();
 
-        // Total time = sum minutes des TimeEntry liés à des orders dont dueAt dans la fenêtre
         $timeQb = $times->createQueryBuilder('t')
             ->select('COALESCE(SUM(t.minutes), 0)')
             ->join('t.relatedOrder', 'to')
@@ -164,12 +156,13 @@ final class DashboardController extends AbstractController
             ->andWhere('to.dueAt >= :start AND to.dueAt < :end')
             ->setParameter('start', $start)
             ->setParameter('end', $end);
+
         if ($selectedClient instanceof Client) {
             $timeQb->andWhere('to.client = :c')->setParameter('c', $selectedClient);
         }
+
         $totalMinutes = (int) $timeQb->getQuery()->getSingleScalarResult();
 
-        // Total revenue = sum price des orders paid=true whose dueAt in window
         $revQb = $orders->createQueryBuilder('o')
             ->select('COALESCE(SUM(o.price), 0)')
             ->andWhere('o.paid = :paid')
@@ -178,13 +171,15 @@ final class DashboardController extends AbstractController
             ->setParameter('paid', true)
             ->setParameter('start', $start)
             ->setParameter('end', $end);
+
         if ($selectedClient instanceof Client) {
             $revQb->andWhere('o.client = :c')->setParameter('c', $selectedClient);
         }
-        $totalCents = (int) $revQb->getQuery()->getSingleScalarResult();
+
+        $totalCents   = (int) $revQb->getQuery()->getSingleScalarResult();
         $totalRevenue = round($totalCents / 100, 2);
 
-        // --- Séries pour charts : thumbnails, time, revenue ---
+        // Series for charts
 
         $labels   = [];
         $countPer = [];
@@ -201,19 +196,19 @@ final class DashboardController extends AbstractController
 
                 $labels[] = $bucketStart->format('Y-m');
 
-                // Orders count
                 $qb1 = $orders->createQueryBuilder('o')
                     ->select('COUNT(o.id)')
                     ->andWhere('o.dueAt IS NOT NULL')
                     ->andWhere('o.dueAt >= :bs AND o.dueAt < :be')
                     ->setParameter('bs', $bucketStart)
                     ->setParameter('be', $bucketEnd);
+
                 if ($selectedClient instanceof Client) {
                     $qb1->andWhere('o.client = :c')->setParameter('c', $selectedClient);
                 }
+
                 $countPer[] = (int) $qb1->getQuery()->getSingleScalarResult();
 
-                // Time minutes
                 $qb2 = $times->createQueryBuilder('t')
                     ->select('COALESCE(SUM(t.minutes), 0)')
                     ->join('t.relatedOrder', 'to2')
@@ -221,12 +216,13 @@ final class DashboardController extends AbstractController
                     ->andWhere('to2.dueAt >= :bs AND to2.dueAt < :be')
                     ->setParameter('bs', $bucketStart)
                     ->setParameter('be', $bucketEnd);
+
                 if ($selectedClient instanceof Client) {
                     $qb2->andWhere('to2.client = :c')->setParameter('c', $selectedClient);
                 }
+
                 $minsPer[] = (int) $qb2->getQuery()->getSingleScalarResult();
 
-                // Revenue euros
                 $qb3 = $orders->createQueryBuilder('o')
                     ->select('COALESCE(SUM(o.price), 0)')
                     ->andWhere('o.paid = :paid')
@@ -235,16 +231,17 @@ final class DashboardController extends AbstractController
                     ->setParameter('paid', true)
                     ->setParameter('bs', $bucketStart)
                     ->setParameter('be', $bucketEnd);
+
                 if ($selectedClient instanceof Client) {
                     $qb3->andWhere('o.client = :c')->setParameter('c', $selectedClient);
                 }
-                $cents = (int) $qb3->getQuery()->getSingleScalarResult();
+
+                $cents    = (int) $qb3->getQuery()->getSingleScalarResult();
                 $revPer[] = round($cents / 100, 2);
 
                 $cursor = $bucketEnd;
             }
         } else {
-            // groupBy === 'day'
             $cursor = new \DateTimeImmutable($start->format('Y-m-d 00:00:00'));
             $limit  = (new \DateTimeImmutable($end->format('Y-m-d 00:00:00')))->modify('+1 day');
 
@@ -254,19 +251,19 @@ final class DashboardController extends AbstractController
 
                 $labels[] = $bucketStart->format('Y-m-d');
 
-                // Orders count
                 $qb1 = $orders->createQueryBuilder('o')
                     ->select('COUNT(o.id)')
                     ->andWhere('o.dueAt IS NOT NULL')
                     ->andWhere('o.dueAt >= :bs AND o.dueAt < :be')
                     ->setParameter('bs', $bucketStart)
                     ->setParameter('be', $bucketEnd);
+
                 if ($selectedClient instanceof Client) {
                     $qb1->andWhere('o.client = :c')->setParameter('c', $selectedClient);
                 }
+
                 $countPer[] = (int) $qb1->getQuery()->getSingleScalarResult();
 
-                // Time minutes
                 $qb2 = $times->createQueryBuilder('t')
                     ->select('COALESCE(SUM(t.minutes), 0)')
                     ->join('t.relatedOrder', 'to2')
@@ -274,12 +271,13 @@ final class DashboardController extends AbstractController
                     ->andWhere('to2.dueAt >= :bs AND to2.dueAt < :be')
                     ->setParameter('bs', $bucketStart)
                     ->setParameter('be', $bucketEnd);
+
                 if ($selectedClient instanceof Client) {
                     $qb2->andWhere('to2.client = :c')->setParameter('c', $selectedClient);
                 }
+
                 $minsPer[] = (int) $qb2->getQuery()->getSingleScalarResult();
 
-                // Revenue euros
                 $qb3 = $orders->createQueryBuilder('o')
                     ->select('COALESCE(SUM(o.price), 0)')
                     ->andWhere('o.paid = :paid')
@@ -288,26 +286,27 @@ final class DashboardController extends AbstractController
                     ->setParameter('paid', true)
                     ->setParameter('bs', $bucketStart)
                     ->setParameter('be', $bucketEnd);
+
                 if ($selectedClient instanceof Client) {
                     $qb3->andWhere('o.client = :c')->setParameter('c', $selectedClient);
                 }
-                $cents = (int) $qb3->getQuery()->getSingleScalarResult();
+
+                $cents    = (int) $qb3->getQuery()->getSingleScalarResult();
                 $revPer[] = round($cents / 100, 2);
 
                 $cursor = $bucketEnd;
             }
         }
 
-        $unitLabel = ($groupBy === 'day') ? 'day' : 'month';
+        $unitLabel = $groupBy === 'day' ? 'day' : 'month';
 
-        // Build charts
         $ordersChart = $charts->createChart(Chart::TYPE_LINE);
         $ordersChart->setData([
             'labels' => $labels,
             'datasets' => [[
                 'label' => 'Thumbnails per ' . $unitLabel,
-                'data'  => $countPer,
-                'fill'  => false,
+                'data' => $countPer,
+                'fill' => false,
                 'tension' => 0.25,
                 'pointRadius' => 3,
                 'borderColor' => '#7aa2f7',
@@ -319,8 +318,8 @@ final class DashboardController extends AbstractController
             'labels' => $labels,
             'datasets' => [[
                 'label' => 'Time spent per ' . $unitLabel . ' (min)',
-                'data'  => $minsPer,
-                'fill'  => false,
+                'data' => $minsPer,
+                'fill' => false,
                 'tension' => 0.25,
                 'pointRadius' => 3,
                 'borderColor' => '#98c379',
@@ -332,15 +331,15 @@ final class DashboardController extends AbstractController
             'labels' => $labels,
             'datasets' => [[
                 'label' => 'Revenue per ' . $unitLabel . ' (€)',
-                'data'  => $revPer,
-                'fill'  => false,
+                'data' => $revPer,
+                'fill' => false,
                 'tension' => 0.25,
                 'pointRadius' => 3,
                 'borderColor' => '#d3869b',
             ]],
         ]);
 
-                // --- CUMULATIF GLOBAL (depuis le début, sans filtres) ---
+        // Global cumulative charts
 
         $firstDue = $orders->createQueryBuilder('o')
             ->select('MIN(o.dueAt)')
@@ -354,8 +353,8 @@ final class DashboardController extends AbstractController
             ->getQuery()
             ->getSingleScalarResult();
 
-        $cumOrdersChart   = null;
-        $cumRevenueChart  = null;
+        $cumOrdersChart  = null;
+        $cumRevenueChart = null;
 
         if ($firstDue && $lastDue) {
             $startCum = (new \DateTimeImmutable($firstDue))->modify('first day of this month 00:00:00');
@@ -365,9 +364,9 @@ final class DashboardController extends AbstractController
             $cumOrdersData  = [];
             $cumRevenueData = [];
 
-            $cursor      = $startCum;
-            $totalOrdersCum   = 0;
-            $totalRevenueCum  = 0.0;
+            $cursor          = $startCum;
+            $totalOrdersCum  = 0;
+            $totalRevenueCum = 0.0;
 
             while ($cursor < $endCum) {
                 $monthStart = $cursor;
@@ -375,7 +374,6 @@ final class DashboardController extends AbstractController
 
                 $labelsCum[] = $monthStart->format('Y-m');
 
-                // Orders in this month (toutes, sans filtres)
                 $countMonth = (int) $orders->createQueryBuilder('o')
                     ->select('COUNT(o.id)')
                     ->andWhere('o.dueAt IS NOT NULL')
@@ -385,10 +383,9 @@ final class DashboardController extends AbstractController
                     ->getQuery()
                     ->getSingleScalarResult();
 
-                $totalOrdersCum += $countMonth;
+                $totalOrdersCum  += $countMonth;
                 $cumOrdersData[] = $totalOrdersCum;
 
-                // Revenue paid=true dans ce mois
                 $centsMonth = (int) $orders->createQueryBuilder('o')
                     ->select('COALESCE(SUM(o.price), 0)')
                     ->andWhere('o.paid = :paid')
@@ -400,7 +397,7 @@ final class DashboardController extends AbstractController
                     ->getQuery()
                     ->getSingleScalarResult();
 
-                $totalRevenueCum += round($centsMonth / 100, 2);
+                $totalRevenueCum   += round($centsMonth / 100, 2);
                 $cumRevenueData[] = $totalRevenueCum;
 
                 $cursor = $monthEnd;
@@ -411,8 +408,8 @@ final class DashboardController extends AbstractController
                 'labels' => $labelsCum,
                 'datasets' => [[
                     'label' => 'Cumulative thumbnails (all time)',
-                    'data'  => $cumOrdersData,
-                    'fill'  => false,
+                    'data' => $cumOrdersData,
+                    'fill' => false,
                     'tension' => 0.25,
                     'pointRadius' => 3,
                     'borderColor' => '#61afef',
@@ -424,8 +421,8 @@ final class DashboardController extends AbstractController
                 'labels' => $labelsCum,
                 'datasets' => [[
                     'label' => 'Cumulative revenue (all time, €)',
-                    'data'  => $cumRevenueData,
-                    'fill'  => false,
+                    'data' => $cumRevenueData,
+                    'fill' => false,
                     'tension' => 0.25,
                     'pointRadius' => 3,
                     'borderColor' => '#c678dd',
@@ -463,9 +460,10 @@ final class DashboardController extends AbstractController
             ]);
         }
 
-        // Clients list for filter
         $clients = $clientsRepo->createQueryBuilder('c')
-            ->orderBy('c.name', 'ASC')->getQuery()->getResult();
+            ->orderBy('c.name', 'ASC')
+            ->getQuery()
+            ->getResult();
 
         return $this->render('dashboard/index.html.twig', [
             'is_admin'        => true,
@@ -476,9 +474,6 @@ final class DashboardController extends AbstractController
             'totalMinutes'    => $totalMinutes,
             'totalOrders'     => $totalOrders,
             'totalRevenue'    => $totalRevenue,
-            'ordersChart'     => $ordersChart,
-            'timeChart'       => $timeChart,
-            'revenueChart'    => $revenueChart,
             'ordersChart'     => $ordersChart,
             'timeChart'       => $timeChart,
             'revenueChart'    => $revenueChart,

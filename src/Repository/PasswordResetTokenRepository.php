@@ -1,5 +1,4 @@
 <?php
-// src/Repository/PasswordResetTokenRepository.php
 
 namespace App\Repository;
 

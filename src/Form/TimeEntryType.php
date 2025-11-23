@@ -23,7 +23,6 @@ class TimeEntryType extends AbstractType
                 'required' => false,
                 'label'    => 'Note',
             ])
-            // createdAt retiré : défini uniquement dans le controller
             ->add('relatedOrder', EntityType::class, [
                 'class'       => Order::class,
                 'choice_label'=> 'title',

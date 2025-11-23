@@ -89,7 +89,7 @@ final class TimeEntryController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_time_entry_delete', methods: ['POST'])]
-    public function delete(Request $request, TimeEntry $timeEntry, EntityManagerInterface $entityManager): Response
+    public function delete(TimeEntry $timeEntry, EntityManagerInterface $entityManager): Response
     {
         $entityManager->remove($timeEntry);
         $entityManager->flush();

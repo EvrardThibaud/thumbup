@@ -1,5 +1,4 @@
 <?php
-// src/Form/OrderType.php — FIX submit (no HTML5 block): use HiddenType for price, remove price_euros field
 
 namespace App\Form;
 
@@ -24,7 +23,7 @@ final class OrderType extends AbstractType
     public function buildForm(FormBuilderInterface $b, array $opt): void
     {
         $isClient = (bool)$opt['is_client'];
-        $minDueAt = $opt['min_due_at']; // 'Y-m-d\TH:i' or null
+        $minDueAt = $opt['min_due_at'];
         $userTz = $options['user_timezone'] ?? 'Europe/Paris';
 
         $b->add('title', TextType::class, [
@@ -47,11 +46,9 @@ final class OrderType extends AbstractType
                 'html5' => true,
                 'attr' => $minDueAt ? ['min' => $minDueAt] : [],
             ])
-          // REAL stored price in cents — hidden so HTML5 "required" won't block submit
           ->add('price', HiddenType::class, [
                 'constraints' => [new Assert\NotBlank(), new Assert\GreaterThanOrEqual(500)],
             ])
-          // Optional attachments
           ->add('attachments', FileType::class, [
                 'mapped' => false,
                 'required' => false,

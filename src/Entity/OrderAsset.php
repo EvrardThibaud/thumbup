@@ -1,5 +1,4 @@
 <?php
-// src/Entity/OrderAsset.php
 
 namespace App\Entity;
 
@@ -13,7 +12,9 @@ use Vich\UploaderBundle\Mapping\Annotation as Vich;
 #[Vich\Uploadable]
 class OrderAsset
 {
-    #[ORM\Id, ORM\GeneratedValue, ORM\Column(type: 'integer')]
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Order::class, inversedBy: 'assets')]
@@ -35,7 +36,12 @@ class OrderAsset
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[Vich\UploadableField(mapping: 'order_asset', fileNameProperty: 'fileName', size: 'fileSize', mimeType: 'mimeType')]
+    #[Vich\UploadableField(
+        mapping: 'order_asset',
+        fileNameProperty: 'fileName',
+        size: 'fileSize',
+        mimeType: 'mimeType'
+    )]
     private ?File $file = null;
 
     public function __construct()
@@ -43,30 +49,94 @@ class OrderAsset
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getOrder(): ?Order { return $this->order; }
-    public function setOrder(?Order $order): self { $this->order = $order; return $this; }
+    public function getOrder(): ?Order
+    {
+        return $this->order;
+    }
 
-    public function getFileName(): ?string { return $this->fileName; }
-    public function setFileName(?string $fileName): self { $this->fileName = $fileName; return $this; }
+    public function setOrder(?Order $order): self
+    {
+        $this->order = $order;
 
-    public function getFileSize(): ?int { return $this->fileSize; }
-    public function setFileSize(?int $fileSize): self { $this->fileSize = $fileSize; return $this; }
+        return $this;
+    }
 
-    public function getMimeType(): ?string { return $this->mimeType; }
-    public function setMimeType(?string $mimeType): self { $this->mimeType = $mimeType; return $this; }
+    public function getFileName(): ?string
+    {
+        return $this->fileName;
+    }
 
-    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self { $this->createdAt = $createdAt; return $this; }
+    public function setFileName(?string $fileName): self
+    {
+        $this->fileName = $fileName;
 
-    public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
-    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self { $this->updatedAt = $updatedAt; return $this; }
+        return $this;
+    }
+
+    public function getFileSize(): ?int
+    {
+        return $this->fileSize;
+    }
+
+    public function setFileSize(?int $fileSize): self
+    {
+        $this->fileSize = $fileSize;
+
+        return $this;
+    }
+
+    public function getMimeType(): ?string
+    {
+        return $this->mimeType;
+    }
+
+    public function setMimeType(?string $mimeType): self
+    {
+        $this->mimeType = $mimeType;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(\DateTimeImmutable $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
 
     public function setFile(?File $file = null): void
     {
         $this->file = $file;
-        if ($file) { $this->updatedAt = new \DateTimeImmutable(); }
+
+        if ($file) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
     }
-    public function getFile(): ?File { return $this->file; }
+
+    public function getFile(): ?File
+    {
+        return $this->file;
+    }
 }

@@ -1,9 +1,9 @@
 <?php
-// src/Controller/AccountController.php
 
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\YoutubeChannel;
 use App\Form\ChangePasswordType;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,7 +12,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Entity\YoutubeChannel;
 
 #[Route('/account')]
 final class AccountController extends AbstractController
@@ -42,7 +41,6 @@ final class AccountController extends AbstractController
         $user   = $this->getUser();
         $client = $user?->getClient();
 
-        // Password form
         $passwordForm = $this->createForm(ChangePasswordType::class, null, [
             'attr' => [
                 'autocomplete' => 'off',
@@ -54,7 +52,6 @@ final class AccountController extends AbstractController
         if ($request->isMethod('POST')) {
             $action = (string) $request->request->get('_action', '');
 
-            // --- PROFILE UPDATE ---
             if ($action === 'profile') {
                 if (!$client) {
                     throw $this->createAccessDeniedException('No client linked to this account.');
@@ -64,7 +61,7 @@ final class AccountController extends AbstractController
                     throw $this->createAccessDeniedException('Invalid CSRF token.');
                 }
 
-                $username = trim((string) $request->request->get('username', ''));
+                $username     = trim((string) $request->request->get('username', ''));
                 $channelsData = $request->request->all('channels') ?? [];
 
                 if ($username === '') {
@@ -77,7 +74,6 @@ final class AccountController extends AbstractController
                     return $this->redirectToRoute('app_account_edit');
                 }
 
-                // Indexe les chaînes existantes par id
                 $existingChannels = [];
                 foreach ($client->getYoutubeChannels() as $ch) {
                     if (null !== $ch->getId()) {
@@ -93,7 +89,6 @@ final class AccountController extends AbstractController
                     $name = trim((string) ($row['name'] ?? ''));
                     $url  = trim((string) ($row['url'] ?? ''));
 
-                    // Ligne vide => on ignore
                     if ($name === '' && $url === '') {
                         continue;
                     }
@@ -118,7 +113,7 @@ final class AccountController extends AbstractController
                     }
 
                     if ($id && isset($existingChannels[$id])) {
-                        $channel = $existingChannels[$id];
+                        $channel   = $existingChannels[$id];
                         $seenIds[] = $id;
                     } else {
                         $channel = new YoutubeChannel();
@@ -129,10 +124,9 @@ final class AccountController extends AbstractController
                     $channel
                         ->setName($name !== '' ? $name : $url)
                         ->setUrl($url)
-                        ->setPosition($position++); // 0 = main, 1 = secondaire, etc.
+                        ->setPosition($position++);
                 }
 
-                // Supprime les chaînes non présentes dans le formulaire
                 foreach ($client->getYoutubeChannels() as $ch) {
                     $id = $ch->getId();
                     if ($id !== null && !in_array($id, $seenIds, true)) {
@@ -149,27 +143,23 @@ final class AccountController extends AbstractController
                 return $this->redirectToRoute('app_account_edit');
             }
 
-            // --- PASSWORD UPDATE ---
             if ($action === 'password' && $passwordForm->isSubmitted()) {
                 $currentPlain = (string) $passwordForm->get('currentPassword')->getData();
                 $newPlain     = (string) $passwordForm->get('newPassword')->getData();
                 $confirmPlain = (string) $passwordForm->get('confirmNewPassword')->getData();
 
-                // 1) Check current password
                 if (!$hasher->isPasswordValid($user, $currentPlain)) {
                     $passwordForm->get('currentPassword')->addError(
                         new FormError('Current password is incorrect.')
                     );
                 }
 
-                // 2) New passwords must match
                 if ($newPlain !== '' && $confirmPlain !== '' && $newPlain !== $confirmPlain) {
                     $passwordForm->get('confirmNewPassword')->addError(
                         new FormError('The two new passwords must match.')
                     );
                 }
 
-                // 3) New password must be different
                 if ($newPlain !== '' && $newPlain === $currentPlain) {
                     $passwordForm->get('newPassword')->addError(
                         new FormError('The new password must be different from the current password.')

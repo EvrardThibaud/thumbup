@@ -3,33 +3,37 @@
 namespace App\Controller;
 
 use App\Entity\Client;
+use App\Entity\YoutubeChannel;
 use App\Form\ClientType;
 use App\Repository\ClientRepository;
+use App\Repository\InvitationRepository;
+use App\Repository\OrderRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Repository\OrderRepository;
-use App\Repository\UserRepository;
-use App\Repository\InvitationRepository;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 #[Route('/admin/client')]
 final class ClientController extends AbstractController
 {
     #[Route('/', name: 'app_client_index', methods: ['GET'])]
-    public function index(ClientRepository $clientsRepo, UserRepository $usersRepo, OrderRepository $orders): Response
-    {
+    public function index(
+        ClientRepository $clientsRepo,
+        UserRepository $usersRepo,
+        OrderRepository $orders
+    ): Response {
         $clients = $clientsRepo->findAll();
 
-        // Construire linkedMap: clientId => User
         $linkedMap = [];
         if (!empty($clients)) {
             $users = $usersRepo->createQueryBuilder('u')
                 ->where('u.client IN (:clients)')
                 ->setParameter('clients', $clients)
-                ->getQuery()->getResult();
+                ->getQuery()
+                ->getResult();
 
             foreach ($users as $u) {
                 $cid = $u->getClient()?->getId();
@@ -43,17 +47,16 @@ final class ClientController extends AbstractController
 
         return $this->render('client/index.html.twig', [
             'clients'   => $clients,
-            'dueMap'  => $dueMap,
-            'linkedMap' => $linkedMap, // 🆕
+            'dueMap'    => $dueMap,
+            'linkedMap' => $linkedMap,
         ]);
     }
-
 
     #[Route('/new', name: 'app_client_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $client = new Client();
-        $form = $this->createForm(ClientType::class, $client);
+        $form   = $this->createForm(ClientType::class, $client);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -65,7 +68,7 @@ final class ClientController extends AbstractController
 
         return $this->render('client/new.html.twig', [
             'client' => $client,
-            'form' => $form,
+            'form'   => $form,
         ]);
     }
 
@@ -80,8 +83,7 @@ final class ClientController extends AbstractController
         $this->denyAccessUnlessGranted('CLIENT_VIEW', $client);
 
         $linkedUser = $users->findOneBy(['client' => $client]);
-
-        $totals = $orderRepo->dueAndPaidForClient($client->getId());
+        $totals     = $orderRepo->dueAndPaidForClient($client->getId());
 
         $page  = max(1, (int) $request->query->get('page', 1));
         $limit = 10;
@@ -103,8 +105,8 @@ final class ClientController extends AbstractController
 
         [$orders, $total] = $result;
 
-        $inviteLink = null;
-        $lastInvitation = $invites->findOneBy(
+        $inviteLink      = null;
+        $lastInvitation  = $invites->findOneBy(
             ['client' => $client],
             ['createdAt' => 'DESC']
         );
@@ -118,34 +120,33 @@ final class ClientController extends AbstractController
         }
 
         return $this->render('client/show.html.twig', [
-            'client'      => $client,
-            'dueCents'    => $totals['dueCents'],
-            'paidCents'   => $totals['paidCents'],
-            'orders'      => $orders,
-            'total'       => $total,
-            'page'        => $page,
-            'limit'       => $limit,
-            'sort'        => $sort,
-            'dir'         => strtoupper($dir),
-            'linkedUser'  => $linkedUser,
-            'inviteLink'  => $inviteLink,
+            'client'     => $client,
+            'dueCents'   => $totals['dueCents'],
+            'paidCents'  => $totals['paidCents'],
+            'orders'     => $orders,
+            'total'      => $total,
+            'page'       => $page,
+            'limit'      => $limit,
+            'sort'       => $sort,
+            'dir'        => strtoupper($dir),
+            'linkedUser' => $linkedUser,
+            'inviteLink' => $inviteLink,
         ]);
     }
 
-
-
-    #[Route('/admin/client/{id}/edit', name: 'app_client_edit', methods: ['GET','POST'])]
-    public function edit(Request $request, Client $client, EntityManagerInterface $em, UserRepository $users): Response
-    {
+    #[Route('/admin/client/{id}/edit', name: 'app_client_edit', methods: ['GET', 'POST'])]
+    public function edit(
+        Request $request,
+        Client $client,
+        EntityManagerInterface $em,
+        UserRepository $users
+    ): Response {
         $form = $this->createForm(ClientType::class, $client);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // --- gestion des chaînes YouTube (similaire à account/edit) ---
-            /** @var array<string,mixed> $channelsPayload */
             $channelsPayload = (array) $request->request->all('channels');
 
-            // indexer les existantes par id
             $existing = [];
             foreach ($client->getYoutubeChannels() as $ch) {
                 $existing[$ch->getId()] = $ch;
@@ -158,7 +159,6 @@ final class ClientController extends AbstractController
                 $name = trim((string) ($row['name'] ?? ''));
                 $url  = trim((string) ($row['url'] ?? ''));
 
-                // ligne vide => suppression si existante
                 if ($name === '' && $url === '') {
                     if ($id && isset($existing[$id])) {
                         $em->remove($existing[$id]);
@@ -175,7 +175,7 @@ final class ClientController extends AbstractController
                     $channel = $existing[$id];
                     unset($existing[$id]);
                 } else {
-                    $channel = new \App\Entity\YoutubeChannel();
+                    $channel = new YoutubeChannel();
                     $channel->setClient($client);
                     $em->persist($channel);
                 }
@@ -185,7 +185,6 @@ final class ClientController extends AbstractController
                 $channel->setPosition($position++);
             }
 
-            // ce qui reste dans $existing n’est plus dans le formulaire => on supprime
             foreach ($existing as $toRemove) {
                 $em->remove($toRemove);
             }
@@ -193,6 +192,7 @@ final class ClientController extends AbstractController
             $em->flush();
 
             $this->addFlash('success', 'Client updated.');
+
             return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);
         }
 
@@ -205,11 +205,13 @@ final class ClientController extends AbstractController
         ]);
     }
 
-
     #[Route('/{id}', name: 'app_client_delete', methods: ['POST'])]
-    public function delete(Request $request, Client $client, EntityManagerInterface $entityManager): Response
-    {
-        if ($this->isCsrfTokenValid('delete'.$client->getId(), $request->getPayload()->getString('_token'))) {
+    public function delete(
+        Request $request,
+        Client $client,
+        EntityManagerInterface $entityManager
+    ): Response {
+        if ($this->isCsrfTokenValid('delete' . $client->getId(), $request->getPayload()->getString('_token'))) {
             $entityManager->remove($client);
             $entityManager->flush();
         }

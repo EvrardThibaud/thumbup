@@ -1,5 +1,4 @@
 <?php
-// src/Controller/ForgotPasswordController.php
 
 namespace App\Controller;
 

@@ -174,8 +174,6 @@ final class PaymentsController extends AbstractController
 
             return $this->redirectToRoute('app_payments_checkout');
         }
-
-        // On garde dans la session la liste nettoyée des IDs, au cas où
         $req->getSession()->set('checkout.order_ids', $eligibleIds);
 
         $pp = $this->ppClient();
@@ -250,7 +248,6 @@ final class PaymentsController extends AbstractController
 
         $status = strtoupper((string) ($res->result->status ?? ''));
 
-        // Récupère les infos de la commande PayPal
         $unit   = $res->result->purchase_units[0] ?? null;
         $amount = $unit->amount->value ?? '0.00';
         $amountCents = (int) round(((float) $amount) * 100);
@@ -267,7 +264,6 @@ final class PaymentsController extends AbstractController
             return $this->redirectToRoute('app_payments_checkout');
         }
 
-        // Retrouve (ou crée) le Payment pour CE paypalOrderId (= $token)
         /** @var Payment|null $pay */
         $pay = $payRepo->findOneByPaypalOrderId($token);
 
@@ -289,13 +285,11 @@ final class PaymentsController extends AbstractController
             $pay->setRawPayload(json_encode($res->result));
         }
 
-        // Capture ID si disponible
         $cap = $res->result->purchase_units[0]->payments->captures[0]->id ?? null;
         if ($cap) {
             $pay->setPaypalCaptureId((string) $cap);
         }
 
-        // Si paiement COMPLETED, on marque les orders comme payées
         if ($status === 'COMPLETED') {
             $updated = 0;
             foreach ($ids as $id) {

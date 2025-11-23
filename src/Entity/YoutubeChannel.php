@@ -56,8 +56,6 @@ class YoutubeChannel
         return $this;
     }
 
-    
-
     public function getUrl(): string
     {
         return $this->url;

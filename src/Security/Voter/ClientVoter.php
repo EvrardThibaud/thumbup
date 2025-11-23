@@ -20,10 +20,8 @@ final class ClientVoter extends Voter
         $user = $token->getUser();
         if (!$user instanceof User) return false;
 
-        // Les admins voient tout
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) return true;
 
-        // Clients : doivent être approuvés et ne voir QUE leur client
         if (in_array('ROLE_CLIENT', $user->getRoles(), true)) {
             return $user->getClient() && $user->getClient()->getId() === $subject->getId();
         }

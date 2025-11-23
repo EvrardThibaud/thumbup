@@ -19,7 +19,12 @@ class Client
     private ?string $name = null;
 
     /** @var Collection<int, Invitation> */
-    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Invitation::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: 'client',
+        targetEntity: Invitation::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
     private Collection $invitations;
 
     /** @var Collection<int, Order> */
@@ -27,7 +32,12 @@ class Client
     private Collection $orders;
 
     /** @var Collection<int, YoutubeChannel> */
-    #[ORM\OneToMany(mappedBy: 'client', targetEntity: YoutubeChannel::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: 'client',
+        targetEntity: YoutubeChannel::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $youtubeChannels;
 
@@ -48,16 +58,16 @@ class Client
         return $this->name;
     }
 
-    public function __toString(): string
-    {
-        return (string) $this->getName();
-    }
-
     public function setName(string $name): static
     {
         $this->name = $name;
 
         return $this;
+    }
+
+    public function __toString(): string
+    {
+        return (string) $this->getName();
     }
 
     /**

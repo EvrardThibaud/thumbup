@@ -37,7 +37,7 @@ final class OrderController extends AbstractController
         $status  = $form->get('status')->getData();
         $from    = $form->get('from')->getData();
         $to      = $form->get('to')->getData();
-        $paidSel = $form->get('paid')->getData(); // null|"yes"|"no"
+        $paidSel = $form->get('paid')->getData();
         $paid    = $paidSel === 'yes' ? true : ($paidSel === 'no' ? false : null);
 
         if ($isClient) {
@@ -87,7 +87,6 @@ final class OrderController extends AbstractController
     ): Response {
         $order = new Order();
 
-        // Tout en UTC côté backend
         $nowUtc = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $order->setCreatedAt($nowUtc);
         $order->setUpdatedAt($nowUtc);
@@ -112,7 +111,6 @@ final class OrderController extends AbstractController
 
             $order->setClient($user->getClient());
 
-            // "Maintenant" dans le fuseau du user pour le pré-remplissage
             $nowUser = $nowUtc->setTimezone(new \DateTimeZone($userTz));
             $dueUser = $nowUser->modify('+2 days');
             $dueUtc  = $dueUser->setTimezone(new \DateTimeZone('UTC'));
@@ -139,7 +137,6 @@ final class OrderController extends AbstractController
         ]);
         $form->handleRequest($request);
 
-        // Sync price from pretty input -> hidden cents (server truth)
         if ($form->isSubmitted()) {
             $pretty = $request->request->get('pretty_price');
             if ($pretty !== null) {
@@ -157,7 +154,6 @@ final class OrderController extends AbstractController
                 $order->setStatus(\App\Enum\OrderStatus::CREATED);
                 $order->setPaid(false);
 
-                // Comparaison en UTC
                 if ($order->getDueAt() && $order->getDueAt() < $nowUtc) {
                     $form->get('dueAt')->addError(new \Symfony\Component\Form\FormError('Due date must be in the future.'));
                 }
@@ -253,13 +249,11 @@ final class OrderController extends AbstractController
         ]);
     }
 
-
-
     #[Route('/{id}', name: 'app_order_show', methods: ['GET'])]
     public function show(Request $request, Order $order): Response
     {
         $this->denyAccessUnlessGranted('ORDER_VIEW', $order);
-        $back = $request->query->get('back'); // string|null
+        $back = $request->query->get('back');
         return $this->render('order/show.html.twig', [
             'order' => $order,
             'back'  => $back,
@@ -277,7 +271,6 @@ final class OrderController extends AbstractController
             && method_exists($user, 'getClient')
             && $user->getClient() === $order->getClient();
 
-        // Un client ne peut éditer que si l'order est en statut CREATED
         if ($isClient && $order->getStatus() !== \App\Enum\OrderStatus::CREATED) {
             throw $this->createAccessDeniedException('You can only edit orders in "Created" status.');
         }
@@ -310,7 +303,7 @@ final class OrderController extends AbstractController
     public function delete(Request $request, Order $order, EntityManagerInterface $em): Response
     {
         $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
-        $back = $request->request->get('back'); // via POST
+        $back = $request->request->get('back');
         if ($this->isCsrfTokenValid('delete'.$order->getId(), $request->request->get('_token'))) {
             $em->remove($order);
             $em->flush();
@@ -324,8 +317,6 @@ final class OrderController extends AbstractController
     public function export(Request $request, OrderRepository $orders): StreamedResponse
     {
         $isClient = $this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN');
-    
-        // Recrée le formulaire de filtres (GET) pour lire les mêmes champs (order_filters[...])
         $form = $this->createForm(\App\Form\OrderFiltersType::class, null, [
             'is_client' => $isClient,
             'method'    => 'GET',
@@ -335,11 +326,11 @@ final class OrderController extends AbstractController
         $q        = $form->get('q')->getData();
         $client   = $form->has('client') ? $form->get('client')->getData() : null;
         $clientId = $client ? $client->getId() : null;
-        $statusVal= $form->get('status')->getData(); // string|nullable
+        $statusVal= $form->get('status')->getData();
         $status   = $statusVal ? \App\Enum\OrderStatus::from($statusVal) : null;
         $from     = $form->get('from')->getData();
         $to       = $form->get('to')->getData();
-        $paidSel  = $form->get('paid')->getData();   // null|"yes"|"no"
+        $paidSel  = $form->get('paid')->getData();
         $paid     = $paidSel === 'yes' ? true : ($paidSel === 'no' ? false : null);
     
         if ($isClient) {
@@ -377,7 +368,7 @@ final class OrderController extends AbstractController
     #[Route('/{id}/toggle-paid', name: 'app_order_toggle_paid', methods: ['POST'])]
     public function togglePaid(Request $request, Order $order, EntityManagerInterface $em): Response
     {
-        $this->denyAccessUnlessGranted('ROLE_ADMIN'); // réservé admin
+        $this->denyAccessUnlessGranted('ROLE_ADMIN');
 
         if (!$this->isCsrfTokenValid('toggle-paid'.$order->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
@@ -441,11 +432,9 @@ final class OrderController extends AbstractController
         return $this->redirect($request->query->get('back') ?: $request->headers->get('referer') ?: $this->generateUrl('app_order_show',['id'=>$order->getId()]));
     }
 
-    // Cancel (client) — si tu as déjà une action, tu peux la simplifier pour réutiliser le workflow :
     #[Route('/{id}/cancel', name: 'app_order_cancel', methods: ['POST'])]
     public function cancel(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
     {
-        // Proprio client OU admin (mais UI côté client)
         $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
         if (!$this->isCsrfTokenValid('wf-cancel'.$order->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException();
@@ -458,7 +447,6 @@ final class OrderController extends AbstractController
     #[Route('/{id}/finish', name: 'app_order_finish', methods: ['POST'])]
     public function finish(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
     {
-        // Admin OU client propriétaire (via voter)
         if (!$this->isGranted('ROLE_ADMIN')) {
             $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
         }
@@ -477,7 +465,6 @@ final class OrderController extends AbstractController
     #[Route('/{id}/request-revision', name: 'app_order_request_revision', methods: ['POST'])]
     public function requestRevision(Request $request, Order $order, OrderWorkflow $wf, EntityManagerInterface $em): Response
     {
-        // Admin OU client propriétaire (via voter)
         if (!$this->isGranted('ROLE_ADMIN')) {
             $this->denyAccessUnlessGranted('ORDER_EDIT', $order);
         }

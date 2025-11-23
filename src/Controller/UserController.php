@@ -69,7 +69,6 @@ final class UserController extends AbstractController
         User $user,
         Request $request,
         EntityManagerInterface $em,
-        UserPasswordHasherInterface $hasher
     ): Response {
         $this->denyAccessUnlessGranted('ROLE_ADMIN');
 

@@ -16,8 +16,6 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Component\Security\Http\Authentication\UserAuthenticatorInterface;
-use App\Security\UserAuthenticator;
 
 final class RegistrationController extends AbstractController
 {
@@ -27,12 +25,10 @@ final class RegistrationController extends AbstractController
         InvitationRepository $invitations,
         UserPasswordHasherInterface $hasher,
         EM $em,
-        UserAuthenticatorInterface $authenticatorManager,
-        UserAuthenticator $formAuthenticator,
         MailerInterface $mailer
     ): Response {
         if ($this->getUser()) {
-            return $this->redirectToRoute('app_home'); // ou ta route dashboard
+            return $this->redirectToRoute('app_home');
         }
         $token = (string) $request->query->get('invite', '');
         $inv   = $token ? $invitations->findUsableByToken($token) : null;
@@ -190,7 +186,6 @@ final class RegistrationController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        // Marquer le token comme utilisé + l'utilisateur comme vérifié
         $tokenEntity->setUsedAt(new \DateTimeImmutable());
         $user->setIsVerified(true);
 

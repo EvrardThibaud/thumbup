@@ -43,19 +43,16 @@ final class UserAuthenticator extends AbstractLoginFormAuthenticator
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
-        // 1) If user was trying to access a protected page, go there
         if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
             return new RedirectResponse($targetPath);
         }
 
-        // 2) Role-based default redirect (works for both login and post-register auto-login)
         $roles = $token->getRoleNames();
         if (in_array('ROLE_ADMIN', $roles, true)) {
-            return new RedirectResponse($this->urlGenerator->generate('app_home')); // ex: /admin or /
+            return new RedirectResponse($this->urlGenerator->generate('app_home'));
         }
 
-        // Clients / regular users
-        return new RedirectResponse($this->urlGenerator->generate('app_home')); // ex: /app
+        return new RedirectResponse($this->urlGenerator->generate('app_home'));
     }
 
     protected function getLoginUrl(Request $request): string

@@ -1,5 +1,4 @@
 <?php
-// src/Controller/ThumbnailsController.php
 
 namespace App\Controller;
 
@@ -38,7 +37,6 @@ final class ThumbnailsController extends AbstractController
             $clients = $clientsRepo->createQueryBuilder('c')->orderBy('c.name', 'ASC')->getQuery()->getResult();
         }
 
-        // ✅ Page "Thumbnails" affiche UNIQUEMENT les résultats finaux (Thumbnail)
         $result = $ordersRepo->paginateOrdersWithThumbnails($selectedClient, $page, $perPage);
 
         return $this->render('thumbnails/index.html.twig', [

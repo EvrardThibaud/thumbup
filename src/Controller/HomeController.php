@@ -1,13 +1,14 @@
 <?php
+
 namespace App\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Enum\OrderStatus;
 use App\Repository\OrderRepository;
 use App\Repository\ThumbnailRepository;
-use App\Enum\OrderStatus;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class HomeController extends AbstractController
 {
@@ -17,21 +18,21 @@ final class HomeController extends AbstractController
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
         }
+
         return $this->render('home/landing.html.twig');
     }
 
-     #[Route('/app', name: 'app_home', methods: ['GET'])]
+    #[Route('/app', name: 'app_home', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function app(
         OrderRepository $orderRepo,
         ThumbnailRepository $thumbRepo
     ): Response {
-        $createdOrders   = [];
-        $acceptedOrders  = [];
+        $createdOrders    = [];
+        $acceptedOrders   = [];
         $clientThumbnails = [];
 
         if ($this->isGranted('ROLE_ADMIN')) {
-            // Orders en status CREATED
             $createdOrders = $orderRepo->createQueryBuilder('o')
                 ->andWhere('o.status = :created')
                 ->setParameter('created', OrderStatus::CREATED)
@@ -40,7 +41,6 @@ final class HomeController extends AbstractController
                 ->getQuery()
                 ->getResult();
 
-            // Orders en status ACCEPTED (to do)
             $acceptedOrders = $orderRepo->createQueryBuilder('o2')
                 ->andWhere('o2.status = :accepted')
                 ->setParameter('accepted', OrderStatus::ACCEPTED)
@@ -50,10 +50,9 @@ final class HomeController extends AbstractController
                 ->getResult();
         }
 
-        // Vue client : 6 dernières thumbnails liées à ses orders
         if ($this->isGranted('ROLE_CLIENT') && !$this->isGranted('ROLE_ADMIN')) {
             /** @var \App\Entity\User $user */
-            $user = $this->getUser();
+            $user   = $this->getUser();
             $client = $user?->getClient();
 
             if ($client) {

@@ -3,13 +3,13 @@
 namespace App\Entity;
 
 use App\Enum\OrderStatus;
-use Symfony\Component\Validator\Constraints as Assert;
 use App\Repository\OrderRepository;
+use App\Entity\TimeEntry;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\TimeEntry;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -49,41 +49,23 @@ class Order
     #[ORM\Column(type: 'boolean', nullable: true, options: ['default' => false])]
     private ?bool $paid = false;
 
+    /** @var Collection<int, Thumbnail> */
     #[ORM\OneToMany(mappedBy: 'order', targetEntity: Thumbnail::class, orphanRemoval: true, cascade: [])]
     private Collection $thumbnails;
 
-    /**
-     * @var Collection<int, TimeEntry>
-     */
+    /** @var Collection<int, TimeEntry> */
     #[ORM\OneToMany(targetEntity: TimeEntry::class, mappedBy: 'relatedOrder')]
     private Collection $timeEntries;
 
-    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderAsset::class, cascade: ['persist','remove'], orphanRemoval: true)]
+    /** @var Collection<int, OrderAsset> */
+    #[ORM\OneToMany(mappedBy: 'order', targetEntity: OrderAsset::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $assets;
-
-    /** @return Collection<int, Thumbnail> */
-    public function getThumbnails(): Collection { return $this->thumbnails; }
-    public function addThumbnail(Thumbnail $t): self
-    {
-        if (!$this->thumbnails->contains($t)) {
-            $this->thumbnails->add($t);
-            $t->setOrder($this);
-        }
-        return $this;
-    }
-    public function removeThumbnail(Thumbnail $t): self
-    {
-        if ($this->thumbnails->removeElement($t)) {
-            if ($t->getOrder() === $this) { $t->setOrder(null); }
-        }
-        return $this;
-    }
 
     public function __construct()
     {
         $this->timeEntries = new ArrayCollection();
-        $this->assets = new ArrayCollection();
-        $this->thumbnails = new ArrayCollection();
+        $this->assets      = new ArrayCollection();
+        $this->thumbnails  = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -131,9 +113,11 @@ class Order
     {
         return $this->status;
     }
+
     public function setStatus(OrderStatus $status): self
     {
         $this->status = $status;
+
         return $this;
     }
 
@@ -181,6 +165,7 @@ class Order
     public function setPaid(bool $paid): self
     {
         $this->paid = $paid;
+
         return $this;
     }
 
@@ -204,20 +189,6 @@ class Order
         return $this->timeEntries;
     }
 
-    public function getTotalMinutes(): int
-    {
-        $sum = 0;
-        foreach ($this->getTimeEntries() as $t) {
-            $sum += (int) $t->getMinutes();
-        }
-        return $sum;
-    }
-
-    public function getTotalHours(): float
-    {
-        return round($this->getTotalMinutes() / 60, 2);
-    }
-
     public function addTimeEntry(TimeEntry $timeEntry): static
     {
         if (!$this->timeEntries->contains($timeEntry)) {
@@ -231,7 +202,6 @@ class Order
     public function removeTimeEntry(TimeEntry $timeEntry): static
     {
         if ($this->timeEntries->removeElement($timeEntry)) {
-            // set the owning side to null (unless already changed)
             if ($timeEntry->getRelatedOrder() === $this) {
                 $timeEntry->setRelatedOrder(null);
             }
@@ -240,14 +210,75 @@ class Order
         return $this;
     }
 
-    /** @return Collection<int, OrderAsset> */
-    public function getAssets(): Collection { return $this->assets; }
-    public function addAsset(OrderAsset $a): self {
-        if (!$this->assets->contains($a)) { $this->assets->add($a); $a->setOrder($this); }
+    public function getTotalMinutes(): int
+    {
+        $sum = 0;
+
+        foreach ($this->getTimeEntries() as $t) {
+            $sum += (int) $t->getMinutes();
+        }
+
+        return $sum;
+    }
+
+    public function getTotalHours(): float
+    {
+        return round($this->getTotalMinutes() / 60, 2);
+    }
+
+    /**
+     * @return Collection<int, Thumbnail>
+     */
+    public function getThumbnails(): Collection
+    {
+        return $this->thumbnails;
+    }
+
+    public function addThumbnail(Thumbnail $t): self
+    {
+        if (!$this->thumbnails->contains($t)) {
+            $this->thumbnails->add($t);
+            $t->setOrder($this);
+        }
+
         return $this;
     }
-    public function removeAsset(OrderAsset $a): self {
-        if ($this->assets->removeElement($a) && $a->getOrder() === $this) { $a->setOrder(null); }
+
+    public function removeThumbnail(Thumbnail $t): self
+    {
+        if ($this->thumbnails->removeElement($t)) {
+            if ($t->getOrder() === $this) {
+                $t->setOrder(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OrderAsset>
+     */
+    public function getAssets(): Collection
+    {
+        return $this->assets;
+    }
+
+    public function addAsset(OrderAsset $a): self
+    {
+        if (!$this->assets->contains($a)) {
+            $this->assets->add($a);
+            $a->setOrder($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAsset(OrderAsset $a): self
+    {
+        if ($this->assets->removeElement($a) && $a->getOrder() === $this) {
+            $a->setOrder(null);
+        }
+
         return $this;
     }
 }

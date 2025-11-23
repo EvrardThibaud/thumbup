@@ -1,5 +1,4 @@
 <?php
-// src/Form/ResetPasswordType.php
 
 namespace App\Form;
 
@@ -13,8 +12,6 @@ class ResetPasswordType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        // Exemple à appliquer sur ton form de reset (plainPassword RepeatedType)
-
         $builder->add('plainPassword', RepeatedType::class, [
             'type' => PasswordType::class,
             'first_options'  => [

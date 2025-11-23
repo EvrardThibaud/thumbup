@@ -45,7 +45,6 @@ class OrderRepository extends ServiceEntityRepository
         if ($to)         { $qb->andWhere('o.dueAt <= :to')->setParameter('to', $to); }
         if ($paid !== null) { $qb->andWhere('o.paid = :paid')->setParameter('paid', $paid); }
 
-        // Group pour pouvoir compter les assets
         $qb->groupBy('o.id, c.id');
 
         $sortMap = [
@@ -57,11 +56,10 @@ class OrderRepository extends ServiceEntityRepository
             'dueAt'     => 'o.dueAt',
             'createdAt' => 'o.createdAt',
             'updatedAt' => 'o.updatedAt',
-            'assets'    => 'assetsCount', // <-- nouveau
+            'assets'    => 'assetsCount',
         ];
         $qb->orderBy($sortMap[$sort] ?? 'o.updatedAt', strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC');
 
-        // Count propre (sans groupBy)
         $countQb = clone $qb;
         $count = (int) $countQb
             ->resetDQLPart('orderBy')
@@ -78,7 +76,7 @@ class OrderRepository extends ServiceEntityRepository
     public function paginateOrdersWithAssets(?Client $client, int $page, int $perPage): array
     {
         $qb = $this->createQueryBuilder('o')
-            ->innerJoin('o.assets', 'a')        // OrderAsset = client files
+            ->innerJoin('o.assets', 'a')
             ->addSelect('a')
             ->groupBy('o.id')
             ->orderBy('o.dueAt', 'DESC')
@@ -103,7 +101,7 @@ class OrderRepository extends ServiceEntityRepository
     public function paginateOrdersWithThumbnails(?Client $client, int $page, int $perPage): array
     {
         $qb = $this->createQueryBuilder('o')
-            ->innerJoin('o.thumbnails', 't')    // Thumbnail = final images (admin)
+            ->innerJoin('o.thumbnails', 't')
             ->addSelect('t')
             ->groupBy('o.id')
             ->orderBy('o.dueAt', 'DESC')
@@ -124,8 +122,6 @@ class OrderRepository extends ServiceEntityRepository
 
         return ['items' => $rows, 'page' => $page, 'hasMore' => $hasMore];
     }
-
-    
 
     /**
      * @return iterable<Order>
@@ -174,7 +170,6 @@ class OrderRepository extends ServiceEntityRepository
                ->setParameter('paid', $paid);
         }
     
-        // sécurisation du tri
         $allowedSort = [
             'id'        => 'o.id',
             'title'     => 'o.title',
@@ -191,16 +186,12 @@ class OrderRepository extends ServiceEntityRepository
     
         $qb->orderBy($sortExpr, $dir);
     
-        // ⚠️ IMPORTANT: pas de fetch join vers o.assets ici
-        // et pas de distinct chelou
-        // du coup on peut streamer avec toIterable()
         return $qb->getQuery()->toIterable();
     }
     
 
     public function dueByClient(): array
     {
-        // map [clientId => dueCents] ; due = DELIVERED && NOT paid
         $rows = $this->createQueryBuilder('o')
             ->innerJoin('o.client', 'c')
             ->select('c.id AS clientId')
@@ -266,8 +257,6 @@ class OrderRepository extends ServiceEntityRepository
             ->orderBy('o.dueAt', 'ASC');
 
         $orders = $qb->getQuery()->getResult();
-
-        // Build month buckets from start..end (inclusive start, exclusive end)
         $cursor   = new \DateTimeImmutable($start->format('Y-m-01 00:00:00'));
         $endMonth = new \DateTimeImmutable($end->format('Y-m-01 00:00:00'));
 
@@ -297,31 +286,4 @@ class OrderRepository extends ServiceEntityRepository
 
         return ['labels' => $labels, 'data' => $data];
     }
-
-
-
-    //    /**
-    //     * @return Order[] Returns an array of Order objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('o')
-    //            ->andWhere('o.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('o.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?Order
-    //    {
-    //        return $this->createQueryBuilder('o')
-    //            ->andWhere('o.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
 }

@@ -1,5 +1,4 @@
 <?php
-// src/Form/UserType.php
 
 namespace App\Form;
 
@@ -19,16 +18,14 @@ final class UserType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            // Email
             ->add('email', EmailType::class, [
                 'label' => 'Email',
             ])
 
-            // Roles : radio (admin OU client)
             ->add('roles', ChoiceType::class, [
                 'label'    => 'Role',
-                'expanded' => true,   // radios
-                'multiple' => false,  // une seule valeur
+                'expanded' => true,
+                'multiple' => false,
                 'choices'  => [
                     'Admin'  => 'ROLE_ADMIN',
                     'Client' => 'ROLE_CLIENT',
@@ -36,7 +33,6 @@ final class UserType extends AbstractType
                 'help' => 'User must be either admin or client.',
             ])
 
-            // Linked client
             ->add('client', EntityType::class, [
                 'class'       => Client::class,
                 'required'    => false,
@@ -57,17 +53,14 @@ final class UserType extends AbstractType
                 },
             ]);
 
-        // 🔁 transformer array<role> <-> string (radio)
         $builder->get('roles')->addModelTransformer(
             new CallbackTransformer(
-                // model -> view  (array -> string)
                 function (?array $rolesArray): ?string {
                     if (!$rolesArray || count($rolesArray) === 0) {
                         return null;
                     }
-                    return $rolesArray[0]; // on prend le premier rôle
+                    return $rolesArray[0];
                 },
-                // view -> model  (string -> array)
                 function (?string $roleString): array {
                     return $roleString ? [$roleString] : [];
                 }

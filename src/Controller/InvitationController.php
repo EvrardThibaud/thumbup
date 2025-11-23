@@ -3,7 +3,7 @@ namespace App\Controller;
 
 use App\Entity\Client;
 use App\Entity\Invitation;
-use App\Service\TokenFactory;
+use App\Token\TokenFactory;
 use Doctrine\ORM\EntityManagerInterface as EM;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,19 +20,9 @@ final class InvitationController extends AbstractController
         $inv = (new Invitation())
             ->setClient($client)
             ->setToken($tokens->generate(24));
-            // ->setExpiresAt((new \DateTimeImmutable())->modify('+14 days'))
-
         $em->persist($inv);
         $em->flush();
 
-        // Génère l’URL d’inscription liée à l’invitation
-        $link = $this->generateUrl(
-            'app_register',
-            ['invite' => $inv->getToken()],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
-
-        // Message de succès classique
         $this->addFlash('success', 'Invitation created.');
 
         return $this->redirectToRoute('app_client_show', ['id' => $client->getId()]);

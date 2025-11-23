@@ -2,7 +2,6 @@
 
 namespace App\Entity;
 
-use App\Entity\Client;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -18,7 +17,13 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\OneToOne(targetEntity: Client::class)]
-    #[ORM\JoinColumn(name: "client_id", referencedColumnName: "id", nullable: true, unique: true, onDelete: "SET NULL")]
+    #[ORM\JoinColumn(
+        name: 'client_id',
+        referencedColumnName: 'id',
+        nullable: true,
+        unique: true,
+        onDelete: 'SET NULL'
+    )]
     private ?Client $client = null;
 
     #[ORM\Id]
@@ -52,8 +57,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    // --- Client ---
-
     public function getClient(): ?Client
     {
         return $this->client;
@@ -66,25 +69,63 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // --- Basics ---
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getId(): ?int { return $this->id; }
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
 
-    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $dt): self { $this->createdAt = $dt; return $this; }
+    public function setCreatedAt(\DateTimeImmutable $dt): self
+    {
+        $this->createdAt = $dt;
 
-    public function getEmail(): ?string { return $this->email; }
-    public function setEmail(string $email): static { $this->email = $email; return $this; }
+        return $this;
+    }
 
-    public function getUserIdentifier(): string { return (string) $this->email; }
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
 
-    public function isVerified(): bool { return $this->isVerified; }
-    public function setIsVerified(bool $isVerified): self { $this->isVerified = $isVerified; return $this; }
+    public function setEmail(string $email): static
+    {
+        $this->email = $email;
 
-    public function getTimezone(): string { return $this->timezone ?? 'Europe/Paris'; }
-    public function setTimezone(string $timezone): self { $this->timezone = $timezone; return $this; }
+        return $this;
+    }
 
-    // --- Roles ---
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setIsVerified(bool $isVerified): self
+    {
+        $this->isVerified = $isVerified;
+
+        return $this;
+    }
+
+    public function getTimezone(): string
+    {
+        return $this->timezone ?? 'Europe/Paris';
+    }
+
+    public function setTimezone(string $timezone): self
+    {
+        $this->timezone = $timezone;
+
+        return $this;
+    }
 
     public function isAdmin(): bool
     {
@@ -108,15 +149,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->roles = array_values(array_unique($roles));
 
-        // Si user devient admin → on coupe le lien client
         if ($this->isAdmin() && $this->client !== null) {
             $this->client = null;
         }
 
         return $this;
     }
-
-    // --- Password ---
 
     public function getPassword(): ?string
     {
@@ -126,13 +164,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): static
     {
         $this->password = $password;
+
         return $this;
     }
 
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
 
         return $data;
     }
@@ -143,12 +182,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // @deprecated, to be removed when upgrading to Symfony 8
     }
 
-    // --- Business validation rules ---
-
-    /**
-     * - si admin → ne doit pas être lié à un client
-     * - si non admin → doit être lié à exactement 1 client
-     */
     #[Assert\Callback]
     public function validateClientRelation(ExecutionContextInterface $context): void
     {
@@ -167,10 +200,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
     }
 
-    /**
-     * - ne peut PAS avoir ROLE_ADMIN et ROLE_CLIENT en même temps
-     * - doit avoir au moins l’un des deux (admin OU client)
-     */
     #[Assert\Callback]
     public function validateRoles(ExecutionContextInterface $context): void
     {
