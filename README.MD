@@ -198,4 +198,6 @@ Une fois `MAILER_DSN` configuré :
 * Le **forgot password** pourra aussi envoyer un lien.
 * Les notifications d’orders fonctionnent : l'admin reçoit un email dès qu’un client crée une nouvelle commande.
 
+(Ne fonctionne pas sur le WIFI de l'école !)
+
 ---
