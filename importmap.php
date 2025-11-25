@@ -13,7 +13,8 @@
  */
 return [
     'app' => [
-        'version' => '0.1.0',
+        'entrypoint' => true,
+        'path' => './assets/app.js',
     ],
     '@hotwired/stimulus' => [
         'version' => '3.2.2',
