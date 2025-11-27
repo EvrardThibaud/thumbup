@@ -42,11 +42,6 @@ ThumbUp est un outil interne pour gérer des **commandes de miniatures YouTube**
 * Base de données : **MariaDB** (configurée via `DATABASE_URL` côté Infomaniak)
 * PHP : 8.3
 
-Limitations actuelles en prod :
-
-* La création de compte fonctionne, mais il est impossible de se connecter car l’email ne peut pas être validé.
-→ Le système de vérification fonctionne en développement via Mailtrap, mais pas encore configuré en production (les emails ne sont pas envoyés).
-
 ---
 
 ## Lancer le projet en développement
